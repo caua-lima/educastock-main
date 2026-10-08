@@ -53,3 +53,4 @@ google-services-admin.json
 node_modules/
 .claude/
 *.docx#
+/flutter/
