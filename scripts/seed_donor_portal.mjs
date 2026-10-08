@@ -14,7 +14,7 @@
 import { initializeApp, applicationDefault, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-if (!getApps().length) initializeApp({ credential: applicationDefault(), projectId: 'educastock-136cd' });
+if (!getApps().length) initializeApp({ credential: applicationDefault(), projectId: 'educastock-69936' });
 const db = getFirestore();
 
 // Date vira Timestamp no Firestore, igual ao que as Cloud Functions gravam.
