@@ -79,7 +79,7 @@ class Donation {
     this.refusalReason,
   });
 
-  int get totalUnits => items.fold(0, (sum, i) => sum + i.quantity);
+  int get totalUnits => items.fold(0, (total, item) => total + item.quantity);
 
   String get displayProtocol => protocol.isEmpty ? 'Gerando protocolo…' : protocol;
 

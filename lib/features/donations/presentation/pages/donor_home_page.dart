@@ -147,7 +147,6 @@ class _LastDonationTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _LastDonationTile({
-    super.key,
     required this.label,
     required this.title,
     required this.trailing,

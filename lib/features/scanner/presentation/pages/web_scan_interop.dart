@@ -1,20 +1,18 @@
-// ignore: avoid_web_libraries_in_flutter
 import 'dart:async';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:js' as js;
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 /// Chama `window._zxingScanFrameCb(cb)` e retorna o barcode ou null.
-/// Usa callback (js.allowInterop) para evitar problemas com promiseToFuture.
+/// Usa callback (dart:js_interop) para evitar problemas com promiseToFuture.
 Future<String?> callWebScanFrame() {
   final completer = Completer<String?>();
   try {
-    js.context.callMethod('_zxingScanFrameCb', [
-      js.allowInterop((dynamic result) {
-        if (completer.isCompleted) return;
-        final str = result?.toString();
-        completer.complete(str == null || str.isEmpty ? null : str);
-      })
-    ]);
+    final callback = ((JSAny? result) {
+      if (completer.isCompleted) return;
+      final str = result?.dartify()?.toString();
+      completer.complete(str == null || str.isEmpty ? null : str);
+    }).toJS;
+    globalContext.callMethod('_zxingScanFrameCb'.toJS, callback);
   } catch (e) {
     if (!completer.isCompleted) completer.complete(null);
   }
@@ -22,16 +20,15 @@ Future<String?> callWebScanFrame() {
 }
 
 /// Captura foto do stream e retorna o código OU string 'ERR:...' (para logs).
-/// Usa callback (js.allowInterop) — sem promiseToFuture.
+/// Usa callback (dart:js_interop) — sem promiseToFuture.
 Future<String?> callWebCaptureAndScanRaw() {
   final completer = Completer<String?>();
   try {
-    js.context.callMethod('_captureAndScanCb', [
-      js.allowInterop((dynamic result) {
-        if (completer.isCompleted) return;
-        completer.complete(result?.toString());
-      })
-    ]);
+    final callback = ((JSAny? result) {
+      if (completer.isCompleted) return;
+      completer.complete(result?.dartify()?.toString());
+    }).toJS;
+    globalContext.callMethod('_captureAndScanCb'.toJS, callback);
   } catch (e) {
     if (!completer.isCompleted) completer.complete('ERR:dart:$e');
   }
@@ -48,8 +45,9 @@ Future<String?> callWebCaptureAndScan() async {
 /// Retorna diagnóstico do stream de vídeo (JSON string) — síncrono.
 String callWebGetDiagnostics() {
   try {
-    final dynamic result = js.context.callMethod('_getStreamDiagnostics', []);
-    return result?.toString() ?? '{}';
+    final JSAny? result =
+        globalContext.callMethod<JSAny?>('_getStreamDiagnostics'.toJS);
+    return result?.dartify()?.toString() ?? '{}';
   } catch (_) {
     return '{}';
   }
