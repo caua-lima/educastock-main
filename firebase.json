@@ -1,0 +1,12 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "flutter": {"platforms":{"android":{"default":{"projectId":"educastock-136cd","appId":"PENDENTE_REGISTRAR_ANDROID","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"educastock-136cd","configurations":{"android":"PENDENTE_REGISTRAR_ANDROID","ios":"PENDENTE_REGISTRAR_IOS","web":"PENDENTE_REGISTRAR_WEB"}}}}}}

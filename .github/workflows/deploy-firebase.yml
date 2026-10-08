@@ -1,0 +1,74 @@
+name: Deploy Firebase
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Ambiente de deploy (dev/hml/prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - hml
+          - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Install functions deps
+        working-directory: functions
+        run: npm ci || npm install
+
+      - name: Build functions
+        working-directory: functions
+        run: npm run build
+
+      - name: Select project alias
+        id: project
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
+            echo "project=${{ secrets.FIREBASE_PROJECT_DEV }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.environment }}" = "hml" ]; then
+            echo "project=${{ secrets.FIREBASE_PROJECT_HML }}" >> $GITHUB_OUTPUT
+          else
+            echo "project=${{ secrets.FIREBASE_PROJECT_PROD }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build app artifacts (env)
+        env:
+          APP_CHECK_WEB_RECAPTCHA_KEY: ${{ secrets.APP_CHECK_WEB_RECAPTCHA_KEY }}
+        run: |
+          flutter build web --release \
+            --dart-define=APP_ENV=${{ github.event.inputs.environment }} \
+            --dart-define=APP_CHECK_WEB_RECAPTCHA_KEY=${APP_CHECK_WEB_RECAPTCHA_KEY}
+          flutter build apk --release \
+            --dart-define=APP_ENV=${{ github.event.inputs.environment }}
+
+      - name: Deploy Firestore/Storage/Functions
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          firebase use "${{ steps.project.outputs.project }}" --token "$FIREBASE_TOKEN"
+          firebase deploy --only firestore:rules,firestore:indexes,storage,functions --token "$FIREBASE_TOKEN"

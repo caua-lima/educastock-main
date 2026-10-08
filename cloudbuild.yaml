@@ -1,0 +1,59 @@
+steps:
+  # Build do backend (functions)
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - southamerica-east1-docker.pkg.dev/educastock-20a98/educastock/functions:$COMMIT_SHA
+      - -t
+      - southamerica-east1-docker.pkg.dev/educastock-20a98/educastock/functions:latest
+      - functions
+
+  # Push do backend
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - --all-tags
+      - southamerica-east1-docker.pkg.dev/educastock-20a98/educastock/functions
+
+  # Build do frontend (Flutter web)
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - southamerica-east1-docker.pkg.dev/educastock-20a98/educastock/web:$COMMIT_SHA
+      - -t
+      - southamerica-east1-docker.pkg.dev/educastock-20a98/educastock/web:latest
+      - .
+
+  # Push do frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - --all-tags
+      - southamerica-east1-docker.pkg.dev/educastock-20a98/educastock/web
+
+  # Deploy automático do backend no Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - functions
+      - --image=southamerica-east1-docker.pkg.dev/educastock-20a98/educastock/functions:$COMMIT_SHA
+      - --region=southamerica-east1
+      - --quiet
+
+  # Deploy automático do frontend no Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - educastock-web
+      - --image=southamerica-east1-docker.pkg.dev/educastock-20a98/educastock/web:$COMMIT_SHA
+      - --region=southamerica-east1
+      - --quiet
+
+options:
+  logging: CLOUD_LOGGING_ONLY

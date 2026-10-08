@@ -1,0 +1,7 @@
+node_modules
+functions/node_modules
+functions/lib
+build
+.dart_tool
+.git
+*.md

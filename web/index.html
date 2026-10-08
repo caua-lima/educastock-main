@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="EducaStock - Controle de estoque da Casa da Criança">
+
+  <!-- Viewport: viewport-fit=cover habilita safe-areas no iPhone X+ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0F2444">
+
+  <!-- iOS PWA — Add to Home Screen -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <!--
+    'default' (não 'black-translucent'): com black-translucent o WebView ocupa
+    a tela inteira ATRÁS da status bar, mas o hit-test do Flutter/CanvasKit no
+    iOS PWA standalone fica DESLOCADO pela altura da barra — o usuário precisa
+    tocar acima dos elementos. Com 'default', o conteúdo respeita a status bar
+    e os toques alinham corretamente.
+  -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="EducaStock">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/Icon-512.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>EducaStock</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!--
+    Garante que o app ocupe exatamente a viewport visível, sem offsets que
+    desalinham o hit-test no iOS PWA standalone. Usa 100dvh (dynamic viewport
+    height) quando suportado para evitar o "salto" da barra do Safari.
+  -->
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    flutter-view, flt-glass-pane, body > flt-scene-host {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+
+  <!--
+    iOS PWA hack: quando aberto via Add-to-Home-Screen (display: standalone),
+    Safari/WebKit não passa pelo service worker e perde a navegação ao tocar
+    em links. Este script reescreve cliques internos para evitar reload da PWA.
+  -->
+  <script>
+    (function () {
+      var isStandalone =
+        ('standalone' in window.navigator && window.navigator.standalone) ||
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      if (!isStandalone) return;
+      document.addEventListener('click', function (e) {
+        var a = e.target;
+        while (a && a.tagName !== 'A') { a = a.parentNode; }
+        if (!a || !a.href) return;
+        var url = new URL(a.href);
+        // Mantém só rotas dentro do mesmo origin como navegação PWA
+        if (url.origin === window.location.origin && a.target !== '_blank') {
+          e.preventDefault();
+          window.history.pushState({}, '', url.pathname + url.search + url.hash);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }
+      });
+    })();
+  </script>
+</head>
+<body>
+  <!--
+    ZXing pure-JS: funciona em iOS Safari sem WASM.
+    Expõe MultiFormatReader, HybridBinarizer, GlobalHistogramBinarizer, etc.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+
+  <script>
+  function _bootstrapApp() {
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1. INICIALIZA ZXING com todos os formatos relevantes
+    // ─────────────────────────────────────────────────────────────────────────
+    window._zxingReady = false;
+    try {
+      var formats = [
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.QR_CODE,
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.UPC_E,
+        ZXing.BarcodeFormat.ITF,
+        ZXing.BarcodeFormat.DATA_MATRIX,
+        ZXing.BarcodeFormat.PDF_417,
+        ZXing.BarcodeFormat.AZTEC,
+        ZXing.BarcodeFormat.CODABAR,
+      ];
+
+      // Hints base: tenta com máxima insistência
+      var hints = new Map();
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+      // ALSO_INVERTED: tenta também barcodes com cores invertidas (suportado no 0.21)
+      try { hints.set(ZXing.DecodeHintType.ALSO_INVERTED, true); } catch(_) {}
+
+      // Reader padrão — HybridBinarizer (frames nítidos, boa iluminação)
+      window._zxingReader = new ZXing.MultiFormatReader();
+      window._zxingReader.setHints(hints);
+
+      // Reader GH — GlobalHistogramBinarizer (baixo contraste, iluminação uniforme)
+      window._zxingReaderGH = new ZXing.MultiFormatReader();
+      window._zxingReaderGH.setHints(hints);
+
+      window._zxingReady = true;
+      console.log('[EducaStock] ZXing pronto ✅ (Hybrid + GH + CODABAR + ALSO_INVERTED)');
+    } catch(e) {
+      console.error('[EducaStock] ZXing init falhou:', e);
+      window._zxingReader = null;
+      window._zxingReaderGH = null;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1b. BARCODE DETECTOR ML (API nativa do browser — Chrome/Edge/Android)
+    // Usa o pipeline ML nativo do S.O. — detecta qualquer rotação sem canvas ops.
+    // Usado como 1ª tentativa no live scan E na captura de foto.
+    // ZXing continua como complemento quando o ML não encontra.
+    // ─────────────────────────────────────────────────────────────────────────
+    window._barcodeDetector = null;
+    if ('BarcodeDetector' in window) {
+      try {
+        BarcodeDetector.getSupportedFormats().then(function(supported) {
+          var desired = ['ean_13','ean_8','qr_code','code_128','code_39',
+                         'upc_a','upc_e','itf','data_matrix','pdf_417','aztec','codabar'];
+          var formats = desired.filter(function(f) { return supported.indexOf(f) >= 0; });
+          if (!formats.length) formats = ['ean_13','ean_8','qr_code','code_128','upc_a'];
+          window._barcodeDetector = new BarcodeDetector({ formats: formats });
+          console.log('[EducaStock] BarcodeDetector ML ✅ (' + formats.length + ' formatos)');
+        }).catch(function() {
+          window._barcodeDetector = new BarcodeDetector({
+            formats: ['ean_13','ean_8','qr_code','code_128','code_39','upc_a','upc_e','itf']
+          });
+          console.log('[EducaStock] BarcodeDetector ML ✅ (formatos padrão)');
+        });
+      } catch(e) {
+        console.log('[EducaStock] BarcodeDetector não disponível:', e.message || e);
+      }
+    } else {
+      console.log('[EducaStock] BarcodeDetector API não suportada — ZXing exclusivo');
+    }
+
+    // Helper: prefere formatos de produto (EAN/Code) sobre QR Code
+    window._preferProduct = function(barcodes) {
+      if (!barcodes || !barcodes.length) return null;
+      var prod = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','data_matrix'];
+      for (var i = 0; i < barcodes.length; i++) {
+        if (prod.indexOf(barcodes[i].format) >= 0) return barcodes[i];
+      }
+      return barcodes[0];
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 2. UTILITÁRIOS DE CANVAS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Tenta decodificar com HybridBinarizer (1ª tentativa padrão)
+    window._decodeHybrid = function(canvas) {
+      if (!window._zxingReader) return null;
+      try {
+        var lum = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+        var bmp = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
+        var r = window._zxingReader.decode(bmp);
+        return r ? r.getText() : null;
+      } catch(e) { return null; }
+    };
+
+    // Tenta decodificar com GlobalHistogramBinarizer (melhor para baixo contraste)
+    window._decodeGH = function(canvas) {
+      if (!window._zxingReaderGH) return null;
+      try {
+        var lum = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+        var bmp = new ZXing.BinaryBitmap(new ZXing.GlobalHistogramBinarizer(lum));
+        var r = window._zxingReaderGH.decode(bmp);
+        return r ? r.getText() : null;
+      } catch(e) { return null; }
+    };
+
+    // Compat: mantido para chamadas legadas
+    window._zxingDecodeCanvas = window._decodeHybrid;
+
+    // Rotaciona canvas 90° no sentido horário (para barcodes inclinados)
+    window._rotateCanvas90 = function(src) {
+      try {
+        var dst = document.createElement('canvas');
+        dst.width  = src.height;
+        dst.height = src.width;
+        var ctx = dst.getContext('2d');
+        ctx.translate(dst.width / 2, dst.height / 2);
+        ctx.rotate(Math.PI / 2);
+        ctx.drawImage(src, -src.width / 2, -src.height / 2);
+        return dst;
+      } catch(e) { return src; }
+    };
+
+    // Recorta a região central do canvas (para focar na área do código)
+    // ratioW e ratioH: fração do tamanho total a manter (0.0–1.0)
+    window._cropCenter = function(canvas, ratioW, ratioH) {
+      try {
+        var w = Math.round(canvas.width  * ratioW);
+        var h = Math.round(canvas.height * ratioH);
+        var x = Math.round((canvas.width  - w) / 2);
+        var y = Math.round((canvas.height - h) / 2);
+        var dst = document.createElement('canvas');
+        dst.width = w; dst.height = h;
+        dst.getContext('2d').drawImage(canvas, x, y, w, h, 0, 0, w, h);
+        return dst;
+      } catch(e) { return canvas; }
+    };
+
+    // Pré-processamento: converte para escala de cinza + boost de contraste.
+    // Aplicar antes do ZXing melhora a binarização em imagens com pouco contraste
+    // (embalagens foscase, iluminação lateral, superfícies metalizadas).
+    window._applyContrastBoost = function(canvas) {
+      try {
+        var ctx = canvas.getContext('2d');
+        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var data = imageData.data;
+        var factor = 1.9; // fator de contraste (1.0 = sem mudança, 2.0 = dobro)
+        var mid = 128;
+        for (var i = 0; i < data.length; i += 4) {
+          // Converte para escala de cinza (pesos perceptivos padrão)
+          var gray = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
+          // Aplica curva de contraste centrada em 128
+          var enhanced = factor * (gray - mid) + mid;
+          var v = Math.round(Math.min(255, Math.max(0, enhanced)));
+          data[i] = data[i+1] = data[i+2] = v;
+          // data[i+3] = alpha, não alterado
+        }
+        ctx.putImageData(imageData, 0, 0);
+        return canvas;
+      } catch(e) { return canvas; }
+    };
+
+    // Cria cópia de canvas com pré-processamento (não modifica original)
+    window._makeContrastCanvas = function(src) {
+      try {
+        var dst = document.createElement('canvas');
+        dst.width = src.width; dst.height = src.height;
+        dst.getContext('2d').drawImage(src, 0, 0);
+        return window._applyContrastBoost(dst);
+      } catch(e) { return src; }
+    };
+
+    // Nitidez: unsharp mask 3×3 — reduz efeito de motion blur e foco suave.
+    // Ajuda a capturar barcodes quando a mão treme levemente.
+    window._sharpenCanvas = function(canvas) {
+      try {
+        var ctx = canvas.getContext('2d');
+        var w = canvas.width, h = canvas.height;
+        var src = ctx.getImageData(0, 0, w, h);
+        var dst = ctx.createImageData(w, h);
+        var sd = src.data, dd = dst.data;
+        // Kernel de nitidez: centro=5, vizinhos=-1 (laplaciano de sharpening)
+        for (var y = 1; y < h - 1; y++) {
+          for (var x = 1; x < w - 1; x++) {
+            var i = (y * w + x) * 4;
+            for (var c = 0; c < 3; c++) {
+              var v = 5 * sd[i + c]
+                - sd[i - 4 + c]         // esquerda
+                - sd[i + 4 + c]         // direita
+                - sd[i - w * 4 + c]     // cima
+                - sd[i + w * 4 + c];    // baixo
+              dd[i + c] = Math.min(255, Math.max(0, v));
+            }
+            dd[i + 3] = 255;
+          }
+        }
+        ctx.putImageData(dst, 0, 0);
+        return canvas;
+      } catch(e) { return canvas; }
+    };
+
+    // Cópia sharpened (não modifica o original)
+    window._makeSharpCanvas = function(src) {
+      try {
+        var dst = document.createElement('canvas');
+        dst.width = src.width; dst.height = src.height;
+        dst.getContext('2d').drawImage(src, 0, 0);
+        return window._sharpenCanvas(dst);
+      } catch(e) { return src; }
+    };
+
+    // Inversão de cores — detecta barcodes brancos em fundo escuro
+    // (embalagens metalizadas, pretas ou com fundo escuro)
+    window._makeInvertCanvas = function(src) {
+      try {
+        var dst = document.createElement('canvas');
+        dst.width = src.width; dst.height = src.height;
+        var ctx = dst.getContext('2d');
+        ctx.drawImage(src, 0, 0);
+        var imageData = ctx.getImageData(0, 0, dst.width, dst.height);
+        var data = imageData.data;
+        for (var i = 0; i < data.length; i += 4) {
+          data[i]     = 255 - data[i];
+          data[i + 1] = 255 - data[i + 1];
+          data[i + 2] = 255 - data[i + 2];
+        }
+        ctx.putImageData(imageData, 0, 0);
+        return dst;
+      } catch(e) { return src; }
+    };
+
+    // Downscale: reduz para máx. 1280px no lado maior (velocidade no live scan)
+    window._downscale = function(canvas, maxDim) {
+      try {
+        var m = maxDim || 1280;
+        var w = canvas.width, h = canvas.height;
+        var max = Math.max(w, h);
+        if (max <= m) return canvas;
+        var scale = m / max;
+        var sw = Math.round(w * scale), sh = Math.round(h * scale);
+        var dst = document.createElement('canvas');
+        dst.width = sw; dst.height = sh;
+        var ctx = dst.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(canvas, 0, 0, sw, sh);
+        return dst;
+      } catch(e) { return canvas; }
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. DECODIFICAÇÃO MULTI-ESTRATÉGIA (live scan — 16 tentativas)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Frame >1280px é reduzido automaticamente (velocidade).
+    // Estratégias em ordem de custo crescente: mais rápidas primeiro.
+    //   1-2.  Original Hybrid + GH
+    //   3-4.  Crop 65% Hybrid + GH
+    //   5-7.  Rotate 90° Hybrid + GH + Crop65  (barcode na lateral — ketchup)
+    //   8-10. Rotate 270° Hybrid + GH + Crop65 (barcode de lado, outro sentido)
+    //   11.   Contraste boosted + Hybrid        (embalagem fosca, luz lateral)
+    //   12.   Rotate 90°  + Boost              (de lado + baixo contraste)
+    //   13.   Rotate 270° + Boost
+    //   14.   Sharp crop + Hybrid              (leve motion blur)
+    //   15.   Invertido + GH                  (embalagem escura / metalizada)
+    //   16.   Rotate 180° + Hybrid             (produto de cabeça para baixo)
+    window._zxingDecodeLive = function(canvas) {
+      // Downscale se necessário (>1280px → mais lento sem ganho no live scan)
+      var c = window._downscale(canvas, 1280);
+      var r;
+
+      // 1. Original — Hybrid
+      r = window._decodeHybrid(c);
+      if (r) return r;
+
+      // 2. Original — GlobalHistogram (baixo contraste / luz uniforme)
+      r = window._decodeGH(c);
+      if (r) return r;
+
+      // 3. Crop 65% — Hybrid
+      var crop = window._cropCenter(c, 0.65, 0.65);
+      r = window._decodeHybrid(crop);
+      if (r) return r;
+
+      // 4. Crop 65% — GlobalHistogram
+      r = window._decodeGH(crop);
+      if (r) return r;
+
+      // 5. Rotate 90° — Hybrid (barcode vertical na lateral do produto)
+      var rot90 = window._rotateCanvas90(c);
+      r = window._decodeHybrid(rot90);
+      if (r) return r;
+
+      // 6. Rotate 90° — GH
+      r = window._decodeGH(rot90);
+      if (r) return r;
+
+      // 7. Rotate 90° + Crop 65% — Hybrid (barcode de lado + centralizado no frame)
+      r = window._decodeHybrid(window._cropCenter(rot90, 0.65, 0.65));
+      if (r) return r;
+
+      // 8. Rotate 270° — Hybrid
+      var rot270 = window._rotateCanvas90(window._rotateCanvas90(rot90));
+      r = window._decodeHybrid(rot270);
+      if (r) return r;
+
+      // 9. Rotate 270° — GH
+      r = window._decodeGH(rot270);
+      if (r) return r;
+
+      // 10. Rotate 270° + Crop 65% — Hybrid (barcode de lado, sentido contrário)
+      r = window._decodeHybrid(window._cropCenter(rot270, 0.65, 0.65));
+      if (r) return r;
+
+      // 11. Contraste boosted — Hybrid (embalagem fosca / iluminação lateral)
+      var boosted = window._makeContrastCanvas(c);
+      r = window._decodeHybrid(boosted);
+      if (r) return r;
+
+      // 12. Rotate 90° + Boost — Hybrid (de lado + baixo contraste)
+      r = window._decodeHybrid(window._makeContrastCanvas(rot90));
+      if (r) return r;
+
+      // 13. Rotate 270° + Boost — Hybrid (de lado sentido contrário + baixo contraste)
+      r = window._decodeHybrid(window._makeContrastCanvas(rot270));
+      if (r) return r;
+
+      // 14. Sharp crop — Hybrid (motion blur de mão levemente tremendo)
+      r = window._decodeHybrid(window._makeSharpCanvas(crop));
+      if (r) return r;
+
+      // 15. Invertido boosted — GH (embalagem escura / metalizada / branca)
+      r = window._decodeGH(window._makeInvertCanvas(boosted));
+      if (r) return r;
+
+      // 16. Rotate 180° — Hybrid (produto de cabeça para baixo)
+      r = window._decodeHybrid(window._rotateCanvas90(rot90));
+      if (r) return r;
+
+      return null;
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 4. DECODIFICAÇÃO COMPLETA (foto — exaustiva, ~20 tentativas)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Usado ao tirar foto. Velocidade não é crítica — prioriza encontrar o código.
+    // Cobre: baixo contraste, embalagens foscase/metalizadas, barcodes laterais,
+    //        foco suave, inversão de cores, múltiplas rotações e crops.
+    window._zxingDecodeFull = function(canvas, callback) {
+      var r;
+
+      // 1. Original — Hybrid
+      r = window._decodeHybrid(canvas);
+      if (r) { callback(r); return; }
+
+      // 2. Original — GlobalHistogram
+      r = window._decodeGH(canvas);
+      if (r) { callback(r); return; }
+
+      // 3. Crop 70% — Hybrid
+      var crop70 = window._cropCenter(canvas, 0.70, 0.70);
+      r = window._decodeHybrid(crop70);
+      if (r) { callback(r); return; }
+
+      // 4. Crop 70% — GH
+      r = window._decodeGH(crop70);
+      if (r) { callback(r); return; }
+
+      // 5. Crop 50% — Hybrid (barcode pequeno, produto longe)
+      var crop50 = window._cropCenter(canvas, 0.50, 0.50);
+      r = window._decodeHybrid(crop50);
+      if (r) { callback(r); return; }
+
+      // 6. Contraste boosted — Hybrid
+      var boosted = window._makeContrastCanvas(canvas);
+      r = window._decodeHybrid(boosted);
+      if (r) { callback(r); return; }
+
+      // 7. Contraste boosted — GH
+      r = window._decodeGH(boosted);
+      if (r) { callback(r); return; }
+
+      // 8. Sharp — Hybrid (foco suave / motion blur)
+      var sharp = window._makeSharpCanvas(canvas);
+      r = window._decodeHybrid(sharp);
+      if (r) { callback(r); return; }
+
+      // 9. Sharp crop — Hybrid
+      r = window._decodeHybrid(window._makeSharpCanvas(crop70));
+      if (r) { callback(r); return; }
+
+      // 10–13. Rotação 90° — Hybrid + GH + boosted + sharp
+      var r90 = window._rotateCanvas90(canvas);
+      r = window._decodeHybrid(r90);
+      if (r) { callback(r); return; }
+      r = window._decodeGH(r90);
+      if (r) { callback(r); return; }
+      r = window._decodeHybrid(window._makeContrastCanvas(r90));
+      if (r) { callback(r); return; }
+      r = window._decodeHybrid(window._makeSharpCanvas(r90));
+      if (r) { callback(r); return; }
+
+      // 14–17. Rotação 270° — Hybrid + GH + boosted + sharp
+      var r270 = window._rotateCanvas90(window._rotateCanvas90(r90));
+      r = window._decodeHybrid(r270);
+      if (r) { callback(r); return; }
+      r = window._decodeGH(r270);
+      if (r) { callback(r); return; }
+      r = window._decodeHybrid(window._makeContrastCanvas(r270));
+      if (r) { callback(r); return; }
+      r = window._decodeHybrid(window._makeSharpCanvas(r270));
+      if (r) { callback(r); return; }
+
+      // 18. Rotação 180° — Hybrid (produto de cabeça para baixo)
+      var r180 = window._rotateCanvas90(r90);
+      r = window._decodeHybrid(r180);
+      if (r) { callback(r); return; }
+
+      // 19. Invertido boosted — GH (embalagem escura / metalizada)
+      r = window._decodeGH(window._makeInvertCanvas(boosted));
+      if (r) { callback(r); return; }
+
+      // 20. Crop 90° boosted + sharp (último recurso para barcode lateral)
+      var crop90boost = window._makeSharpCanvas(
+        window._makeContrastCanvas(window._cropCenter(r90, 0.70, 0.70))
+      );
+      r = window._decodeHybrid(crop90boost);
+      if (r) { callback(r); return; }
+
+      callback(null);
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 5. HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    window._getStreamDiagnostics = function() {
+      try {
+        var video = document.querySelector('video');
+        if (!video) return '{"err":"no-video"}';
+        var tracks = video.srcObject ? video.srcObject.getVideoTracks() : [];
+        var settings = tracks.length > 0 ? tracks[0].getSettings() : {};
+        return JSON.stringify({
+          rs:     video.readyState,
+          w:      video.videoWidth,
+          h:      video.videoHeight,
+          camW:   settings.width  || 0,
+          camH:   settings.height || 0,
+          paused: video.paused,
+          stream: !!video.srcObject,
+          tracks: tracks.length,
+          tState: tracks.length > 0 ? tracks[0].readyState : 'none',
+          IC:     ('ImageCapture' in window),
+          zx:     window._zxingReady,
+          ml:     !!window._barcodeDetector,
+          hd:     !!window._boostedTrack,
+        });
+      } catch(e) { return '{"err":"' + String(e.message || e) + '"}'; }
+    };
+
+    // Obtém (ou cria) instância de ImageCapture para o track ativo
+    window._ic = null; window._icTrack = null;
+    window._getImageCapture = function() {
+      try {
+        var video = document.querySelector('video');
+        if (!video || !video.srcObject) return null;
+        var tracks = video.srcObject.getVideoTracks();
+        if (!tracks || !tracks.length) return null;
+        var track = tracks[0];
+        if (!('ImageCapture' in window)) return null;
+        if (!window._ic || window._icTrack !== track || track.readyState !== 'live') {
+          window._ic = new ImageCapture(track);
+          window._icTrack = track;
+        }
+        return window._ic;
+      } catch(e) { return null; }
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 6. RESOLUÇÃO MÁXIMA DE CÂMERA — polling com track fingerprint
+    //
+    // BUG ANTERIOR: setTimeout(5 s) disparo-único disparava ANTES do usuário
+    // chegar na câmera (PWA abre no home → navega → scanner abre após > 5 s)
+    // → sem stream disponível → retornava sem fazer nada → ficava em 640×480.
+    // Após reiniciar e ir direto ao scanner (< 5 s), a câmera já estava pronta
+    // e o boost funcionava — era ISSO que o usuário percebia como "funciona só
+    // depois de reiniciar".
+    //
+    // SOLUÇÃO: polling leve a cada 2 s com fingerprint de track.
+    //  • applyConstraints é chamado NO MÁXIMO UMA VEZ por track (sem flickering).
+    //  • Se câmera restartar após scan (novo track), o boost é reaplicado.
+    //  • Se já estiver em ≥ 1280 px, registra como OK sem nenhuma constraint.
+    // ─────────────────────────────────────────────────────────────────────────
+    window._boostedTrack = null;
+    window._applyMaxResolution = function() {
+      try {
+        var video = document.querySelector('video');
+        if (!video || !video.srcObject) return;
+        var tracks = video.srcObject.getVideoTracks();
+        if (!tracks || !tracks.length || tracks[0].readyState !== 'live') return;
+        var track = tracks[0];
+        // Este track já foi tratado — nada a fazer
+        if (window._boostedTrack === track) return;
+        var s = track.getSettings();
+        if (s.width && s.width >= 1280) {
+          // Resolução já adequada — marca sem applyConstraints
+          window._boostedTrack = track;
+          console.log('[EducaStock] Câmera OK: ' + s.width + 'x' + s.height
+            + ' facing:' + (s.facingMode||'n/a'));
+          return;
+        }
+        // Track em baixa resolução — aplica constraint UMA ÚNICA VEZ para este track.
+        // Marca ANTES da Promise para evitar chamadas duplas se o intervalo
+        // disparar novamente antes da Promise resolver.
+        window._boostedTrack = track;
+        console.log('[EducaStock] Câmera em ' + (s.width||'?') + 'x' + (s.height||'?')
+          + ' → solicitando Full HD...');
+        track.applyConstraints({
+          advanced: [
+            { width: { ideal: 1920 }, height: { ideal: 1080 } },
+            { width: { ideal: 1280 }, height: { ideal: 720  } },
+            { width: { ideal: 960  }, height: { ideal: 540  } },
+          ]
+        }).then(function() {
+          var ns = track.getSettings();
+          console.log('[EducaStock] Câmera ajustada: ' + (ns.width||'?') + 'x' + (ns.height||'?'));
+        }).catch(function(e) {
+          // Constraint falhou — libera o lock para nova tentativa no próximo tick
+          console.warn('[EducaStock] applyConstraints falhou:', e && e.message ? e.message : e);
+          window._boostedTrack = null;
+        });
+      } catch(e) {}
+    };
+    // Polling a cada 2 s — custo mínimo (apenas leitura de propriedades JS).
+    // Detecta o stream assim que a câmera iniciar, independente de quando o
+    // usuário navegar até a tela do scanner.
+    setInterval(window._applyMaxResolution, 2000);
+    // Tenta imediatamente após 300 ms (caso câmera já esteja pronta no load)
+    setTimeout(window._applyMaxResolution, 300);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 7. SCAN DE FRAME (loop contínuo — ML primeiro, ZXing como complemento)
+    // Fluxo: BarcodeDetector ML (nativo) → ImageCapture+ZXing → canvas+ZXing
+    // BarcodeDetector: mais rápido, suporta qualquer rotação, sem canvas ops.
+    // ZXing: complemento quando ML não encontra (baixo contraste, formatos raros).
+    // ─────────────────────────────────────────────────────────────────────────
+    window._zxingScanFrameCb = function(cb) {
+      if (!window._zxingReader && !window._barcodeDetector) { cb(null); return; }
+      var video = document.querySelector('video');
+      if (!video || video.readyState < 2) { cb(null); return; }
+      var vw = video.videoWidth, vh = video.videoHeight;
+      if (!vw || !vh) { cb(null); return; }
+
+      // ZXing via canvas do elemento de vídeo (fallback final)
+      function zxingFromVideoEl() {
+        if (!window._zxingReader) { cb(null); return; }
+        try {
+          var c = document.createElement('canvas');
+          c.width = vw; c.height = vh;
+          c.getContext('2d').drawImage(video, 0, 0, vw, vh);
+          cb(window._zxingDecodeLive(c));
+        } catch(e) { cb(null); }
+      }
+
+      // ZXing via ImageCapture.grabFrame() (maior qualidade de frame)
+      function zxingViaGrabFrame() {
+        if (!window._zxingReader) { cb(null); return; }
+        var ic = window._getImageCapture();
+        if (!ic) { zxingFromVideoEl(); return; }
+        ic.grabFrame().then(function(frame) {
+          if (!frame) { zxingFromVideoEl(); return; }
+          try {
+            var fc = document.createElement('canvas');
+            fc.width  = frame.width  || vw;
+            fc.height = frame.height || vh;
+            fc.getContext('2d').drawImage(frame, 0, 0);
+            if (frame.close) frame.close();
+            cb(window._zxingDecodeLive(fc));
+          } catch(e) {
+            if (frame && frame.close) frame.close();
+            zxingFromVideoEl();
+          }
+        }, function() { zxingFromVideoEl(); });
+      }
+
+      // 1ª tentativa: BarcodeDetector ML — nativo, suporta rotação automática
+      if (window._barcodeDetector) {
+        window._barcodeDetector.detect(video).then(function(barcodes) {
+          if (barcodes && barcodes.length) {
+            var hit = window._preferProduct(barcodes);
+            if (hit && hit.rawValue) { cb(hit.rawValue); return; }
+          }
+          // ML não encontrou → complementa com ZXing (frame de alta qualidade)
+          zxingViaGrabFrame();
+        }).catch(function() {
+          // BarcodeDetector falhou → ZXing direto
+          zxingViaGrabFrame();
+        });
+      } else {
+        // BarcodeDetector não disponível → ZXing direto
+        zxingViaGrabFrame();
+      }
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 8. DETECTAR EM BLOB (foto tirada) — usa estratégia completa de ~14 tentativas
+    // ─────────────────────────────────────────────────────────────────────────
+    window._detectInBlob = function(blob, callback) {
+      if (!window._zxingReader) { callback(null); return; }
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function() {
+        URL.revokeObjectURL(url);
+        var w = img.naturalWidth  || img.width;
+        var h = img.naturalHeight || img.height;
+        if (!w || !h) { callback(null); return; }
+
+        // Canvas em resolução original
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+
+        // Se muito grande, cria versão reduzida para processar mais rápido
+        // e tenta as duas em paralelo (síncrono via _zxingDecodeFull)
+        var maxDim = Math.max(w, h);
+        if (maxDim > 1920) {
+          var scale  = 1920 / maxDim;
+          var sw = Math.round(w * scale), sh = Math.round(h * scale);
+          var small = document.createElement('canvas');
+          small.width = sw; small.height = sh;
+          small.getContext('2d').drawImage(img, 0, 0, sw, sh);
+          // Tenta na versão menor primeiro (mais rápida para ZXing)
+          window._zxingDecodeFull(small, function(r) {
+            if (r) { callback(r); return; }
+            // Fallback na resolução original (pode ter mais detalhe)
+            window._zxingDecodeFull(canvas, callback);
+          });
+        } else {
+          window._zxingDecodeFull(canvas, callback);
+        }
+      };
+      img.onerror = function() { URL.revokeObjectURL(url); callback(null); };
+      img.src = url;
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 9. CAPTURA FOTO E DETECTA (botão câmera na UI)
+    // Fluxo: takePhoto → ML → ZXing full → grabFrame → ML → ZXing full
+    // BarcodeDetector ML é tentado em CADA fonte de imagem antes do ZXing.
+    // ─────────────────────────────────────────────────────────────────────────
+    window._captureAndScanCb = function(cb) {
+      if (!window._zxingReader && !window._barcodeDetector) { cb('ERR:no_detector'); return; }
+
+      var ic = window._getImageCapture();
+
+      // Fallback: <input type=file capture=environment> (iOS Safari sem ImageCapture)
+      function fileInputFallback() {
+        var input    = document.createElement('input');
+        input.type   = 'file';
+        input.accept = 'image/*';
+        input.setAttribute('capture', 'environment');
+        input.style.cssText = 'position:absolute;top:-9999px;left:-9999px;opacity:0;';
+
+        var settled = false;
+        function done(v) {
+          if (settled) return; settled = true;
+          document.removeEventListener('visibilitychange', onVis);
+          try {
+            if (document.body.contains(input)) document.body.removeChild(input);
+          } catch(_) {}
+          // Para o file input: ML + ZXing no arquivo escolhido
+          if (v && typeof v !== 'string') {
+            detectBlobMLThenZXing(v, function() { cb(null); });
+          } else { cb(v); }
+        }
+
+        input.addEventListener('change', function() {
+          var file = input.files && input.files[0];
+          if (!file) { done(null); return; }
+          done(file); // passa o Blob para done() → detectBlobMLThenZXing
+        });
+
+        var wasHidden = false;
+        function onVis() {
+          if (document.hidden) { wasHidden = true; }
+          else if (wasHidden) { setTimeout(function() { done(null); }, 2000); }
+        }
+        document.addEventListener('visibilitychange', onVis);
+        document.body.appendChild(input);
+        input.click();
+      }
+
+      // ML + ZXing full em um Blob (foto ou arquivo)
+      function detectBlobMLThenZXing(blob, onNotFound) {
+        function tryZXing() {
+          if (!window._zxingReader) { onNotFound(); return; }
+          window._detectInBlob(blob, function(r) { if (r) cb(r); else onNotFound(); });
+        }
+        if (window._barcodeDetector) {
+          window._barcodeDetector.detect(blob)
+            .then(function(barcodes) {
+              if (barcodes && barcodes.length) {
+                var hit = window._preferProduct(barcodes);
+                if (hit && hit.rawValue) { cb(hit.rawValue); return; }
+              }
+              tryZXing(); // ML não achou → ZXing completo (20 estratégias)
+            }).catch(tryZXing);
+        } else { tryZXing(); }
+      }
+
+      // Último recurso: grabFrame + ML + ZXing
+      function tryGrabFrame() {
+        if (!ic) { cb(null); return; }
+        ic.grabFrame().then(function(frame) {
+          if (!frame) { cb(null); return; }
+          try {
+            var fc = document.createElement('canvas');
+            fc.width  = frame.width;
+            fc.height = frame.height;
+            fc.getContext('2d').drawImage(frame, 0, 0);
+            if (frame.close) frame.close();
+            if (window._barcodeDetector) {
+              window._barcodeDetector.detect(fc)
+                .then(function(barcodes) {
+                  if (barcodes && barcodes.length) {
+                    var hit = window._preferProduct(barcodes);
+                    if (hit && hit.rawValue) { cb(hit.rawValue); return; }
+                  }
+                  if (window._zxingReader) window._zxingDecodeFull(fc, cb);
+                  else cb(null);
+                }).catch(function() {
+                  if (window._zxingReader) window._zxingDecodeFull(fc, cb);
+                  else cb(null);
+                });
+            } else {
+              if (window._zxingReader) window._zxingDecodeFull(fc, cb);
+              else cb(null);
+            }
+          } catch(e) { if (frame && frame.close) frame.close(); cb(null); }
+        }, function() { cb(null); });
+      }
+
+      if (!ic) { fileInputFallback(); return; }
+
+      // takePhoto() captura em alta resolução (Full HD) sem abrir câmera nativa
+      var photoPromise;
+      try { photoPromise = ic.takePhoto({ imageWidth: 1920, imageHeight: 1080 }); }
+      catch(e) { photoPromise = ic.takePhoto(); }
+
+      photoPromise.then(function(blob) {
+        // 1ª tentativa: ML + ZXing na foto capturada
+        detectBlobMLThenZXing(blob, function() {
+          // Não encontrou na foto → tenta grabFrame (frame em tempo real)
+          tryGrabFrame();
+        });
+      }, function(err) {
+        console.warn('[EducaStock] takePhoto falhou:', err && err.message ? err.message : err);
+        fileInputFallback();
+      });
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 10. INICIA FLUTTER
+    // ─────────────────────────────────────────────────────────────────────────
+    var s = document.createElement('script');
+    s.src = 'flutter_bootstrap.js';
+    document.body.appendChild(s);
+  }
+
+  _bootstrapApp();
+  </script>
+</body>
+</html>

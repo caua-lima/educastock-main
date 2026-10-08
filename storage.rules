@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─── helpers ────────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isUnder5MB() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // ─── imagens de produtos ─────────────────────────────────────────────
+    // Qualquer usuário autenticado pode visualizar imagens de produtos.
+    // Apenas usuários autenticados podem fazer upload (max 5 MB, somente imagens).
+    match /products/{productId}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isImageFile() && isUnder5MB();
+      allow delete: if isSignedIn();
+    }
+
+    // ─── block all other paths ───────────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

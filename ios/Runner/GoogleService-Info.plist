@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>809300510546-6l7ol2vvtt1edothc173vks8mbcaioje.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.809300510546-6l7ol2vvtt1edothc173vks8mbcaioje</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBYmd7ESC36_wrv8jc7S2sKbYxnQcmfVto</string>
+	<key>GCM_SENDER_ID</key>
+	<string>809300510546</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>br.org.casadacrianca.educastock</string>
+	<key>PROJECT_ID</key>
+	<string>educastock-136cd</string>
+	<key>STORAGE_BUCKET</key>
+	<string>educastock-136cd.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:809300510546:ios:d1604ebe65a40af401dc8b</string>
+</dict>
+</plist>

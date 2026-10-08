@@ -1,0 +1,295 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── helpers ────────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && userDoc().role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isEstoquista() {
+      return hasRole('estoquista');
+    }
+
+    function isVoluntario() {
+      return hasRole('voluntario');
+    }
+
+    function isActiveUser() {
+      return isSignedIn() && userDoc().isActive == true;
+    }
+
+    // Equipe da ONG (qualquer papel interno). O doador NUNCA entra aqui (F2).
+    function isStaffUser() {
+      return isActiveUser()
+          && userDoc().role in ['admin', 'estoquista', 'voluntario', 'consulta'];
+    }
+
+    // Doador ativo (ator externo).
+    function isDonor() {
+      return isActiveUser() && userDoc().role == 'doador';
+    }
+
+    // Quem opera doações: administrador e estoquista.
+    function isOps() {
+      return isActiveUser() && (isAdmin() || isEstoquista());
+    }
+
+    function canWrite() {
+      // admin e estoquista podem escrever; voluntário e consulta só leem
+      return isActiveUser() && (isAdmin() || isEstoquista());
+    }
+
+    // ─── users ──────────────────────────────────────────────────────────────
+    // Qualquer usuário autenticado e ativo pode ler seu próprio perfil.
+    // Apenas admin pode ler todos os perfis ou alterar role/isActive.
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      // F1: o autocadastro só pode criar DOADOR ativo. Papéis da equipe são
+      // concedidos por um administrador (update de role) ou pelo Admin SDK.
+      allow create: if isSignedIn() && request.auth.uid == userId
+                    && request.resource.data.role == 'doador'
+                    && request.resource.data.isActive == true;
+
+      // Usuário pode atualizar apenas campos não-sensíveis do próprio perfil
+      allow update: if isSignedIn() && request.auth.uid == userId
+                    && !('role' in request.resource.data.diff(resource.data).affectedKeys())
+                    && !('isActive' in request.resource.data.diff(resource.data).affectedKeys());
+
+      // Admin pode atualizar qualquer campo (incluindo role e isActive)
+      allow update: if isAdmin();
+
+      allow delete: if false; // nunca deletar usuários via cliente
+
+      // Histórico de códigos lidos/digitados — privado de cada usuário.
+      match /scan_history/{codeId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    // ─── otp_codes (2FA existente) ──────────────────────────────────────────
+    // Apenas o próprio usuário. O código é gerado no cliente (limitação já
+    // documentada no relatório da Sprint 2); mantido só para não quebrar o 2FA.
+    match /otp_codes/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ─── products ───────────────────────────────────────────────────────────
+    match /products/{productId} {
+      allow read: if isStaffUser();
+      allow create, update: if canWrite();
+      allow delete: if isAdmin();
+    }
+
+    // ─── batches ────────────────────────────────────────────────────────────
+    match /batches/{batchId} {
+      allow read: if isStaffUser();
+      allow create, update: if canWrite();
+      allow delete: if isAdmin();
+    }
+
+    // ─── stock_movements ────────────────────────────────────────────────────
+    match /stock_movements/{movementId} {
+      allow read: if isStaffUser();
+      allow create: if canWrite();
+      allow update, delete: if false; // imutável após criação
+    }
+
+    // ─── audit_logs ─────────────────────────────────────────────────────────
+    match /audit_logs/{logId} {
+      allow read: if isAdmin() || isEstoquista();
+      allow create: if canWrite();
+      allow update, delete: if false; // imutável
+    }
+
+    // ─── storage_locations ──────────────────────────────────────────────────
+    match /storage_locations/{locationId} {
+      allow read: if isStaffUser();
+      allow create, update: if canWrite(); // admin ou estoquista
+      allow delete: if false; // soft-delete via isActive
+    }
+
+    // ─── settings ───────────────────────────────────────────────────────────
+    match /settings/{docId} {
+      allow read: if isStaffUser();
+      allow write: if isAdmin();
+    }
+
+    // Regras de doação: únicas configurações visíveis ao doador (RN-D13).
+    match /settings/donation_rules {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+
+    // ─── settings_categories ────────────────────────────────────────────────
+    match /settings_categories/{categoryId} {
+      allow read: if isStaffUser();
+      allow create, update: if isAdmin();
+      allow delete: if false; // soft-delete via isActive
+    }
+
+    // ─── alerts ─────────────────────────────────────────────────────────────
+    match /alerts/{alertId} {
+      allow read: if isStaffUser();
+      allow create, update: if isAdmin() || isEstoquista();
+      allow delete: if isAdmin();
+    }
+
+    // ─── device_tokens ──────────────────────────────────────────────────────
+    match /device_tokens/{tokenId} {
+      allow read: if isAdmin();
+      allow create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // ─── adjustment_approvals ───────────────────────────────────────────────
+    match /adjustment_approvals/{requestId} {
+      allow read: if isAdmin() || isEstoquista();
+      allow create: if isActiveUser() && (isEstoquista() || isVoluntario());
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // ─── consumption_forecasts ──────────────────────────────────────────────
+    // Gravado pelo Colab via Admin SDK (ignora regras). Leitura para a equipe.
+    // Escrita bloqueada no cliente.
+    match /consumption_forecasts/{forecastId} {
+      allow read: if isStaffUser();
+      allow write: if false; // apenas Admin SDK (Colab) pode gravar
+    }
+
+    // ─── risk_classifications ───────────────────────────────────────────────
+    // Gravado pelo notebook de ML via Admin SDK. Leitura para a equipe (F6).
+    match /risk_classifications/{batchId} {
+      allow read: if isStaffUser();
+      allow write: if false;
+    }
+
+    // ─── recipes ────────────────────────────────────────────────────────────
+    match /recipes/{recipeId} {
+      allow read: if isStaffUser();
+      allow create, update: if canWrite();
+      allow delete: if false;
+    }
+
+    // ─── recipe_runs ────────────────────────────────────────────────────────
+    match /recipe_runs/{runId} {
+      allow read: if isStaffUser();
+      allow create: if canWrite();
+      allow update, delete: if false;
+    }
+
+    // ─── outputs ────────────────────────────────────────────────────────────
+    match /outputs/{outputId} {
+      allow read: if isStaffUser();
+      allow create: if canWrite();
+      allow update, delete: if false;
+    }
+
+    // =======================================================================
+    //  PORTAL DO DOADOR (Sprint 2 — RF16 a RF25)
+    // =======================================================================
+
+    // ─── donors ─────────────────────────────────────────────────────────────
+    // Perfil do doador (RF16/RF17). Dono lê e edita; admin e estoquista leem.
+    match /donors/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isOps());
+
+      allow create: if isSignedIn() && request.auth.uid == uid
+                    && request.resource.data.donorType in ['pf', 'pj']
+                    && request.resource.data.displayName is string
+                    && request.resource.data.displayName.size() >= 3
+                    && request.resource.data.consentAt != null
+                    && request.resource.data.termsVersion is string;
+
+      // O doador não apaga o próprio perfil: usa o pedido de exclusão
+      // (deletionRequestedAt), tratado por função (anonimização, RN-D11).
+      allow update: if isSignedIn() && request.auth.uid == uid
+                    && request.resource.data.donorType in ['pf', 'pj'];
+      allow delete: if false;
+
+      // Dados sensíveis (CPF/CNPJ e endereço): só o dono e o administrador.
+      match /private/{docId} {
+        allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+        allow create, update: if isSignedIn() && request.auth.uid == uid;
+        allow delete: if false;
+      }
+    }
+
+    // ─── donation_points ────────────────────────────────────────────────────
+    // Pontos de recebimento (RF22). Doador lê só os ativos; admin escreve.
+    match /donation_points/{pointId} {
+      allow read: if isStaffUser() || (isDonor() && resource.data.isActive == true);
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // ─── donation_needs ─────────────────────────────────────────────────────
+    // Necessidades exibidas ao doador (RF19). As automáticas são gravadas pela
+    // função refreshDonationNeeds (Admin SDK); as manuais, pela equipe.
+    match /donation_needs/{needId} {
+      allow read: if isStaffUser() || (isDonor() && resource.data.isActive == true);
+      allow create, update: if isOps();
+      allow delete: if false;
+    }
+
+    // ─── donations ──────────────────────────────────────────────────────────
+    // Intenção formal de doação (RF18/RF20). Reserva de quantidade, protocolo e
+    // transições válidas são tratados por onDonationCreated / onDonationStatusChanged.
+    match /donations/{donationId} {
+      allow read: if isOps() || (isDonor() && resource.data.donorId == request.auth.uid);
+
+      allow create: if isDonor()
+                    && request.auth.token.email_verified == true
+                    && request.resource.data.donorId == request.auth.uid
+                    && request.resource.data.status == 'pendente'
+                    && request.resource.data.items is list
+                    && request.resource.data.items.size() > 0
+                    && request.resource.data.items.size() <= 20
+                    && request.resource.data.termsAcceptedAt != null;
+
+      // Doador: apenas cancelar a própria doação (pendente ou aprovada).
+      // Equipe: decide e recebe (qualquer campo; transições validadas na função).
+      allow update: if isOps()
+                    || (isDonor()
+                        && resource.data.donorId == request.auth.uid
+                        && resource.data.status in ['pendente', 'aprovada']
+                        && request.resource.data.status == 'cancelada'
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['status', 'updatedAt', 'cancelReason']));
+
+      allow delete: if false;
+
+      // Linha do tempo imutável (RNF15). Criada pela equipe ou pelas funções.
+      match /events/{eventId} {
+        allow read: if isOps()
+                    || (isDonor() && get(/databases/$(database)/documents/donations/$(donationId)).data.donorId == request.auth.uid);
+        allow create: if isOps();
+        allow update, delete: if false;
+      }
+    }
+
+    // ─── user_notifications ─────────────────────────────────────────────────
+    // Caixa de entrada in-app. Criada pelas funções; o dono só marca como lida.
+    match /user_notifications/{uid}/items/{itemId} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && request.auth.uid == uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+      allow create, delete: if false;
+    }
+  }
+}
