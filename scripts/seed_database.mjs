@@ -23,8 +23,20 @@ const db = getFirestore();
 
 // ─── Helpers de data ─────────────────────────────────────────────────────────
 const now = new Date();
-const daysAgo     = (n) => new Date(now.getTime() - n * 86_400_000).toISOString();
-const daysFromNow = (n) => new Date(now.getTime() + n * 86_400_000).toISOString();
+// Horários realistas: espalhados no expediente (08:00–17:59), nunca todos na hora da execução.
+let _seq = 0;
+const daysAgo = (n) => {
+  _seq += 1;
+  const d = new Date(now.getTime() - n * 86_400_000);
+  d.setHours(8 + ((n * 7 + _seq * 13) % 10), (n * 17 + _seq * 29) % 60, (n * 31 + _seq * 7) % 60, 0);
+  return d.toISOString();
+};
+// Validade é uma data (sem hora): vence ao fim do dia.
+const daysFromNow = (n) => {
+  const d = new Date(now.getTime() + n * 86_400_000);
+  d.setHours(23, 59, 0, 0);
+  return d.toISOString();
+};
 
 // ─── UIDs ────────────────────────────────────────────────────────────────────
 const UID_ADMIN      = 'uid-admin-maria';

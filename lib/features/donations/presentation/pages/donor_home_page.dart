@@ -10,6 +10,7 @@ import '../controllers/donor_profile_provider.dart';
 import '../widgets/donation_status_chip.dart';
 import '../widgets/donor_header.dart';
 import '../widgets/email_verification_banner.dart';
+import '../../domain/entities/donation.dart';
 import '../widgets/need_card.dart';
 
 /// D03 — Home do doador: saudação, última doação, CTA "Quero doar" e as duas
@@ -61,13 +62,19 @@ class DonorHomePage extends ConsumerWidget {
                     data: (list) {
                       if (list.isEmpty) return const SizedBox.shrink();
                       final last = list.first;
-                      return _LastDonationTile(
-                        label: 'Sua última doação',
-                        title: last.displayProtocol,
-                        trailing: DonationStatusChip(status: last.status),
-                        onTap: () => context.push(
-                          AppRoutes.donorDonationDetailPath(last.id),
-                        ),
+                      return Column(
+                        children: [
+                          _ImpactSummary(donations: list),
+                          const SizedBox(height: AppSpacing.md),
+                          _LastDonationTile(
+                            label: 'Sua última doação',
+                            title: last.displayProtocol,
+                            trailing: DonationStatusChip(status: last.status),
+                            onTap: () => context.push(
+                              AppRoutes.donorDonationDetailPath(last.id),
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
@@ -192,6 +199,90 @@ class _LastDonationTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "Seu impacto": resumo do histórico do doador (devolutiva sobre a doação).
+class _ImpactSummary extends StatelessWidget {
+  final List<Donation> donations;
+
+  const _ImpactSummary({required this.donations});
+
+  @override
+  Widget build(BuildContext context) {
+    final received = donations.where((d) => d.status.isConcluded).toList();
+    final unitsReceived = received.fold<int>(0, (total, d) => total + d.totalUnits);
+    final inProgress = donations.where((d) => d.status.isOpen).length;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.success600, Color(0xFF1B5E20)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.volunteer_activism_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Seu impacto',
+                style: AppTypography.labelLarge.copyWith(color: Colors.white),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              _Stat(value: '$unitsReceived', label: 'itens entregues'),
+              _Stat(value: '${received.length}', label: 'doações recebidas'),
+              _Stat(value: '$inProgress', label: 'em andamento'),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            unitsReceived > 0
+                ? 'Obrigado! Cada item já está ajudando as crianças atendidas.'
+                : 'Sua primeira doação recebida aparece aqui.',
+            style: AppTypography.bodySmall
+                .copyWith(color: Colors.white.withValues(alpha: 0.9)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _Stat({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: AppTypography.numberMedium.copyWith(color: Colors.white),
+          ),
+          Text(
+            label,
+            style: AppTypography.labelSmall
+                .copyWith(color: Colors.white.withValues(alpha: 0.85)),
+          ),
+        ],
       ),
     );
   }
