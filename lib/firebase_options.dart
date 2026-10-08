@@ -64,12 +64,12 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDLqSJp70KsjEfeSU84RlMyAOVLrFL30gw',
-    appId: '1:809300510546:web:15809012980a553401dc8b',
-    messagingSenderId: '809300510546',
-    projectId: 'educastock-136cd',
-    authDomain: 'educastock-136cd.firebaseapp.com',
-    storageBucket: 'educastock-136cd.firebasestorage.app',
+    apiKey: 'AIzaSyAVkusQsv1GWJl7GRdiCai0mlw1UhSQpv0',
+    appId: '1:250042290294:web:edf271cf681e98d8318f57',
+    messagingSenderId: '250042290294',
+    projectId: 'educastock-69936',
+    authDomain: 'educastock-69936.firebaseapp.com',
+    storageBucket: 'educastock-69936.firebasestorage.app',
   );
 
 }

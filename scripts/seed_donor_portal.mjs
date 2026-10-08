@@ -2,17 +2,21 @@
  * Seed SOMENTE do Portal do Doador (necessidades, ponto de recebimento e regras).
  * Não toca em users, products, batches etc. — seguro para rodar em produção.
  *
- * Pré-requisito: rodar de dentro de functions/ (onde firebase-admin está instalado)
+ * Pré-requisito: firebase-admin instalado em functions/ (npm install lá)
  * com credenciais: `gcloud auth application-default login` ou
  * GOOGLE_APPLICATION_CREDENTIALS apontando para a service account.
  *
  * Execução (a partir da raiz do projeto):
- *   cd functions && node ../scripts/seed_donor_portal.mjs
+ *   node scripts/seed_donor_portal.mjs
  *
  * Ajuste endereço, contato e horários do ponto ANTES de rodar.
  */
-import { initializeApp, applicationDefault, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+
+import { createRequire } from 'node:module';
+// firebase-admin está instalado em functions/ (ESM não usa NODE_PATH).
+const require = createRequire(new URL('../functions/package.json', import.meta.url));
+const { initializeApp, applicationDefault, getApps } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 
 if (!getApps().length) initializeApp({ credential: applicationDefault(), projectId: 'educastock-69936' });
 const db = getFirestore();
@@ -33,9 +37,9 @@ const POINTS = [
   {
     id: 'ponto-sede',
     name: 'Sede da Casa da Criança',
-    address: 'AJUSTAR: endereço da sede',
+    address: 'Sede da Casa da Criança, Itapira – SP (endereço a confirmar)',
     hours: [1, 2, 3, 4, 5].map((weekday) => ({ weekday, from: '09:00', to: '17:00' })).concat([{ weekday: 6, from: '09:00', to: '12:00' }]),
-    contact: 'AJUSTAR: telefone/WhatsApp da coordenação',
+    contact: 'Coordenação da Casa da Criança (contato a confirmar)',
     instructions: 'Procure a recepção e informe o protocolo da doação.',
     isActive: true,
   },

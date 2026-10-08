@@ -11,8 +11,12 @@
  *   node ../scripts/seed_database.mjs
  */
 
-import { initializeApp, applicationDefault, getApps } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { createRequire } from 'node:module';
+// firebase-admin está instalado em functions/ (ESM não usa NODE_PATH).
+const require = createRequire(new URL('../functions/package.json', import.meta.url));
+const { initializeApp, applicationDefault, getApps } = require('firebase-admin/app');
+const { getFirestore, Timestamp } = require('firebase-admin/firestore');
+
 
 if (!getApps().length) initializeApp({ credential: applicationDefault(), projectId: 'educastock-69936' });
 const db = getFirestore();

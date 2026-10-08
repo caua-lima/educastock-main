@@ -12,9 +12,13 @@
  *   node scripts/set_admin.mjs admin@casadacrianca.org.br
  */
 
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { createRequire } from 'node:module';
+// firebase-admin está instalado em functions/ (ESM não usa NODE_PATH).
+const require = createRequire(new URL('../functions/package.json', import.meta.url));
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+const { getFirestore } = require('firebase-admin/firestore');
+
 
 const email = process.argv[2];
 
