@@ -461,7 +461,7 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.12),
+                      color: Colors.green.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.check_circle_rounded,
@@ -491,7 +491,7 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
                   color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                   border:
-                      Border.all(color: cs.outline.withOpacity(0.25)),
+                      Border.all(color: cs.outline.withValues(alpha: 0.25)),
                 ),
                 child: Row(
                   children: [
@@ -559,6 +559,7 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
         ref
             .read(scanHistoryRepositoryProvider)
             .record(barcode, source: 'scanned');
+        if (!mounted) return;
         context
             .push('${AppRoutes.productReview}?barcode=$barcode')
             .then((_) {
@@ -998,7 +999,7 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.85),
+                    color: Colors.red.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Column(
@@ -1095,9 +1096,9 @@ class _DebugLogPanel extends StatelessWidget {
     return Container(
       height: 220,
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.88),
+        color: Colors.black.withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.greenAccent.withOpacity(0.4)),
+        border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -1229,7 +1230,7 @@ class _ScanOverlayPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Sombra ao redor do quadrado
-    final shadow = Paint()..color = Colors.black.withOpacity(0.68);
+    final shadow = Paint()..color = Colors.black.withValues(alpha: 0.68);
     final path   = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(RRect.fromRectAndRadius(
@@ -1270,7 +1271,7 @@ class _ScanOverlayPainter extends CustomPainter {
     final linePaint = Paint()
       ..shader = LinearGradient(colors: [
         Colors.transparent,
-        Colors.greenAccent.withOpacity(0.9),
+        Colors.greenAccent.withValues(alpha: 0.9),
         Colors.transparent,
       ]).createShader(lr);
     canvas.drawRect(lr, linePaint);

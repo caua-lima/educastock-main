@@ -582,7 +582,7 @@ class _DbSkeletonState extends State<_DbSkeleton>
             color: widget.cs.surfaceContainerLow,
             borderRadius: BorderRadius.circular(AppRadius.card + 4),
             border: Border.all(
-                color: widget.cs.outlineVariant.withOpacity(0.3)),
+                color: widget.cs.outlineVariant.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -590,7 +590,7 @@ class _DbSkeletonState extends State<_DbSkeleton>
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: widget.cs.surfaceContainer.withOpacity(opacity),
+                  color: widget.cs.surfaceContainer.withValues(alpha: opacity),
                   borderRadius: BorderRadius.circular(AppRadius.card),
                 ),
               ),
@@ -604,7 +604,7 @@ class _DbSkeletonState extends State<_DbSkeleton>
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color:
-                            widget.cs.surfaceContainer.withOpacity(opacity),
+                            widget.cs.surfaceContainer.withValues(alpha: opacity),
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -614,7 +614,7 @@ class _DbSkeletonState extends State<_DbSkeleton>
                       width: 140,
                       decoration: BoxDecoration(
                         color:
-                            widget.cs.surfaceContainer.withOpacity(opacity),
+                            widget.cs.surfaceContainer.withValues(alpha: opacity),
                         borderRadius: BorderRadius.circular(5),
                       ),
                     ),
@@ -654,7 +654,7 @@ class _SkeletonPill extends StatelessWidget {
       height: 20,
       width: width,
       decoration: BoxDecoration(
-        color: cs.surfaceContainer.withOpacity(opacity),
+        color: cs.surfaceContainer.withValues(alpha: opacity),
         borderRadius: BorderRadius.circular(10),
       ),
     );
@@ -674,9 +674,9 @@ class _ProductFoundCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.success600.withOpacity(0.05),
+        color: AppColors.success600.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(AppRadius.card + 4),
-        border: Border.all(color: AppColors.success600.withOpacity(0.3)),
+        border: Border.all(color: AppColors.success600.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -717,10 +717,10 @@ class _ProductFoundCard extends StatelessWidget {
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-                    color: AppColors.success600.withOpacity(0.08),
+                    color: AppColors.success600.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(
-                        color: AppColors.success600.withOpacity(0.2)),
+                        color: AppColors.success600.withValues(alpha: 0.2)),
                   ),
                   child: product.imageUrl != null &&
                           product.imageUrl!.isNotEmpty
@@ -785,7 +785,7 @@ class _ProductFoundCard extends StatelessWidget {
                   context.push('${AppRoutes.productForm}?id=${product.id}'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 40),
-                side: BorderSide(color: cs.outlineVariant.withOpacity(0.5)),
+                side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.button)),
               ),
@@ -810,9 +810,9 @@ class _NewProductBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.warning600.withOpacity(0.08),
+        color: AppColors.warning600.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.card + 4),
-        border: Border.all(color: AppColors.warning600.withOpacity(0.3)),
+        border: Border.all(color: AppColors.warning600.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -820,7 +820,7 @@ class _NewProductBadge extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.warning600.withOpacity(0.12),
+              color: AppColors.warning600.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.new_label_rounded,
@@ -859,9 +859,9 @@ class _DbErrorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.danger600.withOpacity(0.06),
+        color: AppColors.danger600.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppRadius.card + 4),
-        border: Border.all(color: AppColors.danger600.withOpacity(0.25)),
+        border: Border.all(color: AppColors.danger600.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -869,7 +869,7 @@ class _DbErrorCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.danger600.withOpacity(0.1),
+              color: AppColors.danger600.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.cloud_off_rounded,
@@ -939,10 +939,10 @@ class _WebSearchSection extends StatelessWidget {
           decoration: BoxDecoration(
             color: cs.surfaceContainerLow,
             borderRadius: BorderRadius.circular(AppRadius.card + 4),
-            border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -991,7 +991,7 @@ class _ProgressBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.brandPrimary600.withOpacity(0.06),
+        color: AppColors.brandPrimary600.withValues(alpha: 0.06),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(AppRadius.card + 4),
           topRight: Radius.circular(AppRadius.card + 4),
@@ -1032,7 +1032,7 @@ class _ProgressBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: value,
                 minHeight: 7,
-                backgroundColor: AppColors.brandPrimary600.withOpacity(0.12),
+                backgroundColor: AppColors.brandPrimary600.withValues(alpha: 0.12),
                 valueColor: const AlwaysStoppedAnimation<Color>(
                     AppColors.brandPrimary600),
               ),
@@ -1186,7 +1186,7 @@ class _FoundBody extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: AppColors.success600.withOpacity(0.1),
+              color: AppColors.success600.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppRadius.small),
             ),
             child: const Row(
@@ -1216,10 +1216,10 @@ class _FoundBody extends StatelessWidget {
                 width: 62,
                 height: 62,
                 decoration: BoxDecoration(
-                  color: AppColors.success600.withOpacity(0.08),
+                  color: AppColors.success600.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(
-                      color: AppColors.success600.withOpacity(0.2)),
+                      color: AppColors.success600.withValues(alpha: 0.2)),
                 ),
                 child: result.imageUrl != null &&
                         result.imageUrl!.isNotEmpty
@@ -1274,7 +1274,7 @@ class _FoundBody extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: AppColors.warning600.withOpacity(0.08),
+              color: AppColors.warning600.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppRadius.small),
             ),
             child: const Row(
@@ -1607,7 +1607,7 @@ class _BatchesSection extends ConsumerWidget {
                       borderRadius:
                           BorderRadius.circular(AppRadius.card + 4),
                       border: Border.all(
-                          color: cs.outlineVariant.withOpacity(0.3)),
+                          color: cs.outlineVariant.withValues(alpha: 0.3)),
                     ),
                     child: Column(
                       children: [
@@ -1893,15 +1893,15 @@ class _ExistingBatchCardState extends ConsumerState<_ExistingBatchCard> {
         border: Border(
           left: BorderSide(color: statusColor, width: 4),
           top: BorderSide(
-              color: widget.cs.outlineVariant.withOpacity(0.25)),
+              color: widget.cs.outlineVariant.withValues(alpha: 0.25)),
           right: BorderSide(
-              color: widget.cs.outlineVariant.withOpacity(0.25)),
+              color: widget.cs.outlineVariant.withValues(alpha: 0.25)),
           bottom: BorderSide(
-              color: widget.cs.outlineVariant.withOpacity(0.25)),
+              color: widget.cs.outlineVariant.withValues(alpha: 0.25)),
         ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 6,
               offset: const Offset(0, 2)),
         ],
@@ -1913,7 +1913,7 @@ class _ExistingBatchCardState extends ConsumerState<_ExistingBatchCard> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppRadius.small),
             ),
             child: Icon(Icons.inventory_2_outlined,
@@ -1930,10 +1930,10 @@ class _ExistingBatchCardState extends ConsumerState<_ExistingBatchCard> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                         border: Border.all(
-                            color: statusColor.withOpacity(0.25)),
+                            color: statusColor.withValues(alpha: 0.25)),
                       ),
                       child: Text(_statusLabel(),
                           style: TextStyle(
@@ -2017,7 +2017,7 @@ class _ExistingBatchCardState extends ConsumerState<_ExistingBatchCard> {
                 borderRadius: BorderRadius.circular(AppRadius.button),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.brandPrimary600.withOpacity(0.3),
+                    color: AppColors.brandPrimary600.withValues(alpha: 0.3),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -2056,9 +2056,9 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2099,7 +2099,7 @@ class _HelpItem extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppRadius.small),
           ),
           child: Icon(icon, color: color, size: 18),
@@ -2140,7 +2140,7 @@ class _QtyButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surfaceContainer,
           borderRadius: BorderRadius.circular(AppRadius.button),
-          border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
         ),
         child: Icon(icon, color: cs.onSurface, size: 20),
       ),

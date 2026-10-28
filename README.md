@@ -88,6 +88,20 @@ Ordem de publicação: regras e índices → funções → app. Contas da equipe
 pelo cadastro público: crie-as no Firebase Console e promova com `scripts/set_admin.mjs`.
 Dados de demonstração (necessidades, ponto e regras): `node scripts/seed_database.mjs`.
 
+## Projeto Firebase
+
+Todas as plataformas usam o mesmo projeto Firebase, `educastock-69936`:
+
+| Plataforma | App ID | Arquivo de configuração |
+|---|---|---|
+| Web | `1:250042290294:web:edf271cf681e98d8318f57` | `lib/firebase_options.dart` |
+| Android | `1:250042290294:android:6a8d159af9ec6a75318f57` | `android/app/google-services.json` |
+| iOS | `1:250042290294:ios:447ff5ab9f294e36318f57` | `ios/Runner/GoogleService-Info.plist` |
+
+Esses arquivos contêm apenas identificadores públicos do app (não são segredos); a proteção dos dados vem das
+regras do Firestore (`firestore.rules`). **Nunca** versione chaves de service account (`serviceAccountKey.json`).
+Para reconfigurar: `firebase apps:sdkconfig <ANDROID|IOS> <APP_ID> --project educastock-69936`.
+
 ## Módulo de Machine Learning
 
 O modelo de **Random Forest** classifica cada lote em:

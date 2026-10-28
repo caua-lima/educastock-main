@@ -641,7 +641,7 @@ class _ReportScheduleSheetState extends ConsumerState<_ReportScheduleSheet> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: AppColors.brandPrimary600.withOpacity(0.1),
+                    color: AppColors.brandPrimary600.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppRadius.card),
                   ),
                   child: const Icon(Icons.event_repeat_rounded,
@@ -667,7 +667,7 @@ class _ReportScheduleSheetState extends ConsumerState<_ReportScheduleSheet> {
                 Switch(
                   value: _enabled,
                   onChanged: (v) => setState(() => _enabled = v),
-                  activeColor: AppColors.brandPrimary600,
+                  activeThumbColor: AppColors.brandPrimary600,
                 ),
               ],
             ),
@@ -760,10 +760,10 @@ class _ReportScheduleSheetState extends ConsumerState<_ReportScheduleSheet> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: AppColors.warning600.withOpacity(0.08),
+                  color: AppColors.warning600.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(
-                      color: AppColors.warning600.withOpacity(0.2)),
+                      color: AppColors.warning600.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -4549,10 +4549,15 @@ class _MlConfidenceDistChart extends StatelessWidget {
       final b = [0, 0, 0, 0];
       for (final p in list) {
         final c = p.confidence;
-        if (c < 0.4) b[0]++;
-        else if (c < 0.6) b[1]++;
-        else if (c < 0.8) b[2]++;
-        else b[3]++;
+        if (c < 0.4) {
+          b[0]++;
+        } else if (c < 0.6) {
+          b[1]++;
+        } else if (c < 0.8) {
+          b[2]++;
+        } else {
+          b[3]++;
+        }
       }
       return b;
     }

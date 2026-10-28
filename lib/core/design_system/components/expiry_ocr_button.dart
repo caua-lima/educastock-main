@@ -119,7 +119,7 @@ class _ExpiryOcrButtonState extends State<ExpiryOcrButton> {
         ),
       );
       if (confirm == true && mounted) {
-        widget.onDateSuggested(chosen!);
+        widget.onDateSuggested(chosen);
       }
     } catch (e) {
       if (!mounted) return;

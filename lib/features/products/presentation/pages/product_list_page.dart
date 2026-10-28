@@ -849,7 +849,7 @@ class _CsvImportSheetState extends ConsumerState<_CsvImportSheet> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: AppColors.brandPrimary600.withOpacity(0.1),
+                    color: AppColors.brandPrimary600.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppRadius.card),
                   ),
                   child: const Icon(Icons.upload_file_rounded,
@@ -879,10 +879,10 @@ class _CsvImportSheetState extends ConsumerState<_CsvImportSheet> {
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.secondaryBlue600.withOpacity(0.08),
+                color: AppColors.secondaryBlue600.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(
-                    color: AppColors.secondaryBlue600.withOpacity(0.2)),
+                    color: AppColors.secondaryBlue600.withValues(alpha: 0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -986,7 +986,7 @@ class _CsvImportSheetState extends ConsumerState<_CsvImportSheet> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: AppColors.danger600.withOpacity(0.1),
+                  color: AppColors.danger600.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadius.card),
                 ),
                 child: Row(

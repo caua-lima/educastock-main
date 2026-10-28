@@ -1,34 +1,42 @@
 {
   "project_info": {
-    "project_number": "809300510546",
-    "project_id": "educastock-136cd",
-    "storage_bucket": "educastock-136cd.firebasestorage.app"
+    "project_number": "250042290294",
+    "firebase_url": "https://educastock-69936-default-rtdb.firebaseio.com",
+    "project_id": "educastock-69936",
+    "storage_bucket": "educastock-69936.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:809300510546:android:b27b43f92f2933a501dc8b",
+        "mobilesdk_app_id": "1:250042290294:android:6a8d159af9ec6a75318f57",
         "android_client_info": {
           "package_name": "br.org.casadacrianca.educastock"
         }
       },
       "oauth_client": [
         {
-          "client_id": "809300510546-2op2ki96vappvsmpqbjvs8aonh3svlju.apps.googleusercontent.com",
+          "client_id": "250042290294-0e5rmji8ek18jb308aun2j5isvht69sb.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCKgSy1UdRitxL6op9tgf6osrVkykL6Rao"
+          "current_key": "AIzaSyCu1EUxwlLaOv1MNkLdw7vvuEhhfW4YzKI"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "809300510546-2op2ki96vappvsmpqbjvs8aonh3svlju.apps.googleusercontent.com",
+              "client_id": "250042290294-0e5rmji8ek18jb308aun2j5isvht69sb.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "250042290294-9l1al2qbvet1d44fko5n4lsgmqq44f96.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "br.org.casadacrianca.educastock"
+              }
             }
           ]
         }

@@ -82,7 +82,9 @@ class ScannerNotifier extends Notifier<ScannerState> {
   Future<void> onBarcodeDetected(String barcode) async {
     // Não reinicia a busca se já está em andamento para o mesmo código
     if (state.lastBarcode == barcode &&
-        state.searchStep != WebSearchStep.idle) return;
+        state.searchStep != WebSearchStep.idle) {
+      return;
+    }
 
     state = state.copyWith(
       lastBarcode: barcode,

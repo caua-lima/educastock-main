@@ -441,7 +441,7 @@ class _AlertsSettingsPageState extends ConsumerState<AlertsSettingsPage> {
                             value: _silentModeEnabled,
                             onChanged: (v) =>
                                 setState(() => _silentModeEnabled = v),
-                            activeColor: AppColors.secondarySky500,
+                            activeThumbColor: AppColors.secondarySky500,
                           ),
                         ],
                       ),

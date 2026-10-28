@@ -198,7 +198,9 @@ class OpenFoodFactsDatasource {
       if (tag.contains('beverages') || tag.contains('bebidas')) return 'bebida';
       if (tag.contains('food') ||
           tag.contains('aliment') ||
-          tag.contains('foods')) return 'alimento';
+          tag.contains('foods')) {
+        return 'alimento';
+      }
     }
     return null;
   }
