@@ -21,7 +21,7 @@ O **EducaStock** digitaliza e automatiza o controle de doações e suprimentos d
 
 - 📷 **Leitura de código de barras** e **OCR de validade** (Google ML Kit)
 - 🔄 **Política FEFO** obrigatória nas saídas (First Expired, First Out)
-- 🔔 **Notificações push** de vencimento e baixo estoque (Firebase Messaging)
+- 🔔 **Alertas de vencimento** automáticos e **notificações push** (Cloud Functions, plano Blaze)
 - 🤖 **Machine Learning** — classificação de risco de vencimento (Verde/Amarelo/Vermelho)
 - 📊 **Relatórios exportáveis** em PDF e CSV
 - ✅ **Fluxo de aprovação** para ajustes negativos acima de limite
@@ -59,18 +59,46 @@ O **EducaStock** digitaliza e automatiza o controle de doações e suprimentos d
 - **Design System** completo (`CasaButton`, `CasaTextField`, `CasaStatusChip`, etc.)
 - **Configurações de UI** (tema, preferências do app)
 
-## Pendências em Desenvolvimento 🔧
+## Módulos entregues no PI (novembro/2026)
 
-| # | Funcionalidade | Prioridade |
+### Equipe: gestão das doações (telas S01 a S03)
+Para administrador e estoquista (aba **Doações** na barra inferior, com selo de pendentes):
+
+| Tela | O que faz |
+|---|---|
+| **S01 Fila de triagem** | Abas *Triagem* (intenções pendentes) e *Para destinar* (aprovadas aguardando entrega e recebidas sem destino). |
+| **S02 Avaliar doação** | Doador, itens, validade informada e entrega prevista; mensagem opcional ao doador; **Aprovar** ou **Recusar** (com motivo). |
+| **S03 Recebimento e impacto** | Conferência item a item (divergência exige nota, perecível exige validade), entrada automática no estoque (lote + movimento + auditoria), setor de destino e **mensagem de impacto** enviada ao doador. |
+
+Tudo roda em transação no próprio app (protocolo `DOA-AAAA-NNNNNN`, reserva de quantidade, linha do tempo, auditoria e aviso ao doador), então funciona **sem** Cloud Functions publicadas. O doador vê o relatório de impacto e baixa o **recibo em PDF** na tela de acompanhamento (D09).
+
+### Assistente virtual (Gemini)
+Tela `ChatScreen` no portal do doador (botão *Tirar dúvidas com o assistente*), com `google_generative_ai`, balões azuis (doador) e cinza (assistente) e instruções de sistema sobre itens aceitos, validade e logística. A chave **não fica no código**:
+
+```bash
+flutter run -d chrome --dart-define=GEMINI_API_KEY=SUA_CHAVE
+flutter build web --release --dart-define=GEMINI_API_KEY=SUA_CHAVE
+```
+
+O app pede o `gemini-2.5-flash` e, se o Google o recusar (foi desativado para contas novas), troca sozinho para `gemini-flash-lite-latest` ou `gemini-flash-latest`. Atenção: uma chave passada por `--dart-define` fica dentro do app compilado; restrinja-a por domínio no Google AI Studio.
+
+### Relatórios e desempenho
+* **Exportação** de posição do estoque, movimentações, risco (ML) e reposição em **PDF**, **Excel (.xlsx)** e **CSV** (gerados em paralelo; funciona no celular e na web). O CSV usa `;` e BOM UTF-8 para abrir direto no Excel em português.
+* **Consultas**: lotes a vencer calculados em memória a partir do fluxo em tempo real (zero leituras extras), resumo e categorias por `count()` agregado em paralelo, verificador de alertas sem consulta por lote (sem N+1), **paginação por cursor** no histórico e **cache de 5 minutos** nos relatórios.
+* **Telas largas**: o conteúdo dos relatórios é centralizado com largura máxima em monitores ultrawide.
+
+### Alertas, OCR e modo offline
+* Alertas de validade **gerados automaticamente** quando a equipe abre o app e a cada 6 horas; encerram sozinhos quando o lote sai da janela.
+* **Leitura da validade pela câmera** (Android/iOS) reconhece `DD/MM/AAAA`, `DD/MM/AA`, `MM/AAAA`, meses abreviados (MAR, DEZ…) e corrige confusões O/0.
+* **Offline**: saídas e ajustes de estoque ficam guardados no aparelho (Hive) e são enviados sozinhos quando a internet volta (sem duplicar e sem sobrescrever o que outra pessoa mexeu). Cadastro de lote e saída FEFO em massa exigem internet e avisam.
+* **Push com o app fechado** (`onAlertCreated` e verificação diária `dailyExpiryCheck`): código pronto em `functions/`, mas a publicação exige o plano **Blaze** do Firebase: `firebase deploy --only functions`.
+
+### Pendências
+| # | Item | Observação |
 |---|---|---|
-| 1 | Geração automática de alertas de validade no Firestore | 🔴 Alta |
-| 2 | Persistência das configurações de alertas e categorias | 🔴 Alta |
-| 3 | OCR de data de validade no cadastro de lote | 🟠 Média-Alta |
-| 4 | Relatório completo de movimentações por período | 🟠 Média-Alta |
-| 5 | Filtros avançados na página de auditoria | 🟡 Média |
-| 6 | Exportação da HistoryPage (CSV) + totalizadores | 🟡 Média |
-| 7 | Push notifications via Cloud Functions | 🟡 Média |
-| 8 | Fila offline com sincronização automática (Hive) | 🟢 Baixa |
+| 1 | Publicar as Cloud Functions | Requer plano Blaze (decisão e cartão do titular do projeto) |
+| 2 | Testar no aparelho Android/iOS real | Scanner, OCR e notificações dependem do hardware |
+| 3 | Limpar código sem uso em `reports_page.dart` | Avisos do analisador; sem efeito no funcionamento |
 
 ## Portal do Doador (Sprint 5)
 
