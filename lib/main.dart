@@ -8,8 +8,12 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'core/router/app_router.dart';
 import 'core/firebase/firebase_bootstrap.dart';
 import 'core/notifications/push_notification_service.dart';
+import 'core/offline/offline_banner.dart';
+import 'core/offline/offline_queue.dart';
+import 'core/offline/offline_sync_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_controller.dart';
+import 'features/alerts/presentation/controllers/alerts_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +25,14 @@ void main() async {
   }
   await initializeDateFormatting('pt_BR');
   await FirebaseBootstrap.initialize();
-  runApp(const ProviderScope(child: EducaStockApp()));
+  // Fila de gravações feitas sem internet (guardada no aparelho).
+  final queueStore = await HiveQueueStore.open();
+  runApp(
+    ProviderScope(
+      overrides: [offlineQueueProvider.overrideWithValue(OfflineQueue(queueStore))],
+      child: const EducaStockApp(),
+    ),
+  );
 }
 
 class EducaStockApp extends ConsumerWidget {
@@ -32,6 +43,8 @@ class EducaStockApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
     ref.watch(pushNotificationsBootstrapProvider);
+    ref.watch(alertsAutoCheckProvider);
+    ref.watch(offlineSyncProvider); // mantém a sincronização ativa
     return MaterialApp.router(
       title: 'EducaStock',
       debugShowCheckedModeBanner: false,
@@ -51,6 +64,12 @@ class EducaStockApp extends ConsumerWidget {
       ],
       scrollBehavior: const _CasaScrollBehavior(),
       routerConfig: router,
+      builder: (context, child) => Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: child ?? const SizedBox.shrink()),
+        ],
+      ),
     );
   }
 }

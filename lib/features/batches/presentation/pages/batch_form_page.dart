@@ -1,3 +1,4 @@
+import '../../../../core/offline/offline_sync_controller.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -117,6 +118,18 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Cadastro de lote envia foto e cria registros novos: precisa de internet.
+    if (!ref.read(offlineSyncProvider).online) {
+      showCasaSnackbar(
+        context,
+        message: 'Sem conexão. O cadastro de lote precisa de internet; tente de novo quando voltar. '
+            'Saídas e ajustes de estoque podem ser feitos offline.',
+        isError: true,
+        duration: const Duration(seconds: 5),
+      );
+      return;
+    }
 
     final existingProductId = widget.productId.trim();
     Product? linkedProduct;

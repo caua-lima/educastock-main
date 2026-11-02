@@ -135,6 +135,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Contador de protocolos das doações (DOA-AAAA-NNNNNN): a equipe que opera as
+    // doações precisa incrementá-lo ao aprovar, quando a função de criação não rodou.
+    match /settings/counters {
+      allow read, write: if isOps();
+    }
+
     // ─── settings_categories ────────────────────────────────────────────────
     match /settings_categories/{categoryId} {
       allow read: if isStaffUser();
@@ -284,12 +290,15 @@ service cloud.firestore {
     }
 
     // ─── user_notifications ─────────────────────────────────────────────────
-    // Caixa de entrada in-app. Criada pelas funções; o dono só marca como lida.
+    // Caixa de entrada in-app. Criada pelas funções ou pela equipe; o dono só marca como lida.
     match /user_notifications/{uid}/items/{itemId} {
       allow read: if isSignedIn() && request.auth.uid == uid;
       allow update: if isSignedIn() && request.auth.uid == uid
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
-      allow create, delete: if false;
+      // Criada pelas funções ou pela equipe que opera as doações (aprovação, recebimento
+      // e relatório de impacto). Ninguém apaga.
+      allow create: if isOps();
+      allow delete: if false;
     }
   }
 }

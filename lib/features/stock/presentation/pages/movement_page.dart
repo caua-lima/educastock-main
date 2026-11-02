@@ -1,3 +1,4 @@
+import '../../../../core/offline/offline_sync_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -527,6 +528,18 @@ class _MovementPageState extends ConsumerState<MovementPage> {
         context,
         message: 'Selecione ao menos um produto com quantidade.',
         isError: true,
+      );
+      return;
+    }
+
+    // A saída por FEFO escolhe os lotes lendo o estoque atual: precisa de internet.
+    if (!ref.read(offlineSyncProvider).online) {
+      showCasaSnackbar(
+        context,
+        message: 'Sem conexão. A saída por FEFO precisa de internet para escolher os lotes. '
+            'Ajustes de um lote específico podem ser feitos offline.',
+        isError: true,
+        duration: const Duration(seconds: 5),
       );
       return;
     }

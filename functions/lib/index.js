@@ -37,7 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onDonationStatusChanged = exports.onDonationCreated = void 0;
+exports.dailyExpiryCheck = exports.onAlertCreated = exports.onDonationStatusChanged = exports.onDonationCreated = void 0;
 const express_1 = __importDefault(require("express"));
 const admin = __importStar(require("firebase-admin"));
 if (admin.apps.length === 0) {
@@ -122,12 +122,21 @@ app.post('/generateReport', async (req, res) => {
         res.status(500).json({ error: String(err) });
     }
 });
-const PORT = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : 8080;
-app.listen(PORT, () => {
-    console.log(`educastock-functions listening on port ${PORT}`);
-});
+// O servidor Express só sobe quando o arquivo é executado direto (`npm start`, Cloud Run).
+// Ao ser carregado pelo Firebase Functions (deploy), só as funções exportadas abaixo valem;
+// subir a porta ali travava a descoberta das funções.
+if (require.main === module) {
+    const PORT = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : 8080;
+    app.listen(PORT, () => {
+        console.log(`educastock-functions listening on port ${PORT}`);
+    });
+}
 // Portal do Doador (Sprint 5): gatilhos Firestore das doações.
 var donations_1 = require("./donations");
 Object.defineProperty(exports, "onDonationCreated", { enumerable: true, get: function () { return donations_1.onDonationCreated; } });
 Object.defineProperty(exports, "onDonationStatusChanged", { enumerable: true, get: function () { return donations_1.onDonationStatusChanged; } });
+// Alertas de validade: push ao criar alerta e verificação diária.
+var alerts_1 = require("./alerts");
+Object.defineProperty(exports, "onAlertCreated", { enumerable: true, get: function () { return alerts_1.onAlertCreated; } });
+Object.defineProperty(exports, "dailyExpiryCheck", { enumerable: true, get: function () { return alerts_1.dailyExpiryCheck; } });
 //# sourceMappingURL=index.js.map

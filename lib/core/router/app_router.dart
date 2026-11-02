@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/auth/domain/entities/app_user.dart';
 import '../../features/auth/presentation/controllers/auth_provider.dart';
 import 'app_navigation_shell.dart';
 import 'donor_navigation_shell.dart';
@@ -37,6 +38,10 @@ import '../../features/donations/presentation/pages/donation_form_page.dart';
 import '../../features/donations/presentation/pages/my_donations_page.dart';
 import '../../features/donations/presentation/pages/donation_detail_page.dart';
 import '../../features/donations/presentation/pages/donor_profile_page.dart';
+import '../../features/donation_ops/presentation/pages/donation_queue_page.dart';
+import '../../features/donation_ops/presentation/pages/donation_review_page.dart';
+import '../../features/donation_ops/presentation/pages/donation_receive_page.dart';
+import '../../features/chatbot/presentation/pages/chat_screen.dart';
 
 abstract class AppRoutes {
   static const login = '/login';
@@ -74,6 +79,16 @@ abstract class AppRoutes {
   static const donorDonations = '/doador/doacoes';
   static const donorDonationDetail = '/doador/doacoes/:id';
   static const donorProfile = '/doador/perfil';
+
+  static const donorAssistant = '/doador/assistente';
+
+  // ─── Equipe: doações recebidas pelo portal (S01–S03) ──────────────────────
+  static const opsDonations = '/doacoes';
+  static const opsDonationDetail = '/doacoes/:id';
+  static const opsDonationReceive = '/doacoes/:id/receber';
+
+  static String opsDonationPath(String id) => '$opsDonations/$id';
+  static String opsDonationReceivePath(String id) => '$opsDonations/$id/receber';
 
   static String donorNeedDetailPath(String id) => '$donorNeeds/$id';
   static String donorDonationDetailPath(String id) => '$donorDonations/$id';
@@ -124,6 +139,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       // entra na área do doador (RN-D13, achado F3).
       if (isLoggedIn && isDonor && !isDonorArea) return AppRoutes.donorHome;
       if (isLoggedIn && !isDonor && isDonorArea) return AppRoutes.dashboard;
+
+      // Fila de doações: só administrador e estoquista (mesma regra do Firestore).
+      final isOpsArea = location == AppRoutes.opsDonations ||
+          location.startsWith('${AppRoutes.opsDonations}/');
+      if (isLoggedIn && isOpsArea) {
+        final role = user.role;
+        final allowed = role == UserRole.admin || role == UserRole.estoquista;
+        if (!allowed) return homeForRole;
+      }
       return null;
     },
     routes: [
@@ -196,6 +220,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.donorDonate,
         builder: (_, state) =>
             DonationFormPage(needId: state.uri.queryParameters['needId']),
+      ),
+      // Telas de decisão e recebimento da equipe (S02, S03): tela cheia, sem TabBar.
+      GoRoute(
+        path: AppRoutes.opsDonationDetail,
+        builder: (_, state) =>
+            DonationReviewPage(donationId: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: AppRoutes.opsDonationReceive,
+        builder: (_, state) =>
+            DonationReceivePage(donationId: state.pathParameters['id'] ?? ''),
       ),
       ShellRoute(
         builder: (context, state, child) {
@@ -296,6 +331,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.history,
             builder: (_, __) => const HistoryPage(),
           ),
+          GoRoute(
+            path: AppRoutes.opsDonations,
+            builder: (_, __) => const DonationQueuePage(),
+          ),
         ],
       ),
       // Shell próprio do doador (5 abas), independente do shell da equipe.
@@ -332,6 +371,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.donorProfile,
             builder: (_, __) => const DonorProfilePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.donorAssistant,
+            builder: (_, __) => const ChatScreen(),
           ),
         ],
       ),

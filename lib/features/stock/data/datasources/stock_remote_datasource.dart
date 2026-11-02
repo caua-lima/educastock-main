@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/offline/offline_queue.dart';
 import '../../domain/entities/stock_movement.dart';
 
 class ProductOutputRequest {
@@ -11,6 +12,27 @@ class ProductOutputRequest {
     required this.productName,
     required this.quantity,
   });
+}
+
+/// Resultado de aplicar no servidor uma movimentação que ficou na fila offline.
+enum QueuedMovementOutcome {
+  applied,
+  alreadyApplied,
+  batchNotFound,
+  insufficientStock,
+}
+
+/// Uma página de movimentações mais o cursor para pedir a seguinte.
+class MovementsPage {
+  final List<StockMovement> items;
+
+  /// Último documento da página (cursor de `startAfterDocument`); null se vazia.
+  final DocumentSnapshot<Map<String, dynamic>>? lastDoc;
+
+  /// `true` quando a página veio cheia: pode haver mais registros.
+  final bool hasMore;
+
+  const MovementsPage({required this.items, required this.lastDoc, required this.hasMore});
 }
 
 class StockRemoteDatasource {
@@ -57,6 +79,47 @@ class StockRemoteDatasource {
     });
   }
 
+  /// Aplica uma movimentação guardada offline. Recalcula a quantidade em cima do que
+  /// está no servidor agora (usando a variação registrada) e usa o `opId` como id do
+  /// documento, então repetir o envio nunca duplica o movimento.
+  Future<QueuedMovementOutcome> applyQueuedMovement(PendingMovement op) {
+    return _db.runTransaction<QueuedMovementOutcome>((tx) async {
+      final movRef = _movements.doc(op.opId);
+      if ((await tx.get(movRef)).exists) return QueuedMovementOutcome.alreadyApplied;
+
+      final batchRef = _db.collection('batches').doc(op.batchId);
+      final batchSnap = await tx.get(batchRef);
+      if (!batchSnap.exists) return QueuedMovementOutcome.batchNotFound;
+
+      final current = (batchSnap.data()?['quantity'] as num?)?.toInt() ?? 0;
+      final newQty = current + op.delta;
+      if (newQty < 0) return QueuedMovementOutcome.insufficientStock;
+
+      final status = op.nextStatus ?? (newQty == 0 ? 'distribuido' : null);
+      final movement = Map<String, dynamic>.from(op.movement)
+        ..['isPendingSync'] = false
+        ..['auditBefore'] = {'quantity': current}
+        ..['auditAfter'] = {'quantity': newQty, if (status != null) 'status': status};
+      tx.set(movRef, movement);
+      tx.update(batchRef, {
+        'quantity': newQty,
+        if (status != null) 'status': status,
+      });
+      tx.set(_auditLogs.doc(), {
+        'collection': 'batches',
+        'documentId': op.batchId,
+        'action': movement['type'],
+        'before': movement['auditBefore'],
+        'after': movement['auditAfter'],
+        'performedBy': movement['performedBy'],
+        'performedByName': movement['performedByName'],
+        'performedAt': movement['performedAt'],
+        'syncedFromOffline': true,
+      });
+      return QueuedMovementOutcome.applied;
+    });
+  }
+
   /// Registra um movimento de ENTRADA (cadastro de lote) no histórico.
   /// Diferente de [registerMovement], NÃO usa transação nem altera o batch —
   /// o lote já foi criado pelo BatchesRemoteDatasource. Apenas grava o
@@ -83,6 +146,37 @@ class StockRemoteDatasource {
         .map((snap) => snap.docs
             .map((d) => StockMovement.fromMap(d.data(), d.id))
             .toList());
+  }
+
+  MovementsPage _toPage(QuerySnapshot<Map<String, dynamic>> snap, int pageSize) {
+    return MovementsPage(
+      items: snap.docs.map((d) => StockMovement.fromMap(d.data(), d.id)).toList(),
+      lastDoc: snap.docs.isEmpty ? null : snap.docs.last,
+      hasMore: snap.docs.length >= pageSize,
+    );
+  }
+
+  /// Primeira página, em tempo real (os registros novos aparecem no topo sozinhos).
+  Stream<MovementsPage> watchMovementsHead({int pageSize = 60}) {
+    return _movements
+        .orderBy('performedAt', descending: true)
+        .limit(pageSize)
+        .snapshots()
+        .map((snap) => _toPage(snap, pageSize));
+  }
+
+  /// Páginas seguintes por **cursor** (`startAfterDocument`): lê só o próximo trecho, sem
+  /// reler o que já foi carregado (diferente de `offset`/aumentar o `limit`).
+  Future<MovementsPage> fetchMovementsAfter(
+    DocumentSnapshot<Map<String, dynamic>> cursor, {
+    int pageSize = 60,
+  }) async {
+    final snap = await _movements
+        .orderBy('performedAt', descending: true)
+        .startAfterDocument(cursor)
+        .limit(pageSize)
+        .get();
+    return _toPage(snap, pageSize);
   }
 
   Stream<List<StockMovement>> watchMovementsByProduct(String productId) {

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/controllers/auth_provider.dart';
+import '../../features/donation_ops/presentation/controllers/donation_ops_provider.dart';
 import '../../features/ml/domain/entities/risk_prediction.dart';
 import '../../features/ml/presentation/controllers/risk_classifier_provider.dart';
 import '../design_system/components/casa_tutorial.dart';
 import 'app_router.dart';
 
-class AppNavigationShell extends StatefulWidget {
+class AppNavigationShell extends ConsumerStatefulWidget {
   final Widget child;
   final String location;
 
@@ -18,10 +20,10 @@ class AppNavigationShell extends StatefulWidget {
   });
 
   @override
-  State<AppNavigationShell> createState() => _AppNavigationShellState();
+  ConsumerState<AppNavigationShell> createState() => _AppNavigationShellState();
 }
 
-class _AppNavigationShellState extends State<AppNavigationShell> {
+class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
   static const _tabRoutes = [
     AppRoutes.dashboard,
     AppRoutes.productList,
@@ -50,6 +52,7 @@ class _AppNavigationShellState extends State<AppNavigationShell> {
   }
 
   int _selectedIndex(String currentLocation) {
+    if (currentLocation.startsWith(AppRoutes.opsDonations)) return 5;
     if (currentLocation.startsWith(AppRoutes.movement)) return 2;
     if (currentLocation.startsWith(AppRoutes.history)) return 3;
     if (currentLocation.startsWith(AppRoutes.reports)) return 4;
@@ -60,13 +63,17 @@ class _AppNavigationShellState extends State<AppNavigationShell> {
   @override
   Widget build(BuildContext context) {
     final idx = _selectedIndex(widget.location);
+    // A aba de doações só existe para quem opera o portal (administrador e estoquista).
+    final showDonations = canOperateDonations(ref.watch(currentUserProvider));
+    final routes = [..._tabRoutes, if (showDonations) AppRoutes.opsDonations];
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: _tutorialActive
           ? null
           : _AnimatedTabBar(
               selectedIndex: idx,
-              onTap: (i) => context.go(_tabRoutes[i]),
+              showDonations: showDonations,
+              onTap: (i) => context.go(routes[i]),
             ),
     );
   }
@@ -86,6 +93,13 @@ class _TabDef {
     required this.color,
   });
 }
+
+const _donationsTab = _TabDef(
+  icon: Icons.volunteer_activism_outlined,
+  activeIcon: Icons.volunteer_activism_rounded,
+  label: 'Doações',
+  color: Color(0xFFB7791F),
+);
 
 const _tabs = [
   _TabDef(
@@ -124,10 +138,12 @@ const _tabs = [
 
 class _AnimatedTabBar extends ConsumerWidget {
   final int selectedIndex;
+  final bool showDonations;
   final ValueChanged<int> onTap;
 
   const _AnimatedTabBar({
     required this.selectedIndex,
+    required this.showDonations,
     required this.onTap,
   });
 
@@ -140,6 +156,9 @@ class _AnimatedTabBar extends ConsumerWidget {
           data: (counts) => counts[RiskLevel.vermelho] ?? 0,
           orElse: () => 0,
         );
+
+    final visibleTabs = [..._tabs, if (showDonations) _donationsTab];
+    final pendingDonations = showDonations ? ref.watch(pendingDonationsCountProvider) : 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -163,13 +182,16 @@ class _AnimatedTabBar extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           child: Row(
-            children: List.generate(_tabs.length, (i) {
+            children: List.generate(visibleTabs.length, (i) {
+              final isDonations = showDonations && i == _tabs.length;
               final showBadge = criticalCount > 0 && (i == 1 || i == 2);
               return Expanded(
                 child: _TabItem(
-                  tab: _tabs[i],
+                  tab: visibleTabs[i],
                   selected: selectedIndex == i,
-                  badgeCount: showBadge ? criticalCount : 0,
+                  badgeCount: isDonations
+                      ? pendingDonations
+                      : (showBadge ? criticalCount : 0),
                   onTap: () => onTap(i),
                 ),
               );

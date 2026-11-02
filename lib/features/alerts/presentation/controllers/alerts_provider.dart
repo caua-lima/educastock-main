@@ -1,6 +1,11 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
+import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../data/datasources/alert_checker_service.dart';
 
 // ---------- Entidade ----------
@@ -169,4 +174,35 @@ final alertCheckerServiceProvider = Provider<AlertCheckerService>((ref) {
   return AlertCheckerService(
     batchesDs: ref.read(batchesDatasourceProvider),
   );
+});
+
+// ─── Geração automática de alertas de validade ────────────────────────────
+
+/// Verifica os lotes assim que a equipe de estoque entra no app e a cada 6 horas
+/// enquanto ele estiver aberto, criando os alertas de validade sem ninguém precisar
+/// abrir a tela de alertas. Só roda para quem tem permissão de escrita em `alerts`
+/// (administrador e estoquista).
+final alertsAutoCheckProvider = Provider<void>((ref) {
+  final user = ref.watch(currentUserProvider);
+  final config = ref.watch(alertsConfigProvider).valueOrNull;
+  final canGenerate = user != null &&
+      user.isActive &&
+      (user.role == UserRole.admin || user.role == UserRole.estoquista);
+  // Respeita a opção "alertas de validade" das configurações (expiryEnabled).
+  if (!canGenerate || config == null || !config.expiryEnabled) return;
+
+  Future<void> run() async {
+    try {
+      await ref.read(alertCheckerServiceProvider).checkAndCreateAlerts(
+            criticalDays: config.criticalDays,
+            warningDays: config.warningDays,
+          );
+    } catch (e) {
+      debugPrint('[Alerts] verificação automática falhou: $e');
+    }
+  }
+
+  unawaited(run());
+  final timer = Timer.periodic(const Duration(hours: 6), (_) => run());
+  ref.onDispose(timer.cancel);
 });

@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import '../../utils/expiry_date_parser.dart';
 import '../tokens/color_tokens.dart';
 import '../tokens/spacing_tokens.dart';
 import '../tokens/typography_tokens.dart';
@@ -18,43 +20,24 @@ class ExpiryOcrButton extends StatefulWidget {
 class _ExpiryOcrButtonState extends State<ExpiryOcrButton> {
   bool _loading = false;
 
-  // Regex patterns for common Brazilian expiry date formats on packaging
-  static final _datePatterns = [
-    RegExp(r'\b(\d{2})[/\-\.](\d{2})[/\-\.](\d{4})\b'), // DD/MM/AAAA
-    RegExp(r'\b(\d{2})[/\-\.](\d{4})\b'), // MM/AAAA
-    RegExp(r'\b(\d{2})\s+(\d{2})\s+(\d{4})\b'), // DD MM AAAA
-    RegExp(r'\b(\d{2})\s+(\d{4})\b'), // MM AAAA
-  ];
-
-  List<DateTime> _extractDates(String text) {
-    final found = <DateTime>[];
-    final now = DateTime.now();
-
-    // Pattern DD/MM/YYYY
-    for (final m in _datePatterns[0].allMatches(text)) {
-      try {
-        final d = int.parse(m.group(1)!);
-        final mo = int.parse(m.group(2)!);
-        final y = int.parse(m.group(3)!);
-        final dt = DateTime(y, mo, d);
-        if (dt.isAfter(now.subtract(const Duration(days: 1)))) found.add(dt);
-      } catch (_) {}
-    }
-    // Pattern MM/YYYY
-    for (final m in _datePatterns[1].allMatches(text)) {
-      try {
-        final mo = int.parse(m.group(1)!);
-        final y = int.parse(m.group(2)!);
-        if (mo >= 1 && mo <= 12) {
-          final dt = DateTime(y, mo, 28);
-          if (dt.isAfter(now.subtract(const Duration(days: 1)))) found.add(dt);
-        }
-      } catch (_) {}
-    }
-    return found;
-  }
+  /// A leitura de texto (ML Kit) só existe no Android e no iOS.
+  bool get _ocrSupported =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   Future<void> _pickAndOcr() async {
+    if (!_ocrSupported) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'A leitura da validade pela câmera funciona no app Android/iOS. '
+            'Aqui, informe a data manualmente.',
+          ),
+        ),
+      );
+      return;
+    }
     setState(() => _loading = true);
     try {
       final picked = await ImagePicker().pickImage(
@@ -69,12 +52,16 @@ class _ExpiryOcrButtonState extends State<ExpiryOcrButton> {
       final result = await recognizer.processImage(inputImage);
       await recognizer.close();
 
-      final dates = _extractDates(result.text);
+      final dates = extractExpiryDates(result.text);
       if (!mounted) return;
 
       if (dates.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nenhuma data encontrada na imagem.')),
+          const SnackBar(
+            content: Text(
+              'Não encontrei uma data de validade. Aproxime a câmera da data impressa e tente de novo.',
+            ),
+          ),
         );
         return;
       }
@@ -122,9 +109,12 @@ class _ExpiryOcrButtonState extends State<ExpiryOcrButton> {
         widget.onDateSuggested(chosen);
       }
     } catch (e) {
+      debugPrint('[OCR] erro ao ler validade: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao processar imagem: $e')),
+        const SnackBar(
+          content: Text('Não consegui ler a imagem. Tente de novo ou digite a data.'),
+        ),
       );
     } finally {
       if (mounted) setState(() => _loading = false);

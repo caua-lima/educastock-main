@@ -86,6 +86,13 @@ class DonorHomePage extends ConsumerWidget {
                     icon: Icons.volunteer_activism_rounded,
                     onPressed: () => context.push(AppRoutes.donorDonate),
                   ),
+                  const SizedBox(height: AppSpacing.sm),
+                  CasaButton(
+                    label: 'Tirar dúvidas com o assistente',
+                    icon: Icons.smart_toy_rounded,
+                    variant: CasaButtonVariant.secondary,
+                    onPressed: () => context.push(AppRoutes.donorAssistant),
+                  ),
                   const SizedBox(height: AppSpacing.lg),
 
                   // ── Prioridades da semana ──────────────────────────────

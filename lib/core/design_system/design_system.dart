@@ -22,3 +22,4 @@ export 'components/modern_profile_app_bar.dart';
 export 'components/expiry_ocr_button.dart';
 export 'components/casa_tutorial.dart';
 export 'components/tip_card.dart';
+export 'components/responsive_body.dart';

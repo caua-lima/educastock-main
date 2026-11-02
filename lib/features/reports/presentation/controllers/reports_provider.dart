@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,64 +40,84 @@ class CategoryStock {
 // ---------- Datasource ----------
 
 class ReportsRemoteDatasource {
-  final _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
 
+  ReportsRemoteDatasource({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  /// Resumo do painel em **uma rodada paralela de contagens** (agregações `count()`):
+  /// não baixa nenhum documento, só o número, então o custo é de poucas leituras
+  /// independentemente do tamanho do estoque.
+  ///
+  /// As datas são gravadas como texto ISO-8601 (`Batch.toMap`, `StockMovement.toMap`),
+  /// por isso os filtros comparam texto e não `Timestamp`.
   Future<ReportSummary> fetchSummary() async {
     final now = DateTime.now();
     final in30Days = now.add(const Duration(days: 30));
-
-    final productsSnap =
-        await _firestore.collection('products').count().get();
-    final batchesSnap = await _firestore.collection('batches').count().get();
-
-    final expiringSnap = await _firestore
-        .collection('batches')
-        .where('expiryDate',
-            isGreaterThan: Timestamp.fromDate(now),
-            isLessThan: Timestamp.fromDate(in30Days))
-        .count()
-        .get();
-
-    final expiredSnap = await _firestore
-        .collection('batches')
-        .where('expiryDate', isLessThan: Timestamp.fromDate(now))
-        .count()
-        .get();
-
     final startOfMonth = DateTime(now.year, now.month, 1);
-    final movementsSnap = await _firestore
-        .collection('stock_movements')
-        .where('timestamp',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .count()
-        .get();
+
+    final batches = _firestore.collection('batches');
+    final available = batches.where('status', isEqualTo: 'disponivel');
+    final withExpiry = available.where('noExpiry', isEqualTo: false);
+
+    final counts = await Future.wait([
+      _firestore.collection('products').where('isActive', isEqualTo: true).count().get(),
+      available.count().get(),
+      withExpiry
+          .where('expiryDate', isGreaterThanOrEqualTo: now.toIso8601String())
+          .where('expiryDate', isLessThanOrEqualTo: in30Days.toIso8601String())
+          .count()
+          .get(),
+      withExpiry.where('expiryDate', isLessThan: now.toIso8601String()).count().get(),
+      _firestore
+          .collection('stock_movements')
+          .where('performedAt', isGreaterThanOrEqualTo: startOfMonth.toIso8601String())
+          .count()
+          .get(),
+    ]);
 
     return ReportSummary(
-      totalProducts: productsSnap.count ?? 0,
-      totalBatches: batchesSnap.count ?? 0,
-      expiringIn30Days: expiringSnap.count ?? 0,
-      expiredBatches: expiredSnap.count ?? 0,
+      totalProducts: counts[0].count ?? 0,
+      totalBatches: counts[1].count ?? 0,
+      expiringIn30Days: counts[2].count ?? 0,
+      expiredBatches: counts[3].count ?? 0,
       lowStockProducts: 0, // calculado via business logic
-      movementsThisMonth: movementsSnap.count ?? 0,
+      movementsThisMonth: counts[4].count ?? 0,
     );
   }
 
+  /// Produtos por categoria com uma contagem agregada por categoria, em paralelo.
+  /// Antes baixava a coleção `products` inteira só para contar.
   Future<List<CategoryStock>> fetchStockByCategory() async {
-    final snap =
-        await _firestore.collection('products').get();
-    final Map<String, int> counts = {};
-    for (final doc in snap.docs) {
-      final cat = (doc.data()['category'] as String?) ?? 'outros';
-      counts[cat] = (counts[cat] ?? 0) + 1;
-    }
+    const categories = [
+      'alimento',
+      'bebida',
+      'limpeza',
+      'higienePessoal',
+      'escolar',
+      'roupas',
+      'outro',
+    ];
+    final snaps = await Future.wait([
+      for (final c in categories)
+        _firestore
+            .collection('products')
+            .where('category', isEqualTo: c)
+            .where('isActive', isEqualTo: true)
+            .count()
+            .get(),
+    ]);
+    final counts = <String, int>{
+      for (var i = 0; i < categories.length; i++) categories[i]: snaps[i].count ?? 0,
+    }..removeWhere((_, v) => v == 0);
     final total = counts.values.fold(0, (a, b) => a + b);
-    return counts.entries.map((e) {
-      return CategoryStock(
-        category: e.key,
-        totalItems: e.value,
-        percentage: total == 0 ? 0 : e.value / total * 100,
-      );
-    }).toList()
+    return counts.entries
+        .map((e) => CategoryStock(
+              category: e.key,
+              totalItems: e.value,
+              percentage: total == 0 ? 0 : e.value / total * 100,
+            ))
+        .toList()
       ..sort((a, b) => b.totalItems.compareTo(a.totalItems));
   }
 }
@@ -107,19 +128,34 @@ final reportsDatasourceProvider = Provider<ReportsRemoteDatasource>(
   (_) => ReportsRemoteDatasource(),
 );
 
-final reportSummaryProvider = FutureProvider<ReportSummary>((ref) {
+/// Tempo em que um relatório já calculado é reaproveitado antes de nova leitura.
+/// Relatórios (resumo, categorias, períodos) não exigem tempo real absoluto: dentro
+/// desta janela, voltar à aba ou ao painel não custa nenhuma leitura no Firestore.
+const Duration kReportCacheTtl = Duration(minutes: 5);
+
+/// Mantém o resultado do provider vivo por [kReportCacheTtl] e depois o descarta.
+void keepReportCached(Ref ref) {
+  final link = ref.keepAlive();
+  final timer = Timer(kReportCacheTtl, link.close);
+  ref.onDispose(timer.cancel);
+}
+
+final reportSummaryProvider = FutureProvider.autoDispose<ReportSummary>((ref) {
+  keepReportCached(ref);
   return ref.watch(reportsDatasourceProvider).fetchSummary();
 });
 
 final stockByCategoryProvider =
-    FutureProvider<List<CategoryStock>>((ref) {
+    FutureProvider.autoDispose<List<CategoryStock>>((ref) {
+  keepReportCached(ref);
   return ref.watch(reportsDatasourceProvider).fetchStockByCategory();
 });
 
 // ─── Movement report providers ───────────────────────────────────────────
 
-final movementsReportProvider =
-    FutureProvider.family<List<StockMovement>, DateTimeRange>((ref, range) async {
+final movementsReportProvider = FutureProvider.autoDispose
+    .family<List<StockMovement>, DateTimeRange>((ref, range) async {
+  keepReportCached(ref);
   final ds = ref.read(stockDatasourceProvider);
   return ds.getMovementsByPeriod(
     from: range.start,
@@ -127,8 +163,8 @@ final movementsReportProvider =
   );
 });
 
-final movementsSummaryProvider =
-    FutureProvider.family<Map<String, int>, DateTimeRange>((ref, range) async {
+final movementsSummaryProvider = FutureProvider.autoDispose
+    .family<Map<String, int>, DateTimeRange>((ref, range) async {
   final movements = await ref.read(movementsReportProvider(range).future);
   final summary = <String, int>{};
   for (final m in movements) {
@@ -138,8 +174,8 @@ final movementsSummaryProvider =
   return summary;
 });
 
-final lossesByReasonProvider =
-    FutureProvider.family<Map<String, int>, DateTimeRange>((ref, range) async {
+final lossesByReasonProvider = FutureProvider.autoDispose
+    .family<Map<String, int>, DateTimeRange>((ref, range) async {
   final movements = await ref.read(movementsReportProvider(range).future);
   final losses = movements.where(
     (m) =>

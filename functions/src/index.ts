@@ -95,10 +95,18 @@ app.post('/generateReport', async (req: Request, res: Response) => {
   }
 });
 
-const PORT = process.env.PORT ?? 8080;
-app.listen(PORT, () => {
-  console.log(`educastock-functions listening on port ${PORT}`);
-});
+// O servidor Express só sobe quando o arquivo é executado direto (`npm start`, Cloud Run).
+// Ao ser carregado pelo Firebase Functions (deploy), só as funções exportadas abaixo valem;
+// subir a porta ali travava a descoberta das funções.
+if (require.main === module) {
+  const PORT = process.env.PORT ?? 8080;
+  app.listen(PORT, () => {
+    console.log(`educastock-functions listening on port ${PORT}`);
+  });
+}
 
 // Portal do Doador (Sprint 5): gatilhos Firestore das doações.
 export { onDonationCreated, onDonationStatusChanged } from './donations';
+
+// Alertas de validade: push ao criar alerta e verificação diária.
+export { onAlertCreated, dailyExpiryCheck } from './alerts';

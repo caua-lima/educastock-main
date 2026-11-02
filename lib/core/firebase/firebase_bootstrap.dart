@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -22,6 +23,13 @@ class FirebaseBootstrap {
 
   static Future<void> initialize() async {
     await Firebase.initializeApp(options: _options);
+
+    // Cache local do Firestore: leituras continuam funcionando sem internet. No Android e
+    // no iOS isso já é o padrão; na web precisa ser ligado.
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
 
     await _activateAppCheck();
 

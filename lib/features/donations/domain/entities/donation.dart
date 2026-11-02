@@ -45,6 +45,65 @@ class DonorSnapshot {
       };
 }
 
+/// Destino e mensagem de impacto registrados pela equipe (tela S03) e mostrados
+/// ao doador no relatório de impacto (D09).
+class DonationImpact {
+  final String sector;
+  final String message;
+  final DateTime? usedAt;
+  final String? byName;
+
+  const DonationImpact({
+    required this.sector,
+    required this.message,
+    this.usedAt,
+    this.byName,
+  });
+
+  factory DonationImpact.fromMap(Map<String, dynamic> map) => DonationImpact(
+        sector: map['sector'] as String? ?? '',
+        message: map['message'] as String? ?? '',
+        usedAt: parseDonationDate(map['usedAt']),
+        byName: map['byName'] as String?,
+      );
+
+  Map<String, dynamic> toMap() => {
+        'sector': sector,
+        'message': message,
+        'usedAt': toTimestamp(usedAt),
+        'byName': byName,
+      };
+}
+
+/// Conferência de um item no recebimento (`donations/{id}.receivedItems[]`).
+class ReceivedItemInfo {
+  final int index;
+  final int receivedQty;
+  final String? batchId;
+  final String? note;
+
+  const ReceivedItemInfo({
+    required this.index,
+    required this.receivedQty,
+    this.batchId,
+    this.note,
+  });
+
+  factory ReceivedItemInfo.fromMap(Map<String, dynamic> map) => ReceivedItemInfo(
+        index: (map['index'] as num?)?.toInt() ?? 0,
+        receivedQty: (map['receivedQty'] as num?)?.toInt() ?? 0,
+        batchId: map['batchId'] as String?,
+        note: map['note'] as String?,
+      );
+
+  Map<String, dynamic> toMap() => {
+        'index': index,
+        'receivedQty': receivedQty,
+        'batchId': batchId,
+        'note': note,
+      };
+}
+
 /// Intenção formal de doação — documento `donations/{id}`.
 class Donation {
   final String id;
@@ -63,6 +122,12 @@ class Donation {
   final String? cancelReason;
   final String? refusalReason;
 
+  /// Mensagem opcional da equipe ao doador, enviada junto da aprovação (S02).
+  final String? approvalMessage;
+  final DateTime? receivedAt;
+  final List<ReceivedItemInfo> receivedItems;
+  final DonationImpact? impact;
+
   const Donation({
     required this.id,
     this.protocol = '',
@@ -77,7 +142,14 @@ class Donation {
     this.updatedAt,
     this.cancelReason,
     this.refusalReason,
+    this.approvalMessage,
+    this.receivedAt,
+    this.receivedItems = const [],
+    this.impact,
   });
+
+  /// Recebida mas ainda sem destino/impacto registrado (aba "Para destinar").
+  bool get needsDestination => status.isConcluded && impact == null;
 
   int get totalUnits => items.fold(0, (total, item) => total + item.quantity);
 
@@ -106,6 +178,15 @@ class Donation {
       updatedAt: parseDonationDate(map['updatedAt']),
       cancelReason: map['cancelReason'] as String?,
       refusalReason: map['refusalReason'] as String?,
+      approvalMessage: map['approvalMessage'] as String?,
+      receivedAt: parseDonationDate(map['receivedAt']),
+      receivedItems: ((map['receivedItems'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((e) => ReceivedItemInfo.fromMap(e.cast<String, dynamic>()))
+          .toList(growable: false),
+      impact: map['impact'] is Map
+          ? DonationImpact.fromMap((map['impact'] as Map).cast<String, dynamic>())
+          : null,
     );
   }
 

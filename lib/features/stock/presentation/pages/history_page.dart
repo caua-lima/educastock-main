@@ -6,7 +6,9 @@ import '../../../../core/design_system/design_system.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
 import '../../../products/presentation/controllers/products_provider.dart';
 import '../../domain/entities/stock_movement.dart';
-import '../controllers/stock_provider.dart';
+import '../../../../core/export/export_sheet.dart';
+import '../../../reports/domain/report_tables.dart';
+import '../controllers/movements_feed_provider.dart';
 import 'output_view_page.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
@@ -413,10 +415,49 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     return '$h:$m';
   }
 
+  /// Aplica a busca e os filtros atuais (mesma regra da lista) para exportar só o que está visível.
+  List<StockMovement> _applyFilters(List<StockMovement> all) {
+    var list = all
+        .where((m) =>
+            m.type == MovementType.entrada ||
+            m.type == MovementType.saida ||
+            m.type == MovementType.descarte)
+        .toList();
+    final reason = _filterReason;
+    if (reason != null) {
+      list = list
+          .where((m) => reason == 'entrada'
+              ? m.type == MovementType.entrada
+              : m.reasonCode == reason)
+          .toList();
+    }
+    final range = _filterDateRange;
+    if (range != null) {
+      final start = range.start;
+      final end = DateTime(range.end.year, range.end.month, range.end.day, 23, 59, 59);
+      list = list
+          .where((m) =>
+              !m.performedAt.isBefore(start) && !m.performedAt.isAfter(end))
+          .toList();
+    }
+    if (_search.isNotEmpty) {
+      final q = _search.toLowerCase();
+      list = list
+          .where((m) =>
+              m.productName.toLowerCase().contains(q) ||
+              m.performedByName.toLowerCase().contains(q))
+          .toList();
+    }
+    return list;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final movementsAsync = ref.watch(stockMovementsProvider);
+    // Primeira página ao vivo + páginas antigas por cursor (botão "Carregar mais").
+    final movementsAsync = ref.watch(movementsFeedProvider);
+    final hasMore = ref.watch(movementsHasMoreProvider);
+    final older = ref.watch(olderMovementsProvider);
 
     final bg = isDark ? const Color(0xFF0B1120) : const Color(0xFFF1F5F9);
     final cardBg = isDark ? const Color(0xFF111827) : Colors.white;
@@ -492,7 +533,29 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: 'Exportar histórico (PDF, Excel ou CSV)',
+                  child: IconButton(
+                    icon: const Icon(Icons.ios_share_rounded, color: Colors.white),
+                    onPressed: movementsAsync.hasValue
+                        ? () => showExportSheet(
+                              context,
+                              loader: () async {
+                                // Exporta o que está carregado, respeitando busca e filtros.
+                                final list = _applyFilters(movementsAsync.requireValue);
+                                final now = DateTime.now();
+                                return ReportTables.movements(
+                                  list,
+                                  from: list.isEmpty ? now : list.last.performedAt,
+                                  to: list.isEmpty ? now : list.first.performedAt,
+                                );
+                              },
+                            )
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 4),
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -758,6 +821,39 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                           return card;
                         }),
                       ],
+                      if (hasMore)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: Column(
+                            children: [
+                              if (older.error != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    'Não foi possível carregar mais registros.',
+                                    style: TextStyle(color: textSub, fontSize: 13),
+                                  ),
+                                ),
+                              OutlinedButton.icon(
+                                onPressed: older.loading
+                                    ? null
+                                    : () => ref
+                                        .read(olderMovementsProvider.notifier)
+                                        .loadMore(),
+                                icon: older.loading
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.expand_more_rounded),
+                                label: Text(older.loading
+                                    ? 'Carregando…'
+                                    : 'Carregar registros mais antigos'),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   );
                 },

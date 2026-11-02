@@ -33,11 +33,21 @@ final productAvailableQtyMapProvider = Provider<Map<String, int>>((ref) {
   return map;
 });
 
+/// Lotes que vencem em até [days] dias (inclui os já vencidos), calculados em memória a
+/// partir de [allAvailableBatchesProvider]. Antes cada chamada fazia uma consulta nova
+/// ao Firestore (e ficava desatualizada); agora reaproveita a leitura em tempo real já
+/// existente: zero leituras extras por tela.
 final expiringBatchesProvider =
-    FutureProvider.family<List<Batch>, int>((ref, days) {
-  return ref
-      .watch(batchesDatasourceProvider)
-      .getBatchesExpiringInDays(days);
+    Provider.family<AsyncValue<List<Batch>>, int>((ref, days) {
+  return ref.watch(allAvailableBatchesProvider).whenData((batches) {
+    final limit = DateTime.now().add(Duration(days: days));
+    return batches
+        .where((b) =>
+            !b.noExpiry &&
+            b.expiryDate != null &&
+            !b.expiryDate!.isAfter(limit))
+        .toList(growable: false);
+  });
 });
 
 final batchByIdProvider = FutureProvider.family<Batch?, String>((ref, id) {

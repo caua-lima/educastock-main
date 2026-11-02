@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/utils/auth_error_mapper.dart';
+import '../../data/donation_receipt_pdf.dart';
 import '../../domain/entities/donation.dart';
 import '../controllers/donations_provider.dart';
 import '../widgets/donation_status_chip.dart';
@@ -164,6 +165,42 @@ class _DetailBody extends ConsumerWidget {
             style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant),
           ),
         ],
+        if ((donation.approvalMessage ?? '').trim().isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          _InfoPanel(
+            icon: Icons.chat_bubble_outline_rounded,
+            title: 'Mensagem da equipe',
+            text: donation.approvalMessage!.trim(),
+            color: AppColors.brandPrimary600,
+          ),
+        ],
+        if (donation.impact != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          _InfoPanel(
+            icon: Icons.favorite_rounded,
+            title: 'Relatório de impacto · ${donation.impact!.sector}',
+            text: donation.impact!.message,
+            color: AppColors.success600,
+          ),
+        ],
+        if (donation.status.isConcluded) ...[
+          const SizedBox(height: AppSpacing.md),
+          CasaButton(
+            label: 'Baixar recibo (PDF)',
+            icon: Icons.picture_as_pdf_rounded,
+            variant: CasaButtonVariant.secondary,
+            onPressed: () async {
+              try {
+                await DonationReceiptPdf.share(donation, point: point);
+              } catch (_) {
+                if (context.mounted) {
+                  showCasaSnackbar(context,
+                      message: 'Não foi possível gerar o recibo agora.', isError: true);
+                }
+              }
+            },
+          ),
+        ],
         const SizedBox(height: AppSpacing.lg),
 
         // ── Onde e quando entregar ─────────────────────────────────────
@@ -264,6 +301,51 @@ class _DetailBody extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Quadro de destaque (mensagem da equipe, relatório de impacto).
+class _InfoPanel extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String text;
+  final Color color;
+
+  const _InfoPanel({
+    required this.icon,
+    required this.title,
+    required this.text,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTypography.labelLarge.copyWith(color: color)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(text, style: AppTypography.bodyMedium.copyWith(color: cs.onSurface, height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

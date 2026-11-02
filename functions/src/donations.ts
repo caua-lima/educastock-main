@@ -257,6 +257,10 @@ export const onDonationStatusChanged = onDocumentUpdated('donations/{donationId}
   const toStatus: string = after.status;
   if (fromStatus === toStatus) return;
 
+  // A equipe que decidiu/recebeu pelo aplicativo já gravou evento, auditoria, aviso ao
+  // doador e liberação da reserva na mesma transação (`clientProcessedStatus`): não repete.
+  if (after.clientProcessedStatus === toStatus) return;
+
   const donationId = event.params.donationId;
 
   if (!isTransitionAllowed(fromStatus, toStatus)) {

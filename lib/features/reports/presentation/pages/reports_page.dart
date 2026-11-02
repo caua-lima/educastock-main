@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'dart:io';
+import '../../../../core/export/export_sheet.dart';
+import '../../../../core/export/report_table.dart';
+import '../../domain/report_tables.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
@@ -209,80 +207,33 @@ List<TutorialStep> _reportsTutorialForTab(int index) {
   }
 }
 
-Future<void> _exportCsv({
-  required BuildContext context,
-  required List<Batch> allBatches,
-  required List<Batch> expiring30,
-}) async {
-  final buffer = StringBuffer();
-  buffer.writeln('Produto,Quantidade,Validade,Dias para vencer,Origem,Status');
-  final fmt = DateFormat('dd/MM/yyyy');
-  for (final b in allBatches) {
-    final validade =
-        b.expiryDate != null ? fmt.format(b.expiryDate!) : 'Sem validade';
-    final dias = b.noExpiry ? 'Sem val.' : '${b.daysToExpiry}';
-    buffer.writeln([
-      '"${b.productName.replaceAll('"', '""')}"',
-      '${b.quantity}',
-      '"$validade"',
-      dias,
-      '"${b.origin.replaceAll('"', '""')}"',
-    ].join(','));
-  }
-  buffer.writeln('');
-  buffer.writeln('Total de lotes,${allBatches.length}');
-  buffer.writeln('Vencendo em 30 dias,${expiring30.length}');
+/// Linha com "Exportar" (PDF, Excel, CSV) e o botão de ajuda, no topo de cada aba.
+class _TabActionsRow extends StatelessWidget {
+  final VoidCallback onExport;
+  final Widget helpButton;
 
-  final dir = await getTemporaryDirectory();
-  final file = File(
-      '${dir.path}/relatorio_${DateTime.now().millisecondsSinceEpoch}.csv');
-  await file.writeAsString(buffer.toString());
-  await Share.shareXFiles([XFile(file.path, mimeType: 'text/csv')],
-      text: 'Relatório EducastStock (CSV)');
-  if (!context.mounted) return;
-  showCasaSnackbar(context,
-      message: 'Relatório CSV gerado!', isSuccess: true);
-}
+  const _TabActionsRow({required this.onExport, required this.helpButton});
 
-Future<void> _exportPdf({
-  required List<Batch> allBatches,
-  required List<Batch> expiring7,
-  required List<Batch> expiring30,
-}) async {
-  final doc = pw.Document();
-  final now = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-  final total =
-      allBatches.fold<int>(0, (s, b) => s + b.quantity);
-  doc.addPage(
-    pw.MultiPage(
-      build: (ctx) => [
-        pw.Text('Relatório EducastStock',
-            style: pw.TextStyle(
-                fontSize: 20, fontWeight: pw.FontWeight.bold)),
-        pw.SizedBox(height: 8),
-        pw.Text('Gerado em: $now'),
-        pw.SizedBox(height: 16),
-        pw.Bullet(text: 'Lotes disponíveis: ${allBatches.length}'),
-        pw.Bullet(text: 'Itens em estoque: $total'),
-        pw.Bullet(text: 'Críticos (≤7 dias): ${expiring7.length}'),
-        pw.Bullet(text: 'Atenção (≤30 dias): ${expiring30.length}'),
-        pw.SizedBox(height: 16),
-        pw.Text('Próximos a vencer',
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-        pw.SizedBox(height: 8),
-        pw.TableHelper.fromTextArray(
-          headers: const ['Produto', 'Validade', 'Dias'],
-          data: expiring30.take(15).map((b) {
-            final date = b.expiryDate != null
-                ? DateFormat('dd/MM/yyyy').format(b.expiryDate!)
-                : '-';
-            return [b.productName, date, b.noExpiry ? 'Sem val.' : '${b.daysToExpiry}'];
-          }).toList(),
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        OutlinedButton.icon(
+          onPressed: onExport,
+          icon: const Icon(Icons.ios_share_rounded, size: 18),
+          label: const Text('Exportar'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.brandPrimary600,
+            side: const BorderSide(color: AppColors.brandPrimary600),
+            visualDensity: VisualDensity.compact,
+          ),
         ),
+        const SizedBox(width: AppSpacing.sm),
+        helpButton,
       ],
-    ),
-  );
-  await Printing.layoutPdf(onLayout: (_) async => doc.save());
+    );
+  }
 }
 
 // ─── Custom AppBar with TabBar ────────────────────────────────────────────
@@ -505,12 +456,14 @@ class ReportsPage extends ConsumerWidget {
         backgroundColor: cs.surface,
         body: const Column(children: [
           _ReportsAppBar(),
+          // Em monitores ultrawide o conteúdo fica centralizado (largura máxima), em vez de
+          // esticar os gráficos por toda a tela.
           Expanded(child: TabBarView(
             children: [
-              _ChartsTab(),
-              _MlRiskTab(),
-              _MovementsTab(),
-              _ForecastReportTab(),
+              ResponsiveBody(maxWidth: 1280, child: _ChartsTab()),
+              ResponsiveBody(maxWidth: 1280, child: _MlRiskTab()),
+              ResponsiveBody(maxWidth: 1280, child: _MovementsTab()),
+              ResponsiveBody(maxWidth: 1280, child: _ForecastReportTab()),
             ],
           )),
         ]),
@@ -916,9 +869,12 @@ class _ChartsTab extends ConsumerWidget {
               AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xxxl),
           children: [
             // ─── Botão de tutorial
-            Align(
-              alignment: Alignment.centerRight,
-              child: buildHelpButton(
+            _TabActionsRow(
+              onExport: () => showExportSheet(
+                context,
+                loader: () async => ReportTables.stock(batches),
+              ),
+              helpButton: buildHelpButton(
                 context: context,
                 onPressed: () => showCasaTutorial(
                   context: context,
@@ -1720,9 +1676,16 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
           AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xxxl),
       children: [
         // ─── Botão de tutorial
-        Align(
-          alignment: Alignment.centerRight,
-          child: buildHelpButton(
+        _TabActionsRow(
+          onExport: () => showExportSheet(
+            context,
+            loader: () async {
+              final range = _range;
+              final list = await ref.read(movementsReportProvider(range).future);
+              return ReportTables.movements(list, from: range.start, to: range.end);
+            },
+          ),
+          helpButton: buildHelpButton(
             context: context,
             onPressed: () => showCasaTutorial(
               context: context,
@@ -4409,32 +4372,25 @@ class _MlRiskActionsRow extends ConsumerWidget {
   }
 
   Future<void> _exportRiskCsv(
-      BuildContext context, List<RiskPrediction> predictions) async {
-    final buf = StringBuffer();
-    buf.writeln('Produto,Nível de Risco,Confiança (%),Fonte');
-    for (final p in predictions) {
-      buf.writeln([
-        '"${p.productName.replaceAll('"', '""')}"',
-        p.level.label,
-        (p.confidence * 100).toStringAsFixed(1),
-        p.source,
-      ].join(','));
-    }
-    try {
-      final dir = await getTemporaryDirectory();
-      final file = File(
-          '${dir.path}/risco_ml_${DateTime.now().millisecondsSinceEpoch}.csv');
-      await file.writeAsString(buf.toString());
-      await Share.shareXFiles([XFile(file.path, mimeType: 'text/csv')],
-          text: 'Relatório de Risco ML — EducaStock');
-      if (!context.mounted) return;
-      showCasaSnackbar(context,
-          message: 'Lista de risco exportada!', isSuccess: true);
-    } catch (_) {
-      if (!context.mounted) return;
-      showCasaSnackbar(context,
-          message: 'Erro ao exportar. Tente novamente.', isSuccess: false);
-    }
+      BuildContext context, List<RiskPrediction> predictions) {
+    return showExportSheet(
+      context,
+      loader: () async => ReportTable(
+        title: 'Risco de Vencimento (ML)',
+        subtitle: 'Classificação dos lotes em Verde, Amarelo e Vermelho',
+        summary: {'Produtos analisados': '${predictions.length}'},
+        headers: const ['Produto', 'Nível de risco', 'Confiança (%)', 'Fonte'],
+        rows: [
+          for (final p in predictions)
+            [
+              p.productName,
+              p.level.label,
+              (p.confidence * 100).toStringAsFixed(1),
+              p.source,
+            ],
+        ],
+      ),
+    );
   }
 }
 
@@ -4928,35 +4884,11 @@ class _ForecastReportTab extends ConsumerWidget {
   }
 
   Future<void> _exportReplenishmentCsv(
-      BuildContext context, List<ConsumptionForecast> forecasts) async {
-    final buf = StringBuffer();
-    buf.writeln('Produto,Previsão 7d,Previsão 30d,Estoque atual,Sugestão de reposição,Tendência,Modelo');
-    for (final f in forecasts) {
-      buf.writeln([
-        '"${f.productName.replaceAll('"', '""')}"',
-        f.forecastWeekly.toStringAsFixed(1),
-        f.forecastMonthly.toStringAsFixed(1),
-        f.currentStock,
-        f.suggestedReplenishment,
-        f.trend,
-        f.source,
-      ].join(','));
-    }
-    try {
-      final dir = await getTemporaryDirectory();
-      final file = File(
-          '${dir.path}/reposicao_${DateTime.now().millisecondsSinceEpoch}.csv');
-      await file.writeAsString(buf.toString());
-      await Share.shareXFiles([XFile(file.path, mimeType: 'text/csv')],
-          text: 'Pedido de Reposição — EducaStock');
-      if (!context.mounted) return;
-      showCasaSnackbar(context,
-          message: 'Lista de reposição exportada!', isSuccess: true);
-    } catch (_) {
-      if (!context.mounted) return;
-      showCasaSnackbar(context,
-          message: 'Erro ao exportar.', isSuccess: false);
-    }
+      BuildContext context, List<ConsumptionForecast> forecasts) {
+    return showExportSheet(
+      context,
+      loader: () async => _forecastTable(forecasts, 'Pedido de Reposição'),
+    );
   }
 }
 
@@ -6012,35 +5944,43 @@ class _ForecastStatChip extends StatelessWidget {
   }
 }
 
-Future<void> _exportSingleForecastCsv(
-    BuildContext context, ConsumptionForecast f) async {
-  final buf = StringBuffer();
-  buf.writeln(
-      'Produto,Previsão 7d,Previsão 30d,Estoque atual,Sugestão de reposição,Tendência,Modelo');
-  buf.writeln([
-    '"${f.productName.replaceAll('"', '""')}"',
-    f.forecastWeekly.toStringAsFixed(1),
-    f.forecastMonthly.toStringAsFixed(1),
-    f.currentStock,
-    f.suggestedReplenishment,
-    f.trend,
-    f.source,
-  ].join(','));
-  try {
-    final dir = await getTemporaryDirectory();
-    final file = File(
-        '${dir.path}/pedido_${f.productId}_${DateTime.now().millisecondsSinceEpoch}.csv');
-    await file.writeAsString(buf.toString());
-    await Share.shareXFiles([XFile(file.path, mimeType: 'text/csv')],
-        text: 'Pedido — ${f.productName}');
-    if (!context.mounted) return;
-    showCasaSnackbar(context,
-        message: 'Pedido exportado!', isSuccess: true);
-  } catch (_) {
-    if (!context.mounted) return;
-    showCasaSnackbar(context,
-        message: 'Erro ao exportar.', isSuccess: false);
-  }
+Future<void> _exportSingleForecastCsv(BuildContext context, ConsumptionForecast f) {
+  return showExportSheet(
+    context,
+    loader: () async => _forecastTable([f], 'Pedido: ${f.productName}'),
+  );
+}
+
+ReportTable _forecastTable(List<ConsumptionForecast> forecasts, String title) {
+  return ReportTable(
+    title: title,
+    subtitle: 'Previsão de consumo e sugestão de reposição',
+    summary: {
+      'Produtos': '${forecasts.length}',
+      'Unidades sugeridas': '${forecasts.fold<int>(0, (s, f) => s + f.suggestedReplenishment)}',
+    },
+    headers: const [
+      'Produto',
+      'Previsão 7 dias',
+      'Previsão 30 dias',
+      'Estoque atual',
+      'Sugestão de reposição',
+      'Tendência',
+      'Modelo',
+    ],
+    rows: [
+      for (final f in forecasts)
+        [
+          f.productName,
+          f.forecastWeekly.toStringAsFixed(1),
+          f.forecastMonthly.toStringAsFixed(1),
+          '${f.currentStock}',
+          '${f.suggestedReplenishment}',
+          f.trend,
+          f.source,
+        ],
+    ],
+  );
 }
 
 // ─── Grid de resumo (kept for reference) ─────────────────────────────────

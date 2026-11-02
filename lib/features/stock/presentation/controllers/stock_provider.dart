@@ -1,4 +1,8 @@
+import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/offline/offline_queue.dart';
+import '../../../../core/offline/offline_sync_controller.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../../data/datasources/stock_remote_datasource.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
@@ -21,7 +25,10 @@ class StockNotifier extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<void> registerMovement({
+  /// Registra a movimentação. Retorna `true` se foi gravada no servidor agora, ou `false`
+  /// se estava sem internet e ficou guardada no aparelho para ser enviada sozinha
+  /// quando a conexão voltar.
+  Future<bool> registerMovement({
     required String productId,
     required String productName,
     required String batchId,
@@ -53,14 +60,61 @@ class StockNotifier extends AsyncNotifier<void> {
       performedByName: user.name,
       performedAt: DateTime.now(),
     );
-    await ds.registerMovement(
-      movement: movement,
-      batchId: batchId,
-      previousQuantity: previousQuantity,
-      newQuantity: newQuantity,
-      nextStatus:
-          nextStatusOverride ?? (newQuantity == 0 ? 'distribuido' : null),
-    );
+    final nextStatus =
+        nextStatusOverride ?? (newQuantity == 0 ? 'distribuido' : null);
+
+    Future<bool> saveOffline() async {
+      final op = PendingMovement(
+        opId: _newOpId(),
+        movement: (StockMovement(
+          id: '',
+          productId: productId,
+          productName: productName,
+          batchId: batchId,
+          type: type,
+          quantity: quantity,
+          reasonCode: reasonCode,
+          reason: reason,
+          activity: activity,
+          performedBy: user.id,
+          performedByName: user.name,
+          performedAt: movement.performedAt,
+          isPendingSync: true,
+        )).toMap(),
+        batchId: batchId,
+        delta: newQuantity - previousQuantity,
+        nextStatus: nextStatusOverride,
+        createdAt: DateTime.now(),
+      );
+      await ref.read(offlineSyncProvider.notifier).enqueue(op);
+      return false;
+    }
+
+    if (!ref.read(offlineSyncProvider).online) return saveOffline();
+
+    try {
+      await ds.registerMovement(
+        movement: movement,
+        batchId: batchId,
+        previousQuantity: previousQuantity,
+        newQuantity: newQuantity,
+        nextStatus: nextStatus,
+      );
+      return true;
+    } on FirebaseException catch (e) {
+      // Caiu a conexão no meio da gravação: guarda para enviar depois.
+      if (e.code == 'unavailable' || e.code == 'deadline-exceeded') {
+        ref.read(offlineSyncProvider.notifier).markOffline();
+        return saveOffline();
+      }
+      rethrow;
+    }
+  }
+
+  static String _newOpId() {
+    final rnd = Random.secure();
+    final suffix = List.generate(8, (_) => rnd.nextInt(36).toRadixString(36)).join();
+    return 'off_${DateTime.now().microsecondsSinceEpoch}_$suffix';
   }
 
   /// Dá baixa total no lote como descarte por validade vencida.
