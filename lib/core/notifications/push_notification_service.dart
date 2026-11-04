@@ -9,6 +9,8 @@ import '../../features/auth/presentation/controllers/auth_provider.dart';
 import '../../features/settings/presentation/controllers/system_settings_provider.dart';
 import '../router/app_router.dart';
 import '../firebase/firebase_providers.dart';
+import 'app_messenger.dart';
+import 'package:flutter/material.dart';
 
 class PushNotificationService {
   final FirebaseMessaging? _messagingOverride;
@@ -18,6 +20,10 @@ class PushNotificationService {
 
   bool _permissionRequested = false;
   bool _navigationBound = false;
+
+  /// Roteador ATUAL (o app recria o GoRouter ao trocar de conta; os listeners
+  /// usam sempre o mais recente).
+  GoRouter? _router;
   String? _lastUserId;
   StreamSubscription<String>? _tokenSub;
   StreamSubscription<RemoteMessage>? _foregroundSub;
@@ -43,16 +49,18 @@ class PushNotificationService {
       await _messaging.requestPermission();
     }
 
+    _router = router;
     if (!_navigationBound) {
       _navigationBound = true;
 
+      // Tocou na notificação: abrir os alertas é o que a pessoa pediu.
       FirebaseMessaging.onMessageOpenedApp.listen((_) {
-        router.go(AppRoutes.alerts);
+        _router?.go(AppRoutes.alerts);
       });
 
       final initialMessage = await _messaging.getInitialMessage();
       if (initialMessage != null) {
-        router.go(AppRoutes.alerts);
+        _router?.go(AppRoutes.alerts);
       }
 
       // Suppress foreground notifications during silent hours
@@ -63,8 +71,17 @@ class PushNotificationService {
           debugPrint('[PNS] Silent mode active — suppressing foreground message');
           return;
         }
-        // Navigate to alerts so user sees the new alert
-        router.go(AppRoutes.alerts);
+        // App aberto: só avisa, com atalho. Não tira a pessoa do que está fazendo
+        // (ex.: um formulário pela metade).
+        final title = message.notification?.title ?? 'Novo alerta de validade';
+        appMessengerKey.currentState?.showSnackBar(SnackBar(
+          content: Text(title),
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: 'Ver alertas',
+            onPressed: () => _router?.go(AppRoutes.alerts),
+          ),
+        ));
       });
     }
 

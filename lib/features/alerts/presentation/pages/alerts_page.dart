@@ -9,6 +9,7 @@ import '../../../ml/domain/entities/risk_prediction.dart';
 import '../../../ml/presentation/controllers/risk_classifier_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../controllers/alerts_provider.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 class AlertsPage extends ConsumerStatefulWidget {
   const AlertsPage({super.key});
@@ -282,7 +283,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
           error: (e, _) => CasaEmptyState(
             icon: Icons.error_outline_rounded,
             title: 'Erro ao carregar alertas',
-            description: e.toString(),
+            description: friendlyLoadError(e),
           ),
           data: (alerts) {
             if (alerts.isEmpty) {

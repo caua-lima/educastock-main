@@ -35,10 +35,12 @@ final consumptionForecastsProvider =
 final liveForecastsProvider =
     Provider<AsyncValue<List<ConsumptionForecast>>>((ref) {
   final raw = ref.watch(consumptionForecastsProvider);
-  final liveStock = ref.watch(productAvailableQtyMapProvider);
+  // Sem resposta dos lotes (carregando/erro), mantém o estoque da previsão em vez de
+  // fingir que está zerado.
+  final liveStock = ref.watch(productAvailableQtyAsyncProvider).valueOrNull;
   return raw.whenData((list) {
     final merged = list
-        .map((f) => f.copyWithLiveStock(liveStock[f.productId] ?? 0))
+        .map((f) => liveStock == null ? f : f.copyWithLiveStock(liveStock[f.productId] ?? 0))
         .toList();
     merged.sort((a, b) =>
         b.suggestedReplenishment.compareTo(a.suggestedReplenishment));
@@ -64,8 +66,9 @@ final forecastForProductProvider =
   final repo = ref.watch(consumptionForecastRepositoryProvider);
   final raw = await repo.getForecastForProduct(productId);
   if (raw == null) return null;
-  final liveStock = ref.watch(productAvailableQtyMapProvider)[productId] ?? 0;
-  return raw.copyWithLiveStock(liveStock);
+  final live = ref.watch(productAvailableQtyAsyncProvider).valueOrNull;
+  if (live == null) return raw;
+  return raw.copyWithLiveStock(live[productId] ?? 0);
 });
 
 /// Indica se existe ao menos uma previsão disponível.

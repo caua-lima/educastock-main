@@ -16,6 +16,7 @@ import '../../../scanner/data/scan_history_repository.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../domain/entities/product.dart';
 import '../controllers/products_provider.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 // Helper compartilhado: classifica todos os lotes de um produto e devolve o pior nível.
 RiskLevel? worstRiskLevel(List<Batch> batches) {
@@ -399,7 +400,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
   }
 
   List<Product> _applyFilters(
-      List<Product> products, Map<String, int> stockMap) {
+      List<Product> products, Map<String, int> stockMap, {bool stockKnown = true}) {
     var result = products.where((p) {
       final q = _query.trim().toLowerCase();
       if (q.isNotEmpty) {
@@ -434,8 +435,8 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
     // Inativos (sem estoque) sempre por último, mas mantendo a ordem interna
     // de cada grupo conforme o sort selecionado.
     result.sort((a, b) {
-      final aInactive = (stockMap[a.id] ?? 0) <= 0;
-      final bInactive = (stockMap[b.id] ?? 0) <= 0;
+      final aInactive = stockKnown && (stockMap[a.id] ?? 0) <= 0;
+      final bInactive = stockKnown && (stockMap[b.id] ?? 0) <= 0;
       if (aInactive != bInactive) return aInactive ? 1 : -1;
       return primarySort(a, b);
     });
@@ -455,7 +456,11 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final productsAsync = ref.watch(productsProvider);
-    final stockMap = ref.watch(productAvailableQtyMapProvider);
+    final stockAsync = ref.watch(productAvailableQtyAsyncProvider);
+    // Sem resposta dos lotes (carregando ou erro), nenhum produto é marcado como
+    // "Sem estoque" — não dá para saber (auditoria A08).
+    final stockKnown = stockAsync.hasValue;
+    final stockMap = stockAsync.valueOrNull ?? const <String, int>{};
     final user = ref.watch(currentUserProvider);
     final categoryLabelMap = ref.watch(categoryLabelMapProvider);
     final availableCategories = productsAsync.valueOrNull
@@ -630,12 +635,23 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
             child: Column(
           children: [
             const SizedBox(height: AppSpacing.sm),
+            if (stockAsync.hasError && !stockAsync.hasValue)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md, 0, AppSpacing.md, AppSpacing.sm),
+                child: LoadErrorNotice(
+                  message:
+                      'Não foi possível consultar as quantidades em estoque agora. '
+                      'Os produtos aparecem, mas sem saldo.',
+                  onRetry: () => ref.invalidate(allAvailableBatchesProvider),
+                ),
+              ),
 
             // ─── Grade de produtos
             Expanded(
               child: productsAsync.when(
                 data: (products) {
-                  final filtered = _applyFilters(products, stockMap);
+                  final filtered = _applyFilters(products, stockMap, stockKnown: stockKnown);
                   if (filtered.isEmpty) {
                     return CasaEmptyState(
                       icon: Icons.inventory_2_outlined,
@@ -655,7 +671,9 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                   }
                   return GridView.builder(
                     padding: const EdgeInsets.fromLTRB(AppSpacing.md,
-                        AppSpacing.xs, AppSpacing.md, AppSpacing.xxxl),
+                        // Folga para os botões flutuantes (teclado + Escanear) não
+                        // cobrirem a última linha de produtos.
+                        AppSpacing.xs, AppSpacing.md, 140),
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 240,
@@ -668,7 +686,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       final p = filtered[i];
                       final catLabel = categoryLabelMap[p.category.name] ??
                           defaultCategoryLabel(p.category);
-                      final inactive = (stockMap[p.id] ?? 0) <= 0;
+                      final inactive = stockKnown && (stockMap[p.id] ?? 0) <= 0;
                       final card = _ProductGridCard(
                         product: p,
                         catLabel: catLabel,
@@ -701,7 +719,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                 error: (e, _) => CasaEmptyState(
                   icon: Icons.error_outline_rounded,
                   title: 'Erro ao carregar',
-                  description: e.toString(),
+                  description: friendlyLoadError(e),
                 ),
               ),
             ),
@@ -1718,9 +1736,8 @@ class _ProductGridCard extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final dateFmt = DateFormat('dd/MM');
 
-    final batches = ref
-        .watch(batchesByProductProvider(product.id))
-        .whenOrNull(data: (b) => b) ?? const [];
+    final batchesAsync = ref.watch(availableBatchesOfProductProvider(product.id));
+    final batches = batchesAsync.valueOrNull ?? const <Batch>[];
 
     final totalQty = batches.fold<int>(0, (s, b) => s + b.quantity);
 
@@ -1829,7 +1846,11 @@ class _ProductGridCard extends ConsumerWidget {
                       size: 11, color: palette[0]),
                   const SizedBox(width: 4),
                   Text(
-                    inactive ? 'Sem estoque' : '$totalQty ${product.unit}',
+                    inactive
+                        ? 'Sem estoque'
+                        : batchesAsync.hasValue
+                            ? '$totalQty ${product.unit}'
+                            : '— ${product.unit}',
                     style: AppTypography.labelSmall.copyWith(
                       color: palette[0],
                       fontWeight: FontWeight.w800,

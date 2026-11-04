@@ -5,6 +5,7 @@ import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../controllers/system_settings_provider.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 class AlertsSettingsPage extends ConsumerStatefulWidget {
   const AlertsSettingsPage({super.key});
@@ -556,7 +557,7 @@ class _AlertsSettingsPageState extends ConsumerState<AlertsSettingsPage> {
           error: (e, _) => CasaEmptyState(
             icon: Icons.error_outline_rounded,
             title: 'Erro ao carregar configurações',
-            description: e.toString(),
+            description: friendlyLoadError(e),
           ),
         ),
       ),
@@ -578,9 +579,11 @@ class _UrgencyRow extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: AppSpacing.sm),
-        Text(label,
-            style: AppTypography.bodySmall
-                .copyWith(color: color, fontWeight: FontWeight.w600)),
+        Flexible(
+          child: Text(label,
+              style: AppTypography.bodySmall
+                  .copyWith(color: color, fontWeight: FontWeight.w600)),
+        ),
       ],
     );
   }

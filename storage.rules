@@ -16,13 +16,26 @@ service firebase.storage {
       return request.resource.size < 5 * 1024 * 1024;
     }
 
+    // Perfil do usuário no Firestore (regras do Storage podem consultá-lo).
+    function profile() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Equipe ativa que pode gravar no estoque: administrador e estoquista
+    // (mesma regra de canWrite() no Firestore).
+    function canWriteStock() {
+      return isSignedIn()
+          && profile().isActive == true
+          && profile().role in ['admin', 'estoquista'];
+    }
+
     // ─── imagens de produtos ─────────────────────────────────────────────
-    // Qualquer usuário autenticado pode visualizar imagens de produtos.
-    // Apenas usuários autenticados podem fazer upload (max 5 MB, somente imagens).
+    // Leitura para quem está logado (exibição das fotos). Enviar, trocar ou apagar:
+    // só administrador/estoquista ativos — doador e voluntário não (auditoria A03).
     match /products/{productId}/{allPaths=**} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && isImageFile() && isUnder5MB();
-      allow delete: if isSignedIn();
+      allow create, update: if canWriteStock() && isImageFile() && isUnder5MB();
+      allow delete: if canWriteStock();
     }
 
     // ─── block all other paths ───────────────────────────────────────────

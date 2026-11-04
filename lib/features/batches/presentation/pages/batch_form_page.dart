@@ -14,7 +14,6 @@ import '../../../products/presentation/controllers/products_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../../ml/presentation/widgets/risk_widgets.dart';
 import '../../../stock/domain/entities/stock_movement.dart';
-import '../../../stock/presentation/controllers/stock_provider.dart' show stockDatasourceProvider;
 import '../../domain/entities/batch.dart';
 import '../controllers/batches_provider.dart';
 
@@ -152,7 +151,8 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
       return;
     }
 
-    if (_expiryDate != null && _expiryDate!.isBefore(DateTime.now())) {
+    // Vencido só se a data já passou (validade de hoje ainda vale hoje).
+    if (_expiryDate != null && Batch.civilDaysBetween(DateTime.now(), _expiryDate!) < 0) {
       final confirm = await CasaDialogConfirmacao.show(
         context: context,
         title: 'Produto Vencido',
@@ -252,39 +252,30 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
       createdAt: DateTime.now(),
     );
 
+    // Lote novo: a ENTRADA no histórico e a auditoria vão no mesmo commit do lote
+    // (antes eram gravadas depois e uma falha sumia em silêncio).
+    final entry = _isEdit
+        ? null
+        : StockMovement(
+            id: '',
+            productId: effectiveProductId,
+            productName: productName,
+            batchId: '',
+            type: MovementType.entrada,
+            quantity: qty,
+            reasonCode: _origin,
+            reason: 'Cadastro de lote',
+            performedBy: user.id,
+            performedByName: user.name,
+            performedAt: DateTime.now(),
+            auditAfter: {'quantity': qty},
+          ).toMap();
+
     await ref
         .read(batchFormProvider.notifier)
-        .saveBatch(batch, imageFile: _pickedImageFile);
+        .saveBatch(batch, imageFile: _pickedImageFile, entryMovement: entry);
 
     final state = ref.read(batchFormProvider);
-
-    // Registra ENTRADA no histórico (somente novos lotes) — aparece como
-    // card de entrada na aba Histórico.
-    if (!_isEdit) {
-      final newId = state.valueOrNull;
-      if (newId != null && newId.isNotEmpty) {
-        try {
-          await ref.read(stockDatasourceProvider).logEntryMovement(
-                StockMovement(
-                  id: '',
-                  productId: effectiveProductId,
-                  productName: productName,
-                  batchId: newId,
-                  type: MovementType.entrada,
-                  quantity: qty,
-                  reasonCode: _origin,
-                  reason: 'Cadastro de lote',
-                  performedBy: user.id,
-                  performedByName: user.name,
-                  performedAt: DateTime.now(),
-                  auditAfter: {'quantity': qty},
-                ),
-              );
-        } catch (_) {
-          // Histórico é best-effort; não bloqueia o cadastro.
-        }
-      }
-    }
 
     if (!mounted) return;
     state.when(

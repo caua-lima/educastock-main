@@ -5,6 +5,7 @@ import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../controllers/system_settings_provider.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 final _keyCategorySummary = GlobalKey();
 final _keyCategoryList = GlobalKey();
@@ -242,7 +243,7 @@ class CategoriesSettingsPage extends ConsumerWidget {
           error: (e, _) => CasaEmptyState(
             icon: Icons.error_outline_rounded,
             title: 'Erro ao carregar categorias',
-            description: e.toString(),
+            description: friendlyLoadError(e),
           ),
         ),
       ),

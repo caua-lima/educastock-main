@@ -169,13 +169,24 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
             ? 'limite_de_intencoes'
             : null;
     if (violation) {
-        await ref.update({
-            status: 'cancelada',
-            cancelReason: violation,
-            reservationReleased: true, // nada foi reservado
-            updatedAt: FieldValue.serverTimestamp(),
+        // Relê o estado atual: só cancela se ainda estiver pendente e sem protocolo
+        // (entrega repetida ou atrasada do mesmo evento não sobrescreve nada).
+        const cancelled = await db.runTransaction(async (tx) => {
+            const current = (await tx.get(ref)).data();
+            if (!current || current.protocol || current.status !== 'pendente')
+                return false;
+            tx.update(ref, {
+                status: 'cancelada',
+                cancelReason: violation,
+                reservationReleased: true, // nada foi reservado
+                updatedAt: FieldValue.serverTimestamp(),
+            });
+            return true;
         });
-        await ref.collection('events').add({
+        if (!cancelled)
+            return;
+        // ID fixo: repetir o evento regrava o mesmo registro em vez de duplicar.
+        await ref.collection('events').doc('rejected').set({
             type: 'rejected',
             fromStatus: null,
             toStatus: 'cancelada',
@@ -193,6 +204,12 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
     const protocol = await db.runTransaction(async (tx) => {
         var _a, _b;
         // Leituras primeiro (regra das transações do Firestore).
+        // Relê a doação DENTRO da transação: se outra execução (entrega repetida do
+        // gatilho) já gerou protocolo/reserva, não gera de novo (auditoria A05).
+        const currentSnap = await tx.get(ref);
+        const currentDonation = currentSnap.data();
+        if (!currentDonation || currentDonation.protocol || currentDonation.reservationApplied === true)
+            return null;
         const counterSnap = await tx.get(counterRef);
         const current = Number((_b = (_a = counterSnap.data()) === null || _a === void 0 ? void 0 : _a[`donations_${year}`]) !== null && _b !== void 0 ? _b : 0);
         const next = current + 1;
@@ -208,7 +225,9 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
         });
         return generated;
     });
-    await ref.collection('events').add({
+    if (protocol === null)
+        return; // já processada por outra execução
+    await ref.collection('events').doc('created').set({
         type: 'created',
         fromStatus: null,
         toStatus: 'pendente',
@@ -219,7 +238,7 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
     });
     // Alerta para a equipe (formato lido por StockAlert.fromMap).
     const donorName = (_e = (_d = donation.donorSnapshot) === null || _d === void 0 ? void 0 : _d.displayName) !== null && _e !== void 0 ? _e : 'Doador';
-    await db.collection('alerts').add({
+    await db.collection('alerts').doc(`donation_${donationId}`).set({
         productId: 'donation',
         productName: protocol,
         batchId: null,
@@ -258,13 +277,26 @@ exports.onDonationStatusChanged = (0, firestore_1.onDocumentUpdated)('donations/
     if (after.clientProcessedStatus === toStatus)
         return;
     const donationId = event.params.donationId;
+    // ID do evento do gatilho: igual em entregas repetidas do MESMO evento. Usado como ID
+    // dos registros gerados, para não duplicar linha do tempo, auditoria e avisos.
+    const eventKey = event.id;
     if (!isTransitionAllowed(fromStatus, toStatus)) {
-        await ref.update({
-            status: fromStatus,
-            transitionRejected: true,
-            updatedAt: FieldValue.serverTimestamp(),
+        // Só reverte se o status atual ainda for o deste evento: um evento atrasado
+        // (fora de ordem) não pode desfazer uma mudança mais nova.
+        const reverted = await db.runTransaction(async (tx) => {
+            const current = (await tx.get(ref)).data();
+            if (!current || current.status !== toStatus)
+                return false;
+            tx.update(ref, {
+                status: fromStatus,
+                transitionRejected: true,
+                updatedAt: FieldValue.serverTimestamp(),
+            });
+            return true;
         });
-        await ref.collection('events').add({
+        if (!reverted)
+            return;
+        await ref.collection('events').doc(`invalid_${eventKey}`).set({
             type: 'invalid_transition',
             fromStatus,
             toStatus,
@@ -279,7 +311,7 @@ exports.onDonationStatusChanged = (0, firestore_1.onDocumentUpdated)('donations/
     // O doador só pode cancelar e não grava `updatedBy` (regras): atribui a ele.
     const actor = (_d = after.updatedBy) !== null && _d !== void 0 ? _d : (toStatus === 'cancelada' ? after.donorId : 'unknown');
     // Linha do tempo + auditoria (RNF15).
-    await ref.collection('events').add({
+    await ref.collection('events').doc(`status_${eventKey}`).set({
         type: 'status_changed',
         fromStatus,
         toStatus,
@@ -288,7 +320,7 @@ exports.onDonationStatusChanged = (0, firestore_1.onDocumentUpdated)('donations/
         note: (_g = (_f = after.refusalReason) !== null && _f !== void 0 ? _f : after.cancelReason) !== null && _g !== void 0 ? _g : null,
         at: FieldValue.serverTimestamp(),
     });
-    await db.collection('audit_logs').add({
+    await db.collection('audit_logs').doc(`donation_${eventKey}`).set({
         collection: 'donations',
         documentId: donationId,
         action: `donation_${toStatus}`,
@@ -305,21 +337,30 @@ exports.onDonationStatusChanged = (0, firestore_1.onDocumentUpdated)('donations/
         const items = Array.isArray(after.items) ? after.items : [];
         const pledges = sumPledgesByNeed(items);
         await db.runTransaction(async (tx) => {
+            // Relê o marcador dentro da transação: a reserva só é devolvida uma vez, mesmo
+            // com o gatilho entregue de novo ou duas transições terminais seguidas.
+            const current = (await tx.get(ref)).data();
+            if (!current || current.reservationApplied !== true || current.reservationReleased === true)
+                return;
             await applyPledges(tx, pledges, -1);
             tx.update(ref, { reservationReleased: true });
         });
     }
-    await notifyDonor(after.donorId, donationId, after.protocol, toStatus);
+    await notifyDonor(after.donorId, donationId, after.protocol, toStatus, eventKey);
 });
 // ─── Notificações ──────────────────────────────────────────────────────────
-async function notifyDonor(donorId, donationId, protocol, status) {
+async function notifyDonor(donorId, donationId, protocol, status, notificationId) {
     var _a, _b;
     const template = STATUS_NOTIFICATION[status];
     if (!template || !donorId)
         return;
     const title = template.title;
     const body = protocol ? `${template.body} (${protocol})` : template.body;
-    await db.collection('user_notifications').doc(donorId).collection('items').add({
+    // ID fixo por evento: entrega repetida não cria um segundo aviso nem um segundo push.
+    const noteRef = db.collection('user_notifications').doc(donorId).collection('items').doc(notificationId);
+    if ((await noteRef.get()).exists)
+        return;
+    await noteRef.set({
         title,
         body,
         donationId,

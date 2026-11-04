@@ -43,14 +43,28 @@ class Batch {
     required this.createdAt,
   });
 
+  /// Relógio dos cálculos de validade. Só os testes trocam (para simular datas).
+  static DateTime Function() clock = DateTime.now;
+
+  /// Diferença em dias de CALENDÁRIO (só a data conta, não a hora; sem efeito de
+  /// horário de verão).
+  static int civilDaysBetween(DateTime from, DateTime to) =>
+      DateTime.utc(to.year, to.month, to.day)
+          .difference(DateTime.utc(from.year, from.month, from.day))
+          .inDays;
+
+  /// Vencido a partir do dia SEGUINTE à data impressa: um lote com validade 10/11 pode
+  /// ser usado até o fim do dia 10 (auditoria A19). Antes, às 9h do dia 10 ele já
+  /// aparecia como vencido.
   bool get isExpired {
     if (noExpiry || expiryDate == null) return false;
-    return expiryDate!.isBefore(DateTime.now());
+    return daysToExpiry < 0;
   }
 
+  /// Dias de calendário até a validade: 0 = vence hoje, 1 = amanhã, negativo = vencido.
   int get daysToExpiry {
     if (noExpiry || expiryDate == null) return 9999;
-    return expiryDate!.difference(DateTime.now()).inDays;
+    return civilDaysBetween(clock(), expiryDate!);
   }
 
   /// Retorna o nível de urgência para alertas

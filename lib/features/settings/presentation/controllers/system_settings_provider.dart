@@ -352,8 +352,8 @@ String defaultCategoryLabel(ProductCategory category) {
     ProductCategory.alimento => 'Alimento',
     ProductCategory.bebida => 'Bebida',
     ProductCategory.limpeza => 'Limpeza',
-    ProductCategory.higienePessoal => 'Higiene Pessoal',
-    ProductCategory.escolar => 'Material Escolar',
+    ProductCategory.higienePessoal => 'Higiene pessoal',
+    ProductCategory.escolar => 'Material escolar',
     ProductCategory.roupas => 'Roupas',
     ProductCategory.outro => 'Outro',
   };

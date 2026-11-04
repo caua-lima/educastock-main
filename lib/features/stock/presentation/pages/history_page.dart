@@ -1147,13 +1147,17 @@ class _DayDivider extends StatelessWidget {
       padding: const EdgeInsets.only(top: 10, bottom: 10),
       child: Row(
         children: [
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: textSub,
-              letterSpacing: 0.8,
+          Flexible(
+            child: Text(
+              label.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: textSub,
+                letterSpacing: 0.8,
+              ),
             ),
           ),
           const SizedBox(width: 10),

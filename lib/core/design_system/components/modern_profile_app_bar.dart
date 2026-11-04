@@ -81,11 +81,13 @@ class ModernProfileAppBar extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // ── Linha principal: voltar + título + ações ──────────
-                SizedBox(
-                  height: 64,
+                // Altura mínima (não fixa): com a fonte do sistema ampliada o
+                // cabeçalho cresce em vez de cortar o título.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 64),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg),
+                        horizontal: AppSpacing.lg, vertical: 6),
                     child: Row(
                       children: [
                         if (showBackButton)

@@ -2,40 +2,36 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, homolog]
+    branches: [main, develop, homolog, 'codex/**']
   pull_request:
     branches: [main, develop, homolog]
 
 jobs:
   flutter-checks:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Mesma versão usada no desenvolvimento (o pubspec.lock exige Flutter >= 3.38.4;
+      # a 3.24.5 antiga não resolvia as dependências).
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5'
+          flutter-version: '3.47.6'
           channel: stable
 
       - name: Flutter pub get
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       - name: Analyze
-        run: flutter analyze --no-pub lib
+        run: flutter analyze --no-pub
 
-      - name: Test
+      - name: Test (inclui layout em 5 tamanhos e fonte 200%)
         run: flutter test --no-pub
 
       - name: Build Web (DEV)
-        run: flutter build web --release --dart-define=APP_ENV=dev
-
-      - name: Build APK (DEV)
-        run: flutter build apk --release --dart-define=APP_ENV=dev
+        run: flutter build web --release --no-web-resources-cdn --dart-define=APP_ENV=dev
 
   functions-checks:
     runs-on: ubuntu-latest
@@ -51,8 +47,46 @@ jobs:
         with:
           node-version: 20
 
+      # Sem fallback para "npm install": se o lockfile não bate, o CI deve falhar.
       - name: Install
-        run: npm ci || npm install
+        run: npm ci
 
-      - name: Build
+      - name: Build (TypeScript)
         run: npm run build
+
+      - name: Testes do middleware HTTP
+        run: node --test test/http_auth.test.js test/alerts.test.js
+
+  # Regras do Firestore/Storage e gatilhos de doação no EMULADOR (projeto demo-, que não
+  # existe na nuvem: os testes não alcançam dados reais).
+  emulator-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java (emuladores)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Firebase CLI
+        run: npm install -g firebase-tools@15
+
+      - name: Dependências
+        run: |
+          npm ci --prefix functions
+          npm ci --prefix tests/rules
+          npm run build --prefix functions
+
+      - name: Regras (Firestore + Storage)
+        run: firebase emulators:exec --only firestore,storage --project demo-educastock "npm --prefix tests/rules test"
+
+      - name: Gatilhos de doação (idempotência)
+        run: firebase emulators:exec --only firestore --project demo-educastock "node --test functions/test/donations.emulator.test.js"

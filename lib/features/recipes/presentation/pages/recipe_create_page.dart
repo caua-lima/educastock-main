@@ -122,7 +122,9 @@ class _RecipeCreatePageState extends ConsumerState<RecipeCreatePage>
   @override
   Widget build(BuildContext context) {
     final productsAsync = ref.watch(productsProvider);
-    final stockMap = ref.watch(productAvailableQtyMapProvider);
+    final stockAsync = ref.watch(productAvailableQtyAsyncProvider);
+    final stockKnown = stockAsync.hasValue;
+    final stockMap = stockAsync.valueOrNull ?? const <String, int>{};
     final labelMap = ref.watch(categoryLabelMapProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -184,6 +186,7 @@ class _RecipeCreatePageState extends ConsumerState<RecipeCreatePage>
           // uma receita e o lote tenha acabado posteriormente).
           final inStockProducts = products
               .where((p) =>
+                  !stockKnown ||
                   (stockMap[p.id] ?? 0) > 0 ||
                   (_selectedQty[p.id] ?? 0) > 0)
               .toList();
@@ -363,7 +366,8 @@ class _RecipeCreatePageState extends ConsumerState<RecipeCreatePage>
                               ),
                             )
                           : SliverLayoutBuilder(builder: (context, box) => SliverGrid(
-                              gridDelegate: productCardGridDelegate(box.crossAxisExtent),
+                              gridDelegate: productCardGridDelegate(box.crossAxisExtent,
+                                  textScale: MediaQuery.textScalerOf(context).scale(1)),
                               delegate: SliverChildBuilderDelegate(
                                 (context, i) {
                                   final p = filtered[i];

@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import * as admin from 'firebase-admin';
+import { cleanInt, cleanText, requireActiveStaff } from './http_auth';
 
 if (admin.apps.length === 0) {
   admin.initializeApp();
@@ -7,91 +8,113 @@ if (admin.apps.length === 0) {
 const db = admin.firestore();
 
 const app = express();
-app.use(express.json());
+// Corpo pequeno: as rotas só recebem alguns campos.
+app.use(express.json({ limit: '16kb' }));
 
-// Health check
+// Todas as rotas que gravam exigem administrador/estoquista ATIVO (auditoria A14).
+const requireStaff = requireActiveStaff({
+  verifyToken: (token) => admin.auth().verifyIdToken(token),
+  loadProfile: async (uid) => (await db.doc(`users/${uid}`).get()).data(),
+});
+
+/** Erro interno: registra no log e responde sem expor detalhes. */
+function fail(res: Response, where: string, err: unknown): void {
+  console.error(`${where} error:`, err);
+  res.status(500).json({ error: 'Erro interno. Tente novamente.' });
+}
+
+// Health check (público, não grava nada)
 app.get('/', (_req: Request, res: Response) => {
   res.json({ status: 'OK', service: 'educastock-functions' });
 });
 
 // Alerta de estoque baixo
-app.post('/alertLowStock', async (req: Request, res: Response) => {
+app.post('/alertLowStock', requireStaff, async (req: Request, res: Response) => {
+  const productName = cleanText(req.body?.name);
+  const quantity = cleanInt(req.body?.quantity);
+  if (productName === null || quantity === null) {
+    res.status(400).json({ error: 'Informe "name" (texto) e "quantity" (inteiro ≥ 0).' });
+    return;
+  }
   try {
-    const data = req.body;
-    const productName: string = data?.name ?? 'Produto desconhecido';
-    const quantity: number = data?.quantity ?? 0;
-
     await db.collection('alerts').add({
       type: 'low_stock',
       productName,
       quantity,
+      createdBy: res.locals.uid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
     res.json({ success: true, message: `Alerta criado para ${productName}` });
   } catch (err) {
-    console.error('alertLowStock error:', err);
-    res.status(500).json({ error: String(err) });
+    fail(res, 'alertLowStock', err);
   }
 });
 
 // Alerta de validade próxima
-app.post('/alertExpiryWarning', async (req: Request, res: Response) => {
+app.post('/alertExpiryWarning', requireStaff, async (req: Request, res: Response) => {
+  const productName = cleanText(req.body?.productName);
+  const expiryDate = cleanText(req.body?.expiryDate, 40);
+  const batchId = cleanText(req.body?.batchId, 128);
+  if (productName === null || expiryDate === null || batchId === null || isNaN(Date.parse(expiryDate))) {
+    res.status(400).json({ error: 'Informe "productName", "expiryDate" (data) e "batchId".' });
+    return;
+  }
   try {
-    const data = req.body;
-    const productName: string = data?.productName ?? 'Produto desconhecido';
-    const expiryDate: string = data?.expiryDate ?? '';
-    const batchId: string = data?.batchId ?? '';
-
     await db.collection('alerts').add({
       type: 'expiry_warning',
       productName,
       expiryDate,
       batchId,
+      createdBy: res.locals.uid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
     res.json({ success: true, message: `Alerta de validade criado para ${productName}` });
   } catch (err) {
-    console.error('alertExpiryWarning error:', err);
-    res.status(500).json({ error: String(err) });
+    fail(res, 'alertExpiryWarning', err);
   }
 });
 
-// Notificação de movimentação de estoque
-app.post('/notifyStockMovement', async (req: Request, res: Response) => {
+// Notificação de movimentação de estoque (só campos conhecidos — antes gravava o corpo inteiro)
+app.post('/notifyStockMovement', requireStaff, async (req: Request, res: Response) => {
+  const productName = cleanText(req.body?.productName);
+  const movementType = cleanText(req.body?.type, 40);
+  const quantity = cleanInt(req.body?.quantity);
+  if (productName === null || movementType === null || quantity === null) {
+    res.status(400).json({ error: 'Informe "productName", "type" e "quantity".' });
+    return;
+  }
   try {
-    const data = req.body;
-
     await db.collection('notifications').add({
       type: 'stock_movement',
-      ...data,
+      productName,
+      movementType,
+      quantity,
+      createdBy: res.locals.uid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
     res.json({ success: true });
   } catch (err) {
-    console.error('notifyStockMovement error:', err);
-    res.status(500).json({ error: String(err) });
+    fail(res, 'notifyStockMovement', err);
   }
 });
 
-// Geração de relatório
-app.post('/generateReport', async (req: Request, res: Response) => {
+// Geração de relatório (quem pede é quem está autenticado, não um campo do corpo)
+app.post('/generateReport', requireStaff, async (req: Request, res: Response) => {
+  const type = cleanText(req.body?.type ?? 'general', 40);
+  if (type === null) {
+    res.status(400).json({ error: 'Tipo de relatório inválido.' });
+    return;
+  }
   try {
-    const data = req.body;
-
     const reportRef = await db.collection('reports').add({
       status: 'pending',
-      requestedBy: data?.userId ?? 'unknown',
-      type: data?.type ?? 'general',
+      requestedBy: res.locals.uid,
+      type,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-
     res.json({ success: true, reportId: reportRef.id });
   } catch (err) {
-    console.error('generateReport error:', err);
-    res.status(500).json({ error: String(err) });
+    fail(res, 'generateReport', err);
   }
 });
 

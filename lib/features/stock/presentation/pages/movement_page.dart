@@ -1,5 +1,6 @@
 import '../../../../core/offline/offline_sync_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/design_system.dart';
@@ -17,8 +18,10 @@ import '../../../recipes/presentation/controllers/recipes_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../data/datasources/stock_remote_datasource.dart';
 import '../controllers/stock_provider.dart';
+import '../../../reports/presentation/controllers/reports_provider.dart';
 import '../../domain/entities/stock_movement.dart';
 import 'output_view_page.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 // Helper local: pior nível de risco entre os lotes disponíveis de um produto.
 RiskLevel? _worstRisk(String productId, List<Batch> batches) {
@@ -182,7 +185,6 @@ class _MovementPageState extends ConsumerState<MovementPage> {
   /// o filtro de validade selecionado.
   bool _matchesExpiryFilter(String productId, List<Batch> batches) {
     if (_expiryFilter == _ExpiryFilter.todos) return true;
-    final now = DateTime.now();
     final available = batches.where(
         (b) => b.productId == productId && b.status == BatchStatus.disponivel);
     for (final b in available) {
@@ -190,8 +192,8 @@ class _MovementPageState extends ConsumerState<MovementPage> {
         if (_expiryFilter == _ExpiryFilter.seguros) return true;
         continue;
       }
-      final d = b.expiryDate!.difference(now).inDays;
-      final isExpired = b.expiryDate!.isBefore(now);
+      final d = b.daysToExpiry;
+      final isExpired = b.isExpired;
       switch (_expiryFilter) {
         case _ExpiryFilter.vencidos:
           if (isExpired) return true;
@@ -550,7 +552,11 @@ class _MovementPageState extends ConsumerState<MovementPage> {
       reasonCode: _reasonCode,
       reason: _reasonLabels[_reasonCode],
       activity: null,
+      operationId: const Uuid().v4(),
     );
+    // Relatórios em cache ficam desatualizados depois da saída.
+    final container = ProviderScope.containerOf(context, listen: false);
+    pendingFuture.then((_) => invalidateReportCaches(container), onError: (_) {});
 
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).push(
@@ -905,34 +911,34 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: filteredProducts.length,
-                      gridDelegate: productCardGridDelegate(box.maxWidth),
+                      gridDelegate: productCardGridDelegate(box.maxWidth,
+                          textScale: MediaQuery.textScalerOf(context).scale(1)),
                       itemBuilder: (_, i) {
                           final p = filteredProducts[i];
                           final available = _availableForProduct(p.id, batches);
                           final qty = _selectedQtyByProduct[p.id] ?? 0;
 
-                          final now = DateTime.now();
                           // Crítico: lote vence em até 7 dias (mas ainda não venceu)
                           final criticalBatch = batches.any((b) =>
                               b.productId == p.id &&
                               b.status == BatchStatus.disponivel &&
                               b.expiryDate != null &&
-                              !b.expiryDate!.isBefore(now) &&
-                              b.expiryDate!.difference(now).inDays <= 7);
+                              !b.isExpired &&
+                              b.daysToExpiry <= 7);
                           // Atenção: lote vence entre 8 e 30 dias
                           final nearExpiry = batches.any((b) =>
                               b.productId == p.id &&
                               b.status == BatchStatus.disponivel &&
                               b.expiryDate != null &&
-                              !b.expiryDate!.isBefore(now) &&
-                              b.expiryDate!.difference(now).inDays > 7 &&
-                              b.expiryDate!.difference(now).inDays <= 30);
+                              !b.isExpired &&
+                              b.daysToExpiry > 7 &&
+                              b.daysToExpiry <= 30);
                           // Vencido: lote no passado
                           final expiredBatch = batches.any((b) =>
                               b.productId == p.id &&
                               b.status == BatchStatus.disponivel &&
                               b.expiryDate != null &&
-                              b.expiryDate!.isBefore(now));
+                              b.isExpired);
 
                           final mlRisk = _worstRisk(p.id, batches);
                           // Paleta + badge de validade
@@ -1127,7 +1133,7 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                       error: (e, _) => CasaEmptyState(
                         icon: Icons.error_outline_rounded,
                         title: 'Erro ao carregar receitas',
-                        description: e.toString(),
+                        description: friendlyLoadError(e),
                       ),
                     ),
                   ],
@@ -1135,10 +1141,10 @@ class _MovementPageState extends ConsumerState<MovementPage> {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Erro: $e')),
+            error: (e, _) => Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(friendlyLoadError(e), textAlign: TextAlign.center))),
           ),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Erro: $e')),
+          error: (e, _) => Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(friendlyLoadError(e), textAlign: TextAlign.center))),
         ),
       )),
       ]),

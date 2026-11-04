@@ -229,7 +229,7 @@ Future<void> seedFakeData(FakeFirebaseFirestore db, {DateTime? now}) async {
   ];
   for (var i = 0; i < locs.length; i++) {
     final (room, section, shelf, level) = locs[i];
-    await db.collection('locations').doc('loc-$i').set({
+    await db.collection('storage_locations').doc('loc-$i').set({
       'room': room,
       'section': section,
       'shelf': shelf,

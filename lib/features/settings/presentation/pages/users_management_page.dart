@@ -6,6 +6,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../controllers/system_settings_provider.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 final _keyUserCard = GlobalKey();
 final _keyUserRole = GlobalKey();
@@ -262,7 +263,7 @@ class UsersManagementPage extends ConsumerWidget {
           error: (e, _) => CasaEmptyState(
             icon: Icons.error_outline_rounded,
             title: 'Erro ao carregar usuarias',
-            description: e.toString(),
+            description: friendlyLoadError(e),
           ),
         ),
       ),

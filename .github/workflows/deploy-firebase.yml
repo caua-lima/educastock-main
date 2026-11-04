@@ -12,6 +12,11 @@ on:
           - dev
           - hml
           - prod
+      include_hosting:
+        description: 'Publicar também o site (Hosting)?'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   deploy:
@@ -30,7 +35,7 @@ jobs:
 
       - name: Install functions deps
         working-directory: functions
-        run: npm ci || npm install
+        run: npm ci
 
       - name: Build functions
         working-directory: functions
@@ -50,17 +55,24 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5'
+          flutter-version: '3.47.6'
           channel: stable
 
       - name: Flutter pub get
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
+
+      # O deploy só segue se análise e testes passarem.
+      - name: Verificações antes do deploy
+        run: |
+          flutter analyze --no-pub
+          flutter test --no-pub
+          (cd functions && node --test test/http_auth.test.js test/alerts.test.js)
 
       - name: Build app artifacts (env)
         env:
           APP_CHECK_WEB_RECAPTCHA_KEY: ${{ secrets.APP_CHECK_WEB_RECAPTCHA_KEY }}
         run: |
-          flutter build web --release \
+          flutter build web --release --no-web-resources-cdn \
             --dart-define=APP_ENV=${{ github.event.inputs.environment }} \
             --dart-define=APP_CHECK_WEB_RECAPTCHA_KEY=${APP_CHECK_WEB_RECAPTCHA_KEY}
           flutter build apk --release \
@@ -71,4 +83,8 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
           firebase use "${{ steps.project.outputs.project }}" --token "$FIREBASE_TOKEN"
-          firebase deploy --only firestore:rules,firestore:indexes,storage,functions --token "$FIREBASE_TOKEN"
+          TARGETS="firestore:rules,firestore:indexes,storage,functions"
+          if [ "${{ github.event.inputs.include_hosting }}" = "true" ]; then
+            TARGETS="$TARGETS,hosting"
+          fi
+          firebase deploy --only "$TARGETS" --token "$FIREBASE_TOKEN"

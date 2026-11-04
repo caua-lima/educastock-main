@@ -84,28 +84,34 @@ Future<void> _loadRealFonts() async {
   if (root == null) return;
   final dir = Directory('$root/bin/cache/artifacts/material_fonts');
   if (!dir.existsSync()) return;
-  Future<ByteData> bytes(String name) async =>
-      ByteData.sublistView(await File('${dir.path}/$name').readAsBytes());
+  // Usa as variações que existirem (o conjunto baixado muda entre máquinas e o CI).
+  final files = dir.listSync().whereType<File>().toList();
+  final roboto = files.where((f) {
+    final n = f.uri.pathSegments.last.toLowerCase();
+    return n.startsWith('roboto') && n.endsWith('.ttf') && !n.contains('italic');
+  }).toList();
+  final icons = files.where((f) => f.uri.pathSegments.last.toLowerCase().startsWith('materialicons'));
+  Future<ByteData> bytes(File f) async => ByteData.sublistView(await f.readAsBytes());
 
-  final families = <String>{
-    'Roboto',
-    AppTypography.fontNunito,
-    AppTypography.fontPoppins,
-    AppTypography.fontProductName,
-  };
-  for (final family in families) {
-    final loader = FontLoader(family)
-      ..addFont(bytes('roboto-regular.ttf'))
-      ..addFont(bytes('roboto-medium.ttf'))
-      ..addFont(bytes('roboto-bold.ttf'))
-      ..addFont(bytes('roboto-black.ttf'));
-    await loader.load();
+  if (roboto.isNotEmpty) {
+    for (final family in {
+      'Roboto',
+      AppTypography.fontNunito,
+      AppTypography.fontPoppins,
+      AppTypography.fontProductName,
+    }) {
+      final loader = FontLoader(family);
+      for (final f in roboto) {
+        loader.addFont(bytes(f));
+      }
+      await loader.load();
+    }
   }
-  final icons = FontLoader('MaterialIcons')..addFont(bytes('materialicons-regular.otf'));
-  await icons.load();
+  if (icons.isNotEmpty) {
+    await (FontLoader('MaterialIcons')..addFont(bytes(icons.first))).load();
+  }
 }
 
-/// Datasource de login sem Firebase Auth (e-mail já verificado).
 class _FakeAuthDatasource extends AuthRemoteDatasource {
   _FakeAuthDatasource(FakeFirebaseFirestore db) : super(firestore: db);
 
@@ -114,7 +120,8 @@ class _FakeAuthDatasource extends AuthRemoteDatasource {
 }
 
 class _TestApp extends ConsumerWidget {
-  const _TestApp();
+  final double textScale;
+  const _TestApp({this.textScale = 1.0});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -129,6 +136,10 @@ class _TestApp extends ConsumerWidget {
       ],
       supportedLocales: const [Locale('pt', 'BR')],
       routerConfig: ref.watch(routerProvider),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
     );
   }
 }
@@ -178,12 +189,27 @@ Future<void> _scrollThrough(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-Future<void> _checkRoute(WidgetTester tester, String route, AppUser? user) async {
+/// Pontos que ainda estouram com fonte em 200% (dívida registrada, não escondida).
+/// Qualquer estouro NOVO fora desta lista reprova o teste. Ao corrigir um, remova-o daqui.
+const _knownBigTextIssues = {
+  'lib/features/alerts/presentation/pages/alerts_page.dart:985', // linha hora + origem do alerta
+  'lib/features/batches/presentation/pages/batch_form_page.dart:1195', // título de seção com ícone
+  'lib/features/locations/presentation/pages/locations_page.dart:336', // cabeçalho de cômodo
+  'lib/features/products/presentation/pages/product_detail_page.dart:473', // cabeçalho expansível
+  'lib/features/products/presentation/pages/product_detail_page.dart:1476', // selos do lote
+  'lib/features/settings/presentation/pages/categories_settings_page.dart:113', // cabeçalho
+  'lib/features/settings/presentation/pages/users_management_page.dart:204', // seletor de perfil
+};
+
+Future<void> _checkRoute(WidgetTester tester, String route, AppUser? user,
+    {double textScale = 1.0, Map<String, Size> sizes = _sizes, Set<String> known = const {}}) async {
   final problems = <String>[];
   final originalOnError = FlutterError.onError;
   String currentSize = '';
   FlutterError.onError = (details) {
-    final msg = '$currentSize → ${_describe(details)}';
+    final described = _describe(details);
+    if (known.any(described.contains)) return;
+    final msg = '$currentSize → $described';
     if (!problems.contains(msg)) problems.add(msg);
   };
 
@@ -198,14 +224,15 @@ Future<void> _checkRoute(WidgetTester tester, String route, AppUser? user) async
 
   try {
     tester.view.devicePixelRatio = 1.0;
-    final first = _sizes.values.first;
+    final first = sizes.values.first;
     tester.view.physicalSize = first;
-    await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const _TestApp()));
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: container, child: _TestApp(textScale: textScale)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     container.read(routerProvider).go(route);
 
-    for (final entry in _sizes.entries) {
+    for (final entry in sizes.entries) {
       currentSize = entry.key;
       tester.view.physicalSize = entry.value;
       await tester.pump();
@@ -268,6 +295,21 @@ void main() {
   group('Doador', () {
     for (final route in _donorRoutes) {
       testWidgets('layout $route', (tester) => _checkRoute(tester, route, kDonorUser));
+    }
+  });
+
+  // Fonte do sistema ampliada a 200% (acessibilidade), sem o limite do app.
+  const bigText = {'celular 412x915': Size(412, 915), 'notebook 1366x768': Size(1366, 768)};
+  group('Fonte 200%', () {
+    for (final route in _staffRoutes) {
+      testWidgets('layout 200% $route',
+          (tester) => _checkRoute(tester, route, kAdminUser,
+              textScale: 2.0, sizes: bigText, known: _knownBigTextIssues));
+    }
+    for (final route in _donorRoutes) {
+      testWidgets('layout 200% $route',
+          (tester) => _checkRoute(tester, route, kDonorUser,
+              textScale: 2.0, sizes: bigText, known: _knownBigTextIssues));
     }
   });
 

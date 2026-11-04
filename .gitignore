@@ -57,3 +57,6 @@ node_modules/
 
 # Cache do Firebase CLI (hosting deploy)
 .firebase/
+
+# Dependências dos testes de regras
+tests/rules/node_modules/

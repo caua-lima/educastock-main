@@ -9,6 +9,7 @@ import '../../../ml/data/repositories/rule_based_risk_classifier.dart';
 import '../../../ml/domain/entities/risk_prediction.dart';
 import '../controllers/locations_provider.dart';
 import '../../domain/entities/storage_location.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 final _keyLocationFAB = GlobalKey();
 final _keyLocationsList = GlobalKey();
@@ -132,7 +133,7 @@ class LocationsPage extends ConsumerWidget {
           error: (e, _) => CasaEmptyState(
             icon: Icons.error_outline_rounded,
             title: 'Erro ao carregar',
-            description: e.toString(),
+            description: friendlyLoadError(e),
           ),
         ),
       ),
