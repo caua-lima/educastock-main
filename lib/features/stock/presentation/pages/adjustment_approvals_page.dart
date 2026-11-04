@@ -2,19 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
-import '../../data/datasources/stock_remote_datasource.dart';
+import '../controllers/stock_provider.dart';
 
 final _keyApprovalCard = GlobalKey();
 final _keyApproveBtn = GlobalKey();
 final _keyRejectBtn = GlobalKey();
 final _keyReasonBox = GlobalKey();
 
-final _stockDatasourceProvider= Provider<StockRemoteDatasource>(
-  (_) => StockRemoteDatasource(),
-);
-
 final pendingAdjustmentsProvider = StreamProvider<List<Map<String, dynamic>>>(
-  (ref) => ref.read(_stockDatasourceProvider).watchPendingAdjustmentApprovals(),
+  (ref) => ref.read(stockDatasourceProvider).watchPendingAdjustmentApprovals(),
 );
 
 class AdjustmentApprovalsPage extends ConsumerWidget {
@@ -175,7 +171,7 @@ class AdjustmentApprovalsPage extends ConsumerWidget {
                   rejectKey: i == 0 ? _keyRejectBtn : null,
                   onApprove: () async {
                     await ref
-                        .read(_stockDatasourceProvider)
+                        .read(stockDatasourceProvider)
                         .processAdjustmentApproval(
                           requestId: requestId,
                           approve: true,
@@ -189,7 +185,7 @@ class AdjustmentApprovalsPage extends ConsumerWidget {
                   },
                   onReject: () async {
                     await ref
-                        .read(_stockDatasourceProvider)
+                        .read(stockDatasourceProvider)
                         .processAdjustmentApproval(
                           requestId: requestId,
                           approve: false,
@@ -254,16 +250,15 @@ class _AdjustmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AccentStripe(
+      color: AppColors.warning600,
+      radius: AppRadius.card,
+      width: 3,
+      child: Container(
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border(
-          left: BorderSide(color: AppColors.warning600, width: 3),
-          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.35)),
-          right: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.35)),
-          bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.35)),
-        ),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
@@ -367,6 +362,7 @@ class _AdjustmentCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

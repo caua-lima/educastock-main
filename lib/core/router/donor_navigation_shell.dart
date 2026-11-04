@@ -5,6 +5,9 @@ import 'app_router.dart';
 
 /// Shell de navegação do DOADOR (RNF16): 5 abas — Início, Precisa, Doar,
 /// Doações e Perfil. Independente do `AppNavigationShell` da equipe.
+///
+/// No celular as abas ficam na barra inferior; em tablet e computador viram
+/// navegação lateral, e o conteúdo fica centralizado com largura confortável de leitura.
 class DonorNavigationShell extends StatelessWidget {
   final Widget child;
   final String location;
@@ -23,10 +26,14 @@ class DonorNavigationShell extends StatelessWidget {
     _DonorTab(Icons.person_outline_rounded, Icons.person_rounded, 'Perfil'),
   ];
 
+  /// Largura máxima do conteúdo do portal do doador (telas de leitura).
+  static const double _contentMaxWidth = 1040;
+
   int get _selectedIndex {
     if (location.startsWith(AppRoutes.donorNeeds)) return 1;
     if (location.startsWith(AppRoutes.donorDonations)) return 3;
     if (location.startsWith(AppRoutes.donorProfile)) return 4;
+    if (location.startsWith(AppRoutes.donorAssistant)) return -1;
     return 0;
   }
 
@@ -48,9 +55,52 @@ class DonorNavigationShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final width = MediaQuery.sizeOf(context).width;
     final selected = _selectedIndex;
 
+    if (width >= AppBreakpoints.rail) {
+      return Scaffold(
+        body: Row(
+          children: [
+            AdaptiveSideRail(
+              extended: width >= AppBreakpoints.expanded,
+              subtitle: 'Portal do Doador',
+              primary: [
+                for (var i = 0; i < _tabs.length; i++)
+                  RailDestination(
+                    icon: _tabs[i].icon,
+                    activeIcon: _tabs[i].activeIcon,
+                    label: i == 2 ? 'Doar agora' : _tabs[i].label,
+                    color: AppColors.brandPrimary600,
+                    selected: selected == i && i != 2,
+                    onTap: () => _onTap(context, i),
+                  ),
+              ],
+              secondary: [
+                RailDestination(
+                  icon: Icons.smart_toy_outlined,
+                  activeIcon: Icons.smart_toy_rounded,
+                  label: 'Assistente',
+                  color: AppColors.brandPrimary600,
+                  selected: location.startsWith(AppRoutes.donorAssistant),
+                  onTap: () => context.go(AppRoutes.donorAssistant),
+                ),
+              ],
+            ),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
+                  child: child,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
@@ -98,6 +148,8 @@ class DonorNavigationShell extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               tab.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: AppTypography.labelSmall.copyWith(
                                 color: i == 2 ? AppColors.brandPrimary600 : color,
                                 fontWeight:

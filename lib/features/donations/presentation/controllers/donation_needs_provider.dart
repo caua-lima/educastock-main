@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/donation_needs_datasource.dart';
 import '../../domain/entities/donation_need.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 final donationNeedsDatasourceProvider = Provider<DonationNeedsDatasource>(
-  (_) => DonationNeedsDatasource(),
+  (ref) => DonationNeedsDatasource(db: ref.watch(firestoreProvider)),
 );
 
 /// Necessidades ativas, já na ordem do servidor (prioridade e atualização).

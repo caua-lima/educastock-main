@@ -1886,19 +1886,15 @@ class _ExistingBatchCardState extends ConsumerState<_ExistingBatchCard> {
     final statusColor = _statusColor();
     final b = widget.batch;
 
-    return Container(
+    return AccentStripe(
+      color: statusColor,
+      radius: AppRadius.card + 2,
+      width: 4,
+      child: Container(
       decoration: BoxDecoration(
         color: widget.cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card + 2),
-        border: Border(
-          left: BorderSide(color: statusColor, width: 4),
-          top: BorderSide(
-              color: widget.cs.outlineVariant.withValues(alpha: 0.25)),
-          right: BorderSide(
-              color: widget.cs.outlineVariant.withValues(alpha: 0.25)),
-          bottom: BorderSide(
-              color: widget.cs.outlineVariant.withValues(alpha: 0.25)),
-        ),
+        border: Border.all(color: widget.cs.outlineVariant.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -2039,6 +2035,7 @@ class _ExistingBatchCardState extends ConsumerState<_ExistingBatchCard> {
           ),
         ],
       ),
+    ),
     );
   }
 }

@@ -1,5 +1,7 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../design_system/layout/breakpoints.dart';
 import '../../features/auth/domain/entities/app_user.dart';
 import '../../features/auth/presentation/controllers/auth_provider.dart';
 import 'app_navigation_shell.dart';
@@ -98,6 +100,11 @@ abstract class AppRoutes {
           : Uri(path: donorDonate, queryParameters: {'needId': needId}).toString();
 }
 
+/// Em telas largas, formulários e telas de leitura ficam centralizados com largura
+/// confortável (no celular não muda nada). Ver [ResponsivePageFrame].
+Widget _framed(Widget page, [double maxWidth = AppBreakpoints.formMaxWidth]) =>
+    ResponsivePageFrame(maxWidth: maxWidth, child: page);
+
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authStateProvider);
   ref.watch(pendingOtpProvider);
@@ -168,13 +175,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       // não-shell (erro: '!keyReservation.contains(key)': is not true).
       GoRoute(
         path: AppRoutes.scanner,
-        builder: (_, __) => const ScannerPage(),
+        builder: (_, __) => _framed(const ScannerPage(), 960),
       ),
       GoRoute(
         path: AppRoutes.productReview,
         builder: (_, state) {
           final barcode = state.uri.queryParameters['barcode'] ?? '';
-          return ProductReviewPage(barcode: barcode);
+          return _framed(ProductReviewPage(barcode: barcode));
         },
       ),
       // productForm e batchForm também fora do ShellRoute: são formulários
@@ -193,7 +200,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           final prefillUnit = state.uri.queryParameters['unit'];
           final prefillUnitSize = state.uri.queryParameters['unitSize'];
           final prefillDescription = state.uri.queryParameters['desc'];
-          return ProductFormPage(
+          return _framed(ProductFormPage(
             productId: productId,
             barcode: barcode,
             prefillName: prefillName,
@@ -204,7 +211,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             prefillUnit: prefillUnit,
             prefillUnitSize: prefillUnitSize,
             prefillDescription: prefillDescription,
-          );
+          ));
         },
       ),
       GoRoute(
@@ -212,25 +219,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final productId = state.uri.queryParameters['productId'] ?? '';
           final batchId = state.uri.queryParameters['id'] ?? '';
-          return BatchFormPage(productId: productId, batchId: batchId);
+          return _framed(BatchFormPage(productId: productId, batchId: batchId));
         },
       ),
       // Formulário de doação (D06–D07): tela cheia, fora de qualquer shell.
       GoRoute(
         path: AppRoutes.donorDonate,
         builder: (_, state) =>
-            DonationFormPage(needId: state.uri.queryParameters['needId']),
+            _framed(DonationFormPage(needId: state.uri.queryParameters['needId'])),
       ),
       // Telas de decisão e recebimento da equipe (S02, S03): tela cheia, sem TabBar.
       GoRoute(
         path: AppRoutes.opsDonationDetail,
         builder: (_, state) =>
-            DonationReviewPage(donationId: state.pathParameters['id'] ?? ''),
+            _framed(DonationReviewPage(donationId: state.pathParameters['id'] ?? ''), 960),
       ),
       GoRoute(
         path: AppRoutes.opsDonationReceive,
         builder: (_, state) =>
-            DonationReceivePage(donationId: state.pathParameters['id'] ?? ''),
+            _framed(DonationReceivePage(donationId: state.pathParameters['id'] ?? ''), 960),
       ),
       ShellRoute(
         builder: (context, state, child) {
@@ -252,7 +259,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.productDetail,
             builder: (_, state) {
               final id = state.pathParameters['id'] ?? '';
-              return ProductDetailPage(productId: id);
+              return _framed(ProductDetailPage(productId: id), 1100);
             },
           ),
           GoRoute(
@@ -270,7 +277,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.adjustmentApprovals,
-            builder: (_, __) => const AdjustmentApprovalsPage(),
+            builder: (_, __) => _framed(const AdjustmentApprovalsPage(), 1000),
           ),
           GoRoute(
             path: AppRoutes.alerts,
@@ -278,7 +285,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.audit,
-            builder: (_, __) => const AuditPage(),
+            builder: (_, __) => _framed(const AuditPage(), 1100),
           ),
           GoRoute(
             path: AppRoutes.reports,
@@ -286,7 +293,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.settings,
-            builder: (_, __) => const SettingsPage(),
+            builder: (_, __) => _framed(const SettingsPage()),
           ),
           GoRoute(
             path: AppRoutes.locations,
@@ -294,19 +301,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.locationCreate,
-            builder: (_, __) => const LocationCreatePage(),
+            builder: (_, __) => _framed(const LocationCreatePage()),
           ),
           GoRoute(
             path: AppRoutes.usersManagement,
-            builder: (_, __) => const UsersManagementPage(),
+            builder: (_, __) => _framed(const UsersManagementPage(), 1000),
           ),
           GoRoute(
             path: AppRoutes.categoriesSettings,
-            builder: (_, __) => const CategoriesSettingsPage(),
+            builder: (_, __) => _framed(const CategoriesSettingsPage()),
           ),
           GoRoute(
             path: AppRoutes.alertsSettings,
-            builder: (_, __) => const AlertsSettingsPage(),
+            builder: (_, __) => _framed(const AlertsSettingsPage()),
           ),
           GoRoute(
             path: AppRoutes.mlInsights,
@@ -324,7 +331,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.recipeCreate,
             builder: (context, state) {
               final recipe = state.extra as StockRecipe?;
-              return RecipeCreatePage(editRecipe: recipe);
+              return _framed(RecipeCreatePage(editRecipe: recipe));
             },
           ),
           GoRoute(

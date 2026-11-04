@@ -58,7 +58,14 @@ class CasaButton extends StatelessWidget {
                 Icon(icon, size: 20),
                 const SizedBox(width: AppSpacing.sm),
               ],
-              Text(label, style: AppTypography.buttonLarge),
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppTypography.buttonLarge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           );
 

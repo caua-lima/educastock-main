@@ -5,9 +5,10 @@ import '../../domain/entities/donation.dart';
 import '../../domain/entities/donation_point.dart';
 import '../../domain/entities/donation_rules.dart';
 import '../../domain/entities/donation_status.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 final donationsDatasourceProvider = Provider<DonationsRemoteDatasource>(
-  (_) => DonationsRemoteDatasource(),
+  (ref) => DonationsRemoteDatasource(db: ref.watch(firestoreProvider)),
 );
 
 /// Doações do doador logado (`donorId == auth.uid`), mais recentes primeiro.

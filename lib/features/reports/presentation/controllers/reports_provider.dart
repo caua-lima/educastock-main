@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../stock/domain/entities/stock_movement.dart';
-import '../../../stock/presentation/pages/movement_page.dart';
+import '../../../stock/presentation/controllers/stock_provider.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 // ---------- Modelos de relatório ----------
 
@@ -125,7 +126,7 @@ class ReportsRemoteDatasource {
 // ---------- Providers ----------
 
 final reportsDatasourceProvider = Provider<ReportsRemoteDatasource>(
-  (_) => ReportsRemoteDatasource(),
+  (ref) => ReportsRemoteDatasource(firestore: ref.watch(firestoreProvider)),
 );
 
 /// Tempo em que um relatório já calculado é reaproveitado antes de nova leitura.

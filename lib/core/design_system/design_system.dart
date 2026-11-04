@@ -23,3 +23,6 @@ export 'components/expiry_ocr_button.dart';
 export 'components/casa_tutorial.dart';
 export 'components/tip_card.dart';
 export 'components/responsive_body.dart';
+export 'components/adaptive_side_rail.dart';
+export 'components/accent_stripe.dart';
+export 'layout/breakpoints.dart';

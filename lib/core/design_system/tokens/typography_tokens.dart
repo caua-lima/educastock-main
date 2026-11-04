@@ -8,6 +8,14 @@ abstract class AppTypography {
   // Nunito Sans — textos, formulários, números
   static const String fontNunito = 'NunitoSans';
 
+  /// Família usada quando o download do Google Fonts está desligado (testes).
+  static const String fontProductName = 'PlusJakartaSans';
+
+  /// Os testes não têm internet para baixar a fonte: desligam isto e registram a família
+  /// [fontProductName] localmente. No app fica sempre ligado.
+  @visibleForTesting
+  static bool useGoogleFonts = true;
+
   /// Fonte distinta para NOMES DE PRODUTOS — usada em todas as áreas
   /// que listam produtos (Estoque, Saída, Receita, etc).
   /// Plus Jakarta Sans é moderna, com bom peso visual e excelente leitura.
@@ -18,13 +26,15 @@ abstract class AppTypography {
     double height = 1.15,
     double letterSpacing = -0.2,
   }) {
-    return GoogleFonts.plusJakartaSans(
+    final style = TextStyle(
       fontSize: size,
       fontWeight: weight,
       color: color,
       height: height,
       letterSpacing: letterSpacing,
     );
+    if (!useGoogleFonts) return style.copyWith(fontFamily: fontProductName);
+    return GoogleFonts.plusJakartaSans(textStyle: style);
   }
 
   // Display

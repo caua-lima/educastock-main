@@ -1,52 +1,41 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../../core/design_system/design_system.dart';
+import '../../../../core/export/export_sheet.dart';
+import '../../../../core/export/report_table.dart';
 import '../../../ml/domain/entities/risk_prediction.dart';
 import '../../../ml/presentation/controllers/risk_classifier_provider.dart';
-import '../../../stock/presentation/pages/movement_page.dart';
+import '../../../stock/presentation/controllers/stock_provider.dart';
 
 final auditLogsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
   return ref.watch(stockDatasourceProvider).watchAuditLogs(limit: 100);
 });
 
-Future<void> _exportAuditCsv(
-    BuildContext context, List<Map<String, dynamic>> logs) async {
-  final buffer = StringBuffer();
-  buffer.writeln('Data,Hora,Ação,Usuário,Antes,Depois');
+/// Monta a tabela da auditoria (já filtrada) para exportar em PDF, Excel ou CSV.
+/// Antes gravava um arquivo temporário com `dart:io`, o que não funciona na web.
+ReportTable _auditTable(List<Map<String, dynamic>> logs) {
   final fmt = DateFormat('dd/MM/yyyy');
   final fmtTime = DateFormat('HH:mm');
+  final rows = <List<String>>[];
   for (final log in logs) {
-    final action = log['action'] as String? ?? '';
-    final performedAt = log['performedAt'] as String? ?? '';
-    DateTime? date;
-    try {
-      date = DateTime.parse(performedAt);
-    } catch (_) {}
-    final user = log['performedByName'] as String? ?? '';
-    final before =
-        log['before']?.toString().replaceAll('"', '""') ?? '';
-    final after =
-        log['after']?.toString().replaceAll('"', '""') ?? '';
-    buffer.writeln([
-      '"${date != null ? fmt.format(date) : ''}"',
-      '"${date != null ? fmtTime.format(date) : ''}"',
-      '"$action"',
-      '"$user"',
-      '"$before"',
-      '"$after"',
-    ].join(','));
+    final date = DateTime.tryParse(log['performedAt'] as String? ?? '');
+    rows.add([
+      date != null ? fmt.format(date) : '',
+      date != null ? fmtTime.format(date) : '',
+      log['action'] as String? ?? '',
+      log['performedByName'] as String? ?? '',
+      log['before']?.toString() ?? '',
+      log['after']?.toString() ?? '',
+    ]);
   }
-  final dir = await getTemporaryDirectory();
-  final file = File(
-      '${dir.path}/auditoria_${DateTime.now().millisecondsSinceEpoch}.csv');
-  await file.writeAsString(buffer.toString());
-  await Share.shareXFiles(
-      [XFile(file.path, mimeType: 'text/csv')],
-      text: 'Auditoria EducaStock');
+  return ReportTable(
+    title: 'Auditoria',
+    subtitle: 'Registro de ações no estoque',
+    summary: {'Registros': '${logs.length}'},
+    headers: const ['Data', 'Hora', 'Ação', 'Usuário', 'Antes', 'Depois'],
+    rows: rows,
+  );
 }
 
 class AuditPage extends ConsumerStatefulWidget {
@@ -376,7 +365,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
               key: _keyExportBtn,
               icon: const Icon(Icons.download_rounded),
               tooltip: 'Exportar CSV',
-              onPressed: () => _exportAuditCsv(context, filtered),
+              onPressed: () => showExportSheet(context, loader: () async => _auditTable(filtered)),
             );
           }).valueOrNull ??
               const SizedBox.shrink(),
@@ -505,19 +494,15 @@ class _AuditLogTile extends StatelessWidget {
       _ => AppColors.neutral500,
     };
 
-    return Container(
+    return AccentStripe(
+      color: color,
+      radius: AppRadius.card,
+      width: 3,
+      child: Container(
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border(
-          left: BorderSide(color: color, width: 3),
-          top: BorderSide(
-              color: cs.outlineVariant.withValues(alpha: 0.35)),
-          right: BorderSide(
-              color: cs.outlineVariant.withValues(alpha: 0.35)),
-          bottom: BorderSide(
-              color: cs.outlineVariant.withValues(alpha: 0.35)),
-        ),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -592,6 +577,7 @@ class _AuditLogTile extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

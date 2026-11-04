@@ -7,6 +7,7 @@ import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../data/datasources/alert_checker_service.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 // ---------- Entidade ----------
 
@@ -63,7 +64,11 @@ class StockAlert {
 // ---------- Datasource ----------
 
 class AlertsRemoteDatasource {
-  final _col = FirebaseFirestore.instance.collection('alerts');
+  final FirebaseFirestore _db;
+
+  AlertsRemoteDatasource({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
+
+  CollectionReference<Map<String, dynamic>> get _col => _db.collection('alerts');
 
   Stream<List<StockAlert>> watchActiveAlerts() {
     return _col
@@ -81,7 +86,7 @@ class AlertsRemoteDatasource {
   }
 
   Future<void> resolveMany(Iterable<String> ids) async {
-    final batch = FirebaseFirestore.instance.batch();
+    final batch = _db.batch();
     for (final id in ids) {
       batch.update(_col.doc(id), {'resolved': true});
     }
@@ -118,7 +123,7 @@ class AlertsRemoteDatasource {
 // ---------- Providers ----------
 
 final alertsDatasourceProvider = Provider<AlertsRemoteDatasource>(
-  (_) => AlertsRemoteDatasource(),
+  (ref) => AlertsRemoteDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final activeAlertsProvider = StreamProvider<List<StockAlert>>((ref) {

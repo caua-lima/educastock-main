@@ -5,11 +5,13 @@ import '../../domain/entities/product.dart';
 
 class ProductsRemoteDatasource {
   final FirebaseFirestore _db;
-  final FirebaseStorage _storage;
+  final FirebaseStorage? _storageOverride;
+
+  FirebaseStorage get _storage => _storageOverride ?? FirebaseStorage.instance;
 
   ProductsRemoteDatasource({FirebaseFirestore? db, FirebaseStorage? storage})
       : _db = db ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+        _storageOverride = storage;
 
   CollectionReference get _col => _db.collection('products');
 

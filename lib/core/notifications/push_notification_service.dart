@@ -8,10 +8,13 @@ import '../../features/auth/domain/entities/app_user.dart';
 import '../../features/auth/presentation/controllers/auth_provider.dart';
 import '../../features/settings/presentation/controllers/system_settings_provider.dart';
 import '../router/app_router.dart';
+import '../firebase/firebase_providers.dart';
 
 class PushNotificationService {
-  final FirebaseMessaging _messaging;
+  final FirebaseMessaging? _messagingOverride;
   final FirebaseFirestore _firestore;
+
+  FirebaseMessaging get _messaging => _messagingOverride ?? FirebaseMessaging.instance;
 
   bool _permissionRequested = false;
   bool _navigationBound = false;
@@ -24,7 +27,7 @@ class PushNotificationService {
   PushNotificationService({
     FirebaseMessaging? messaging,
     FirebaseFirestore? firestore,
-  })  : _messaging = messaging ?? FirebaseMessaging.instance,
+  })  : _messagingOverride = messaging,
         _firestore = firestore ?? FirebaseFirestore.instance;
 
   void updateAlertsConfig(AlertsConfig config) {
@@ -131,7 +134,7 @@ class PushNotificationService {
 }
 
 final pushNotificationServiceProvider = Provider<PushNotificationService>(
-  (_) => PushNotificationService(),
+  (ref) => PushNotificationService(firestore: ref.watch(firestoreProvider)),
 );
 
 final pushNotificationsBootstrapProvider = Provider<void>((ref) {

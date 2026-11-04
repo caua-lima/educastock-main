@@ -16,6 +16,7 @@ import '../../../recipes/domain/entities/stock_recipe.dart';
 import '../../../recipes/presentation/controllers/recipes_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../data/datasources/stock_remote_datasource.dart';
+import '../controllers/stock_provider.dart';
 import '../../domain/entities/stock_movement.dart';
 import 'output_view_page.dart';
 
@@ -85,10 +86,6 @@ IconData _categoryIcon(ProductCategory cat) => switch (cat) {
       ProductCategory.roupas => Icons.checkroom_rounded,
       ProductCategory.outro => Icons.category_rounded,
     };
-
-final stockDatasourceProvider = Provider<StockRemoteDatasource>(
-  (_) => StockRemoteDatasource(),
-);
 
 class MovementPage extends ConsumerStatefulWidget {
   final String batchId;
@@ -904,16 +901,11 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                       ),
                     )
                   else if (_mode == _OutputMode.products) ...[
-                    GridView.builder(
+                    LayoutBuilder(builder: (context, box) => GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: filteredProducts.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 14,
-                        crossAxisSpacing: 14,
-                        childAspectRatio: 0.82,
-                      ),
+                      gridDelegate: productCardGridDelegate(box.maxWidth),
                       itemBuilder: (_, i) {
                           final p = filteredProducts[i];
                           final available = _availableForProduct(p.id, batches);
@@ -1030,7 +1022,7 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                           }
                           return card;
                         },
-                      ),
+                      )),
                   ] else ...[
                     recipesAsync.when(
                       data: (recipes) {

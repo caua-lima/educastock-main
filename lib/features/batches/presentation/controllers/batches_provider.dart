@@ -2,9 +2,10 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/batches_remote_datasource.dart';
 import '../../domain/entities/batch.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 final batchesDatasourceProvider = Provider<BatchesRemoteDatasource>(
-  (_) => BatchesRemoteDatasource(),
+  (ref) => BatchesRemoteDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final batchesByProductProvider =

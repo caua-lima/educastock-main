@@ -149,27 +149,15 @@ class CategoriesSettingsPage extends ConsumerWidget {
                   return Padding(
                     key: idx == 0 ? _keyCategoryList : null,
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: Container(
+                    child: AccentStripe(
+      color: item.isActive ? AppColors.brandPrimary600 : cs.outlineVariant,
+      radius: AppRadius.card,
+      width: 3,
+      child: Container(
                       decoration: BoxDecoration(
                         color: cs.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border(
-                          left: BorderSide(
-                            color: item.isActive
-                                ? AppColors.brandPrimary600
-                                : cs.outlineVariant,
-                            width: 3,
-                          ),
-                          top: BorderSide(
-                              color: cs.outlineVariant
-                                  .withValues(alpha: 0.35)),
-                          right: BorderSide(
-                              color: cs.outlineVariant
-                                  .withValues(alpha: 0.35)),
-                          bottom: BorderSide(
-                              color: cs.outlineVariant
-                                  .withValues(alpha: 0.35)),
-                        ),
+                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
                         boxShadow: [
                           BoxShadow(
                               color: Colors.black.withValues(alpha: 0.03),
@@ -239,6 +227,7 @@ class CategoriesSettingsPage extends ConsumerWidget {
                         ],
                       ),
                     ),
+    ),
                   );
                 }),
               ],

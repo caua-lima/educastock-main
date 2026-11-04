@@ -561,18 +561,18 @@ class _GridSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      child: GridView.builder(
+      child: LayoutBuilder(builder: (context, box) => GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: box.maxWidth >= 900 ? 5 : (box.maxWidth >= 620 ? 4 : 3),
           mainAxisSpacing: AppSpacing.xs,
           crossAxisSpacing: AppSpacing.xs,
           childAspectRatio: 0.78,
         ),
         itemCount: 6,
         itemBuilder: (_, __) => const CasaCardSkeleton(),
-      ),
+      )),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 // ---------- Entidade ----------
 
@@ -41,7 +42,11 @@ class AuditEntry {
 // ---------- Datasource ----------
 
 class AuditRemoteDatasource {
-  final _col = FirebaseFirestore.instance.collection('audit_logs');
+  final FirebaseFirestore _db;
+
+  AuditRemoteDatasource({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
+
+  CollectionReference<Map<String, dynamic>> get _col => _db.collection('audit_logs');
 
   Stream<List<AuditEntry>> watchAuditLogs({int limit = 100}) {
     return _col
@@ -68,7 +73,7 @@ class AuditRemoteDatasource {
 // ---------- Providers ----------
 
 final auditDatasourceProvider = Provider<AuditRemoteDatasource>(
-  (_) => AuditRemoteDatasource(),
+  (ref) => AuditRemoteDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final auditLogsProvider = StreamProvider<List<AuditEntry>>((ref) {

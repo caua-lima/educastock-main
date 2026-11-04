@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/locations_remote_datasource.dart';
 import '../../domain/entities/storage_location.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 final locationsDatasourceProvider = Provider<LocationsRemoteDatasource>(
-  (_) => LocationsRemoteDatasource(),
+  (ref) => LocationsRemoteDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final activeLocationsProvider = StreamProvider<List<StorageLocation>>((ref) {

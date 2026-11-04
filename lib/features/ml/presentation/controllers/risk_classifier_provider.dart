@@ -4,6 +4,7 @@ import '../../data/repositories/rule_based_risk_classifier.dart';
 import '../../data/repositories/risk_classification_firestore_repository.dart';
 import '../../../../features/batches/domain/entities/batch.dart';
 import '../../../../features/batches/presentation/controllers/batches_provider.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Repositório do Firestore (singleton)
@@ -19,7 +20,7 @@ import '../../../../features/batches/presentation/controllers/batches_provider.d
 
 final riskClassificationRepoProvider =
     Provider<RiskClassificationFirestoreRepository>(
-  (ref) => RiskClassificationFirestoreRepository(),
+  (ref) => RiskClassificationFirestoreRepository(db: ref.watch(firestoreProvider)),
 );
 
 final _ruleFallbackProvider = Provider<RuleBasedRiskClassifier>(

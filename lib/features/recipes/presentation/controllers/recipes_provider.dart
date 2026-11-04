@@ -2,9 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../data/datasources/recipes_remote_datasource.dart';
 import '../../domain/entities/stock_recipe.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 final recipesDatasourceProvider = Provider<RecipesRemoteDatasource>(
-  (_) => RecipesRemoteDatasource(),
+  (ref) => RecipesRemoteDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final recipesProvider = StreamProvider<List<StockRecipe>>((ref) {

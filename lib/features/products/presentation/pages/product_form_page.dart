@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -60,7 +60,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
   int _minimumStock = 0;
   DateTime? _originalCreatedAt;
   String? _originalCreatedBy;
-  File? _imageFile;
+  /// Foto escolhida (bytes): funciona igual na web, no Android e no iOS.
+  Uint8List? _imageBytes;
   String? _existingImageUrl;
   final _imagePicker = ImagePicker();
 
@@ -212,9 +213,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
     if (user == null) return;
 
     String? imageUrl = _existingImageUrl;
-    if (_imageFile != null) {
-      final bytes = await _imageFile!.readAsBytes();
-      imageUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    if (_imageBytes != null) {
+      imageUrl = 'data:image/jpeg;base64,${base64Encode(_imageBytes!)}';
     }
 
     final product = Product(
@@ -576,7 +576,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                               : cs.outlineVariant.withValues(alpha: 0.4),
                         ),
                       ),
-                      child: SwitchListTile(
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: SwitchListTile(
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
                           vertical: AppSpacing.xs,
@@ -618,6 +620,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                         value: _isPerishable,
                         onChanged: (v) => setState(() => _isPerishable = v),
                         activeThumbColor: AppColors.warning600,
+                      ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -744,9 +747,16 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                 title: 'Foto do Produto',
                 iconColor: AppColors.brandPrimary600,
                 child: _ProductImagePicker(
-                  imageFile: _imageFile,
+                  imageBytes: _imageBytes,
                   existingImageUrl: _existingImageUrl,
                   cs: cs,
+                  suggestions: _internetImages,
+                  searchingSuggestions: _isSearchingImages,
+                  searchedSuggestions: _hasSearchedImages,
+                  onUseSuggestion: (url) => setState(() {
+                    _imageBytes = null;
+                    _existingImageUrl = url;
+                  }),
                   onPickCamera: () async {
                     final picked = await _imagePicker.pickImage(
                       source: ImageSource.camera,
@@ -754,9 +764,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                       maxWidth: 600,
                       maxHeight: 600,
                     );
-                    if (picked != null && mounted) {
-                      setState(() => _imageFile = File(picked.path));
-                    }
+                    if (picked == null) return;
+                    final bytes = await picked.readAsBytes();
+                    if (mounted) setState(() => _imageBytes = bytes);
                   },
                   onPickGallery: () async {
                     final picked = await _imagePicker.pickImage(
@@ -765,12 +775,12 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                       maxWidth: 600,
                       maxHeight: 600,
                     );
-                    if (picked != null && mounted) {
-                      setState(() => _imageFile = File(picked.path));
-                    }
+                    if (picked == null) return;
+                    final bytes = await picked.readAsBytes();
+                    if (mounted) setState(() => _imageBytes = bytes);
                   },
                   onRemove: () => setState(() {
-                    _imageFile = null;
+                    _imageBytes = null;
                     _existingImageUrl = null;
                   }),
                 ),
@@ -869,30 +879,40 @@ class _SaveBar extends StatelessWidget {
 // ─── Seletor de imagem do produto ─────────────────────────────────────────
 
 class _ProductImagePicker extends StatelessWidget {
-  final File? imageFile;
+  final Uint8List? imageBytes;
   final String? existingImageUrl;
   final ColorScheme cs;
   final VoidCallback onPickCamera;
   final VoidCallback onPickGallery;
   final VoidCallback onRemove;
 
+  /// Fotos encontradas no Open Food Facts pelo nome/código do produto.
+  final List<String> suggestions;
+  final bool searchingSuggestions;
+  final bool searchedSuggestions;
+  final ValueChanged<String> onUseSuggestion;
+
   const _ProductImagePicker({
-    required this.imageFile,
+    required this.imageBytes,
     required this.existingImageUrl,
     required this.cs,
     required this.onPickCamera,
     required this.onPickGallery,
     required this.onRemove,
+    required this.suggestions,
+    required this.searchingSuggestions,
+    required this.searchedSuggestions,
+    required this.onUseSuggestion,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = imageFile != null || existingImageUrl != null;
+    final hasImage = imageBytes != null || existingImageUrl != null;
 
     if (hasImage) {
       Widget imageWidget;
-      if (imageFile != null) {
-        imageWidget = Image.file(imageFile!,
+      if (imageBytes != null) {
+        imageWidget = Image.memory(imageBytes!,
             height: 180, width: double.infinity, fit: BoxFit.cover);
       } else if (existingImageUrl!.startsWith('data:')) {
         final base64Str = existingImageUrl!.split(',').last;
@@ -989,8 +1009,86 @@ class _ProductImagePicker extends StatelessWidget {
               ),
             ],
           ),
+          if (searchingSuggestions || suggestions.isNotEmpty || searchedSuggestions) ...[
+            const SizedBox(height: AppSpacing.md),
+            _ImageSuggestions(
+              urls: suggestions,
+              searching: searchingSuggestions,
+              onPick: onUseSuggestion,
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// Faixa com fotos sugeridas (Open Food Facts). Um toque usa a foto no produto.
+class _ImageSuggestions extends StatelessWidget {
+  final List<String> urls;
+  final bool searching;
+  final ValueChanged<String> onPick;
+
+  const _ImageSuggestions({
+    required this.urls,
+    required this.searching,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final caption = AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant, fontSize: 12);
+    if (searching && urls.isEmpty) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(child: Text('Procurando fotos do produto…', style: caption)),
+        ],
+      );
+    }
+    if (urls.isEmpty) {
+      return Text('Nenhuma foto encontrada para este nome.', style: caption, textAlign: TextAlign.center);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Sugestões da internet — toque para usar', style: caption),
+        const SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          height: 72,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: urls.length.clamp(0, 8),
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+            itemBuilder: (_, i) => Semantics(
+              button: true,
+              label: 'Usar foto sugerida ${i + 1}',
+              child: InkWell(
+                onTap: () => onPick(urls[i]),
+                borderRadius: BorderRadius.circular(10),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    urls[i],
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 72,
+                      height: 72,
+                      color: cs.surfaceContainerHigh,
+                      child: Icon(Icons.broken_image_outlined, color: cs.onSurfaceVariant),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1002,14 +1100,11 @@ class _FormSection extends StatelessWidget {
   final String title;
   final Color iconColor;
   final Widget child;
-  final GlobalKey? sectionKey;
-
   const _FormSection({
     required this.icon,
     required this.title,
     required this.iconColor,
     required this.child,
-    this.sectionKey,
   });
 
   @override
@@ -1017,7 +1112,6 @@ class _FormSection extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      key: sectionKey,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLowest,

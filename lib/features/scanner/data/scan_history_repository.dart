@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/firebase/firebase_providers.dart';
 
 /// Item do histórico de códigos (escaneados ou digitados).
 class ScanHistoryItem {
@@ -31,11 +32,13 @@ class ScanHistoryItem {
 /// Subcoleção + orderBy num único campo dispensa índice composto.
 class ScanHistoryRepository {
   final FirebaseFirestore _db;
-  final FirebaseAuth _auth;
+  final FirebaseAuth? _authOverride;
+
+  FirebaseAuth get _auth => _authOverride ?? FirebaseAuth.instance;
 
   ScanHistoryRepository({FirebaseFirestore? db, FirebaseAuth? auth})
       : _db = db ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+        _authOverride = auth;
 
   static const _maxItems = 12;
 
@@ -129,7 +132,7 @@ class ScanHistoryRepository {
 }
 
 final scanHistoryRepositoryProvider = Provider<ScanHistoryRepository>(
-  (_) => ScanHistoryRepository(),
+  (ref) => ScanHistoryRepository(db: ref.watch(firestoreProvider)),
 );
 
 /// Stream dos códigos recentes — usado para exibir os chips no modal.

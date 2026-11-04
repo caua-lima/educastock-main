@@ -2,9 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../data/datasources/donor_profile_datasource.dart';
 import '../../domain/entities/donor_profile.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 final donorProfileDatasourceProvider = Provider<DonorProfileDatasource>(
-  (_) => DonorProfileDatasource(),
+  (ref) => DonorProfileDatasource(db: ref.watch(firestoreProvider)),
 );
 
 /// Perfil do doador logado (null enquanto não existe `donors/{uid}`).

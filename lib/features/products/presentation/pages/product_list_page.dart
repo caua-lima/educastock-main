@@ -657,8 +657,8 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                     padding: const EdgeInsets.fromLTRB(AppSpacing.md,
                         AppSpacing.xs, AppSpacing.md, AppSpacing.xxxl),
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 240,
                       mainAxisSpacing: AppSpacing.md,
                       crossAxisSpacing: AppSpacing.md,
                       childAspectRatio: 0.92,
@@ -689,8 +689,8 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                 loading: () => GridView.builder(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                      const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 240,
                     mainAxisSpacing: AppSpacing.md,
                     crossAxisSpacing: AppSpacing.md,
                     childAspectRatio: 0.92,

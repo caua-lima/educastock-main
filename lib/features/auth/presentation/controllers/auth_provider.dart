@@ -2,9 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../donations/domain/entities/donor_profile.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../domain/entities/app_user.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 final authDatasourceProvider = Provider<AuthRemoteDatasource>(
-  (_) => AuthRemoteDatasource(),
+  (ref) => AuthRemoteDatasource(firestore: ref.watch(firestoreProvider)),
 );
 
 final authStateProvider = StreamProvider<AppUser?>((ref) async* {

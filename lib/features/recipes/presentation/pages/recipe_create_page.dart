@@ -362,13 +362,8 @@ class _RecipeCreatePageState extends ConsumerState<RecipeCreatePage>
                                 ),
                               ),
                             )
-                          : SliverGrid(
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 14,
-                                crossAxisSpacing: 14,
-                                childAspectRatio: 0.82,
-                              ),
+                          : SliverLayoutBuilder(builder: (context, box) => SliverGrid(
+                              gridDelegate: productCardGridDelegate(box.crossAxisExtent),
                               delegate: SliverChildBuilderDelegate(
                                 (context, i) {
                                   final p = filtered[i];
@@ -409,7 +404,7 @@ class _RecipeCreatePageState extends ConsumerState<RecipeCreatePage>
                                 },
                                 childCount: filtered.length,
                               ),
-                            ),
+                            )),
                     ),
                   ],
                 ),

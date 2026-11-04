@@ -14,7 +14,7 @@ import '../../../products/presentation/controllers/products_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../../ml/presentation/widgets/risk_widgets.dart';
 import '../../../stock/domain/entities/stock_movement.dart';
-import '../../../stock/presentation/pages/movement_page.dart' show stockDatasourceProvider;
+import '../../../stock/presentation/controllers/stock_provider.dart' show stockDatasourceProvider;
 import '../../domain/entities/batch.dart';
 import '../controllers/batches_provider.dart';
 
@@ -974,15 +974,22 @@ class _QuantityRow extends StatelessWidget {
         border: Border.all(
             color: cs.outlineVariant.withValues(alpha: 0.4)),
       ),
-      child: Row(
+      child: LayoutBuilder(builder: (context, box) {
+      // Em telas estreitas os atalhos +5/+10/+20 somem (os botões − e + continuam).
+      final showQuickAdd = box.maxWidth >= 330;
+      return Row(
         children: [
           const Icon(Icons.inventory_rounded,
               size: 18, color: AppColors.brandPrimary600),
           const SizedBox(width: AppSpacing.sm),
-          Text('Quantidade',
-              style: AppTypography.labelMedium
-                  .copyWith(color: cs.onSurface)),
-          const Spacer(),
+          Expanded(
+            child: Text('Quantidade',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.labelMedium
+                    .copyWith(color: cs.onSurface)),
+          ),
+          if (showQuickAdd)
           for (final add in [5, 10, 20])
             GestureDetector(
               onTap: () => onAdd(add),
@@ -1025,7 +1032,8 @@ class _QuantityRow extends StatelessWidget {
               enabled: true,
               onTap: onIncrement),
         ],
-      ),
+      );
+      }),
     );
   }
 }

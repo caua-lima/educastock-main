@@ -2,9 +2,10 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/products_remote_datasource.dart';
 import '../../domain/entities/product.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 final productsDatasourceProvider = Provider<ProductsRemoteDatasource>(
-  (_) => ProductsRemoteDatasource(),
+  (ref) => ProductsRemoteDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final productsProvider = StreamProvider<List<Product>>((ref) {
@@ -52,28 +53,28 @@ final productFormProvider =
 
 // ─── CSV Batch Import ─────────────────────────────────────────────────────────
 
-class _CsvImportState {
+class CsvImportState {
   final bool loading;
   final int total;
   final int done;
   final String? error;
   final bool success;
 
-  const _CsvImportState({
+  const CsvImportState({
     this.loading = false,
     this.total = 0,
     this.done = 0,
     this.error,
     this.success = false,
   });
-  _CsvImportState copyWith({
+  CsvImportState copyWith({
     bool? loading,
     int? total,
     int? done,
     String? error,
     bool? success,
   }) =>
-      _CsvImportState(
+      CsvImportState(
         loading: loading ?? this.loading,
         total: total ?? this.total,
         done: done ?? this.done,
@@ -82,12 +83,12 @@ class _CsvImportState {
       );
 }
 
-class CsvImportNotifier extends Notifier<_CsvImportState> {
+class CsvImportNotifier extends Notifier<CsvImportState> {
   @override
-  _CsvImportState build() => const _CsvImportState();
+  CsvImportState build() => const CsvImportState();
 
   Future<int> importFromCsvString(String csvContent, String createdBy) async {
-    state = const _CsvImportState(loading: true);
+    state = const CsvImportState(loading: true);
     try {
       final lines = csvContent
           .split('\n')
@@ -143,7 +144,7 @@ class CsvImportNotifier extends Notifier<_CsvImportState> {
       final ds = ref.read(productsDatasourceProvider);
       await ds.batchCreateProducts(products);
 
-      state = _CsvImportState(
+      state = CsvImportState(
           loading: false, total: products.length, done: products.length, success: true);
       return products.length;
     } catch (e) {
@@ -152,7 +153,7 @@ class CsvImportNotifier extends Notifier<_CsvImportState> {
     }
   }
 
-  void reset() => state = const _CsvImportState();
+  void reset() => state = const CsvImportState();
 
   static List<String> _splitCsvLine(String line) {
     final result = <String>[];
@@ -203,5 +204,5 @@ class CsvImportNotifier extends Notifier<_CsvImportState> {
 }
 
 final csvImportProvider =
-    NotifierProvider<CsvImportNotifier, _CsvImportState>(
+    NotifierProvider<CsvImportNotifier, CsvImportState>(
         () => CsvImportNotifier());

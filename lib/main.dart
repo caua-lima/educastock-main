@@ -69,11 +69,17 @@ class EducaStockApp extends ConsumerWidget {
       ],
       scrollBehavior: const _CasaScrollBehavior(),
       routerConfig: router,
-      builder: (context, child) => Column(
-        children: [
-          const OfflineBanner(),
-          Expanded(child: child ?? const SizedBox.shrink()),
-        ],
+      // Respeita a fonte maior do sistema (acessibilidade), mas dentro de um limite em que
+      // cartões e tabelas continuam legíveis sem estourar.
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        minScaleFactor: 0.85,
+        maxScaleFactor: 1.3,
+        child: Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(child: child ?? const SizedBox.shrink()),
+          ],
+        ),
       ),
     );
   }

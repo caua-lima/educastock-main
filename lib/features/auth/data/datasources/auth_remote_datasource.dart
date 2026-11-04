@@ -12,15 +12,18 @@ class AuthRemoteDatasource {
   static const _rememberLoginKey = 'remember_login';
   static const _rememberedEmailKey = 'remembered_email';
 
-  final FirebaseAuth _auth;
+  final FirebaseAuth? _authOverride;
   final FirebaseFirestore _firestore;
+
+  /// Obtido só quando usado: construir o datasource não exige o Firebase inicializado.
+  FirebaseAuth get _auth => _authOverride ?? FirebaseAuth.instance;
   final GoogleSignIn? _googleSignIn;
 
   AuthRemoteDatasource({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
     GoogleSignIn? googleSignIn,
-  })  : _auth = auth ?? FirebaseAuth.instance,
+  })  : _authOverride = auth,
         _firestore = firestore ?? FirebaseFirestore.instance,
         _googleSignIn = kIsWeb ? null : (googleSignIn ?? GoogleSignIn());
 

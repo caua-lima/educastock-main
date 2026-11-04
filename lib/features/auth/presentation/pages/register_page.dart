@@ -286,7 +286,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             const SizedBox(height: AppSpacing.sm),
 
             // ── Consentimento (RNF13): obrigatório ───────────────────────
-            CheckboxListTile(
+            Material(
+              type: MaterialType.transparency,
+              child: CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
               value: _acceptedTerms,
@@ -299,13 +301,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 style: AppTypography.bodySmall.copyWith(color: cs.onSurface),
               ),
             ),
-            CheckboxListTile(
+            ),
+            Material(
+              type: MaterialType.transparency,
+              child: CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
               value: _rememberLogin,
               onChanged:
                   isLoading ? null : (v) => setState(() => _rememberLogin = v ?? true),
               title: Text('Manter login', style: AppTypography.bodySmall),
+            ),
             ),
             const SizedBox(height: AppSpacing.lg),
             CasaButton(

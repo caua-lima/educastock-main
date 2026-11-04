@@ -191,22 +191,6 @@ List<TutorialStep> _forecastTutorialSteps() => [
       ),
     ];
 
-/// Retorna os passos do tutorial conforme a aba ativa do reports.
-List<TutorialStep> _reportsTutorialForTab(int index) {
-  switch (index) {
-    case 0:
-      return _chartsTutorialSteps();
-    case 1:
-      return _riskTutorialSteps();
-    case 2:
-      return _movementsTutorialSteps();
-    case 3:
-      return _forecastTutorialSteps();
-    default:
-      return _chartsTutorialSteps();
-  }
-}
-
 /// Linha com "Exportar" (PDF, Excel, CSV) e o botão de ajuda, no topo de cada aba.
 class _TabActionsRow extends StatelessWidget {
   final VoidCallback onExport;
@@ -227,6 +211,9 @@ class _TabActionsRow extends StatelessWidget {
             foregroundColor: AppColors.brandPrimary600,
             side: const BorderSide(color: AppColors.brandPrimary600),
             visualDensity: VisualDensity.compact,
+            // O tema define botões com largura mínima infinita (ocupam a linha toda);
+            // dentro de uma Row isso quebra o layout, então aqui a largura é a do conteúdo.
+            minimumSize: const Size(0, 40),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -239,8 +226,7 @@ class _TabActionsRow extends StatelessWidget {
 // ─── Custom AppBar with TabBar ────────────────────────────────────────────
 
 class _ReportsAppBar extends ConsumerWidget {
-  final List<Widget>? actions;
-  const _ReportsAppBar({this.actions});
+  const _ReportsAppBar();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -349,7 +335,6 @@ class _ReportsAppBar extends ConsumerWidget {
                         ),
                       ),
                       // ── Actions extras (export, etc) ──
-                      if (actions != null) ...actions!,
                       // ── Sino de alertas ──
                       CasaAlertsBellButton(
                         alertCount: alertCount,
@@ -468,14 +453,6 @@ class ReportsPage extends ConsumerWidget {
           )),
         ]),
       ),
-    );
-  }
-  static void _showScheduleSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _ReportScheduleSheet(),
     );
   }
 }
@@ -2038,87 +2015,6 @@ class _MovementsPeriodHeader extends StatelessWidget {
 
 // ─── Period Selector (old version, kept for reference) ──────────────────────
 
-class _PeriodSelector extends StatelessWidget {
-  final int selectedDays;
-  final List<int> periods;
-  final Map<int, String> periodLabels;
-  final void Function(int) onPeriodSelected;
-  final VoidCallback onCustomRange;
-  final ColorScheme cs;
-
-  const _PeriodSelector({
-    required this.selectedDays,
-    required this.periods,
-    required this.periodLabels,
-    required this.onPeriodSelected,
-    required this.onCustomRange,
-    required this.cs,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          ...periods.map((p) {
-            final selected = p == selectedDays;
-            return Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.xs),
-              child: FilterChip(
-                label: Text(periodLabels[p]!),
-                selected: selected,
-                onSelected: (_) => onPeriodSelected(p),
-                selectedColor:
-                    AppColors.secondaryBlue600.withValues(alpha: 0.15),
-                checkmarkColor: AppColors.secondaryBlue600,
-                labelStyle: TextStyle(
-                  color: selected
-                      ? AppColors.secondaryBlue600
-                      : cs.onSurfaceVariant,
-                  fontWeight:
-                      selected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
-            );
-          }),
-          ActionChip(
-            avatar: Icon(
-              Icons.calendar_today_rounded,
-              size: 14,
-              color: selectedDays == 0
-                  ? AppColors.brandPrimary600
-                  : cs.onSurfaceVariant,
-            ),
-            label: Text(
-              selectedDays == 0 ? 'Personalizado ✓' : 'Personalizado',
-              style: TextStyle(
-                color: selectedDays == 0
-                    ? AppColors.brandPrimary600
-                    : cs.onSurfaceVariant,
-                fontWeight: selectedDays == 0
-                    ? FontWeight.w700
-                    : FontWeight.w500,
-                fontSize: 12,
-              ),
-            ),
-            backgroundColor: selectedDays == 0
-                ? AppColors.brandPrimary600.withValues(alpha: 0.1)
-                : null,
-            side: selectedDays == 0
-                ? BorderSide(
-                    color:
-                        AppColors.brandPrimary600.withValues(alpha: 0.4))
-                : null,
-            onPressed: onCustomRange,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ─── Movements Summary Grid ───────────────────────────────────────────────
 
 class _MovementsSummaryGrid extends StatelessWidget {
@@ -2217,13 +2113,15 @@ class _MovementsSummaryGrid extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         // Cards individuais
-        GridView.count(
+        LayoutBuilder(builder: (context, box) => GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 3,
-          crossAxisSpacing: AppSpacing.sm,
-          mainAxisSpacing: AppSpacing.sm,
-          childAspectRatio: 1.2,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: box.maxWidth >= 900 ? 5 : 3,
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+            mainAxisExtent: 96,
+          ),
           children: [
             _MovKpiCard(
                 icon: Icons.add_circle_outline_rounded,
@@ -2262,7 +2160,7 @@ class _MovementsSummaryGrid extends StatelessWidget {
                 color: AppColors.brandPrimary600,
                 cs: cs),
           ],
-        ),
+        )),
       ],
     );
   }
@@ -3594,70 +3492,6 @@ class _MlNonCriticalSummary extends StatelessWidget {
 
 // ─── Legenda ML ───────────────────────────────────────────────────────────
 
-class _MlLegend extends StatelessWidget {
-  final bool isDark;
-  final ColorScheme cs;
-  const _MlLegend({required this.isDark, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      (Icons.check_circle_rounded, AppColors.success600, 'Seguro',
-          'Lote em condições normais.'),
-      (Icons.schedule_rounded, AppColors.warning600, 'Atenção',
-          'Vencimento se aproximando ou estoque baixo.'),
-      (Icons.warning_rounded, AppColors.danger600, 'Crítico',
-          'Risco iminente de perda. Priorize a distribuição.'),
-    ];
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Como funciona a classificação',
-              style: AppTypography.labelSmall.copyWith(
-                  color: cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: AppSpacing.sm),
-          ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  children: [
-                    Icon(item.$1, color: item.$2, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      item.$3,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: item.$2,
-                          fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        item.$4,
-                        style: AppTypography.bodySmall.copyWith(
-                            fontSize: 11,
-                            color: cs.onSurfaceVariant),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-        ],
-      ),
-    );
-  }
-}
-
 // ─── Modern Stats Banner ─────────────────────────────────────────────────
 
 class _ModernStatsBanner extends StatelessWidget {
@@ -4333,7 +4167,6 @@ class _MlRiskActionsRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
         Expanded(
@@ -4411,7 +4244,6 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final disabled = onTap == null;
     final effectiveColor = disabled ? AppColors.neutral500 : color;
@@ -5020,13 +4852,15 @@ class _ForecastKpiGrid extends StatelessWidget {
       ),
     ];
 
-    return GridView.count(
-      crossAxisCount: 2,
+    return LayoutBuilder(builder: (context, box) => GridView(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: box.maxWidth >= 700 ? 4 : 2,
+        mainAxisSpacing: AppSpacing.sm,
+        crossAxisSpacing: AppSpacing.sm,
+        mainAxisExtent: 76,
+      ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.sm,
-      crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 2.2,
       children: tiles
           .map((t) => _ForecastKpiTile(
                 icon: t.$1,
@@ -5037,7 +4871,7 @@ class _ForecastKpiGrid extends StatelessWidget {
                 isDark: isDark,
               ))
           .toList(),
-    );
+    ));
   }
 }
 
@@ -5985,117 +5819,6 @@ ReportTable _forecastTable(List<ConsumptionForecast> forecasts, String title) {
 
 // ─── Grid de resumo (kept for reference) ─────────────────────────────────
 
-class _SummaryGrid extends StatelessWidget {
-  final int totalBatches;
-  final int totalItems;
-  final double totalValue;
-  final int expired;
-  final int criticals;
-  final int warnings;
-  final int healthScore;
-  final bool isDark;
-  final ColorScheme cs;
-  const _SummaryGrid(
-      {required this.totalBatches,
-      required this.totalItems,
-      required this.totalValue,
-      required this.expired,
-      required this.criticals,
-      required this.warnings,
-      required this.healthScore,
-      required this.isDark,
-      required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    final currFmt = NumberFormat.currency(
-        locale: 'pt_BR', symbol: 'R\$', decimalDigits: 0);
-    final healthColor = healthScore >= 80
-        ? AppColors.success600
-        : healthScore >= 50
-            ? AppColors.warning600
-            : AppColors.danger600;
-    final cards = [
-      _SummaryDef('Lotes', '$totalBatches', Icons.layers_rounded,
-          AppColors.brandPrimary600),
-      _SummaryDef('Itens', '$totalItems', Icons.widgets_outlined,
-          AppColors.secondaryBlue600),
-      _SummaryDef('Valor est.', currFmt.format(totalValue),
-          Icons.attach_money_rounded, AppColors.success600),
-      _SummaryDef('Saúde', '$healthScore%',
-          Icons.favorite_rounded, healthColor),
-      _SummaryDef('Críticos', '$criticals', Icons.warning_rounded,
-          criticals > 0 ? AppColors.danger600 : AppColors.success600),
-      _SummaryDef('Vencidos', '$expired', Icons.cancel_outlined,
-          expired > 0 ? AppColors.danger600 : AppColors.success600),
-    ];
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.sm,
-      crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 1.4,
-      children: cards.map((d) => _SummaryCard(def: d, cs: cs)).toList(),
-    );
-  }
-}
-
-class _SummaryDef {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  const _SummaryDef(this.label, this.value, this.icon, this.color);
-}
-
-class _SummaryCard extends StatelessWidget {
-  final _SummaryDef def;
-  final ColorScheme cs;
-  const _SummaryCard({required this.def, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: def.color.withValues(alpha: 0.2)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 4)
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(children: [
-            Icon(def.icon, size: 14, color: def.color),
-            const SizedBox(width: 4),
-            Text(def.label,
-                style: AppTypography.labelSmall.copyWith(
-                    color: cs.onSurfaceVariant, fontSize: 10)),
-          ]),
-          const SizedBox(height: 4),
-          Text(
-            def.value,
-            style: AppTypography.headingSmall.copyWith(
-              color: cs.onSurface,
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ─── Gráfico de linha: tendência mensal ──────────────────────────────────
 
 class _MonthlyTrendChart extends StatelessWidget {
@@ -6755,375 +6478,5 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
 
 // ─── Insights automáticos ─────────────────────────────────────────────────
 
-class _InsightDef {
-  final IconData icon;
-  final String title;
-  final String description;
-  final Color color;
-  const _InsightDef(this.icon, this.title, this.description, this.color);
-}
-
-List<_InsightDef> _buildInsights({
-  required List<Batch> batches,
-  required int exp7,
-  required int exp30,
-  required int expired,
-  required int totalItems,
-}) {
-  final insights = <_InsightDef>[];
-
-  if (expired > 0) {
-    insights.add(_InsightDef(
-      Icons.cancel_outlined,
-      'Lotes vencidos detectados',
-      'Há $expired lote${expired > 1 ? 's' : ''} com validade ultrapassada. Faça a baixa imediatamente.',
-      AppColors.danger600,
-    ));
-  }
-  if (exp7 > 0) {
-    insights.add(_InsightDef(
-      Icons.warning_rounded,
-      'Ação urgente necessária',
-      '$exp7 lote${exp7 > 1 ? 's' : ''} vence${exp7 == 1 ? '' : 'm'} em até 7 dias. Priorize o uso ou descarte.',
-      AppColors.danger600,
-    ));
-  }
-  if (exp30 > exp7 + expired) {
-    insights.add(_InsightDef(
-      Icons.schedule_rounded,
-      'Planejar consumo em breve',
-      '${exp30 - exp7 - expired} lotes vencem entre 8 e 30 dias. Programe distribuição com antecedência.',
-      AppColors.warning600,
-    ));
-  }
-
-  if (batches.isNotEmpty) {
-    final Map<String, int> prodQty = {};
-    for (final b in batches) {
-      prodQty[b.productName] = (prodQty[b.productName] ?? 0) + b.quantity;
-    }
-    final sorted = prodQty.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    if (sorted.isNotEmpty && totalItems > 0) {
-      final topPct = sorted.first.value / totalItems * 100;
-      if (topPct > 50) {
-        insights.add(_InsightDef(
-          Icons.pie_chart_outline_rounded,
-          'Estoque concentrado',
-          '${sorted.first.key} representa ${topPct.toStringAsFixed(0)}% do estoque total. Diversifique.',
-          AppColors.secondaryBlue600,
-        ));
-      }
-    }
-  }
-
-  if (insights.isEmpty) {
-    insights.add(const _InsightDef(
-      Icons.check_circle_outline_rounded,
-      'Estoque saudável',
-      'Nenhuma anomalia detectada. Continue monitorando as validades regularmente.',
-      AppColors.success600,
-    ));
-  }
-
-  return insights;
-}
-
-class _InsightsPanel extends StatelessWidget {
-  final List<_InsightDef> insights;
-  const _InsightsPanel({super.key, required this.insights});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: insights.map((insight) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(
-                color: cs.outlineVariant.withValues(alpha: 0.35)),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 4),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    width: 4,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          insight.color,
-                          insight.color.withValues(alpha: 0.5)
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: insight.color.withValues(alpha: 0.12),
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.small),
-                          ),
-                          child: Icon(insight.icon,
-                              color: insight.color, size: 20),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                insight.title,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                insight.description,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: cs.onSurfaceVariant,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
 // ─── Lista de próximos a vencer (agrupada por urgência) ───────────────────
-
-class _ExpiryList extends StatelessWidget {
-  final List<Batch> batches;
-  final ColorScheme cs;
-  final bool isDark;
-  const _ExpiryList(
-      {required this.batches, required this.cs, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final critical =
-        batches.where((b) => !b.noExpiry && b.daysToExpiry <= 7).toList();
-    final warning =
-        batches.where((b) => b.noExpiry || b.daysToExpiry > 7).toList();
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (critical.isNotEmpty) ...[
-          _ExpiryGroupHeader(
-            label: 'Crítico — vence em até 7 dias',
-            color: AppColors.danger600,
-            count: critical.length,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          _ExpirySection(batches: critical, cs: cs),
-          const SizedBox(height: AppSpacing.md),
-        ],
-        if (warning.isNotEmpty) ...[
-          _ExpiryGroupHeader(
-            label: 'Atenção — vence entre 8 e 30 dias',
-            color: AppColors.warning600,
-            count: warning.length,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          _ExpirySection(batches: warning, cs: cs),
-        ],
-      ],
-    );
-  }
-}
-
-class _ExpiryGroupHeader extends StatelessWidget {
-  final String label;
-  final Color color;
-  final int count;
-  const _ExpiryGroupHeader(
-      {required this.label, required this.color, required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 3,
-          height: 14,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 7),
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(
-            '$count',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ExpirySection extends StatelessWidget {
-  final List<Batch> batches;
-  final ColorScheme cs;
-  const _ExpirySection({required this.batches, required this.cs});
-
-  @override
-  Widget build(BuildContext context) {
-    final fmt = DateFormat('dd/MM/yyyy');
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.35)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: batches.take(15).toList().asMap().entries.map((e) {
-          final b = e.value;
-          final days = b.noExpiry ? 9999 : b.daysToExpiry;
-          final urgentColor =
-              days <= 7 ? AppColors.danger600 : AppColors.warning600;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (e.key > 0)
-                Divider(
-                    height: 1,
-                    color: cs.outlineVariant.withValues(alpha: 0.3),
-                    indent: AppSpacing.md,
-                    endIndent: AppSpacing.md),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: urgentColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            b.productName,
-                            style: AppTypography.labelMedium
-                                .copyWith(color: cs.onSurface),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                b.expiryDate != null
-                                    ? fmt.format(b.expiryDate!)
-                                    : '-',
-                                style: AppTypography.bodySmall.copyWith(
-                                    color: cs.onSurfaceVariant,
-                                    fontSize: 11),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text('• ${b.quantity} un.',
-                                  style: AppTypography.bodySmall.copyWith(
-                                      color: cs.onSurfaceVariant,
-                                      fontSize: 11)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: urgentColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                      child: Text(
-                        b.noExpiry ? 'Sem val.' : '${days}d',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: urgentColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
 

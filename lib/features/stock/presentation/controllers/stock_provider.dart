@@ -7,9 +7,10 @@ import '../../domain/entities/stock_movement.dart';
 import '../../data/datasources/stock_remote_datasource.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../batches/domain/entities/batch.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 final stockDatasourceProvider = Provider<StockRemoteDatasource>((ref) {
-  return StockRemoteDatasource();
+  return StockRemoteDatasource(db: ref.watch(firestoreProvider));
 });
 
 final stockMovementsProvider = StreamProvider<List<StockMovement>>((ref) {

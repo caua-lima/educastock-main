@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../products/domain/entities/product.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 class CategorySetting {
   final String key;
@@ -258,7 +259,7 @@ class StockRulesSettingsDatasource {
 }
 
 final userAdminDatasourceProvider = Provider<UserAdminDatasource>(
-  (_) => UserAdminDatasource(),
+  (ref) => UserAdminDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final usersManagementProvider = StreamProvider<List<AppUser>>((ref) {
@@ -301,7 +302,7 @@ final userManagementNotifierProvider =
         UserManagementNotifier.new);
 
 final categorySettingsDatasourceProvider = Provider<CategorySettingsDatasource>(
-  (_) => CategorySettingsDatasource(),
+  (ref) => CategorySettingsDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final categorySettingsProvider = StreamProvider<List<CategorySetting>>((ref) {
@@ -380,12 +381,12 @@ final categoryLabelMapProvider = Provider<Map<String, String>>((ref) {
 });
 
 final alertsSettingsDatasourceProvider = Provider<AlertsSettingsDatasource>(
-  (_) => AlertsSettingsDatasource(),
+  (ref) => AlertsSettingsDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final stockRulesSettingsDatasourceProvider =
     Provider<StockRulesSettingsDatasource>(
-  (_) => StockRulesSettingsDatasource(),
+  (ref) => StockRulesSettingsDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final alertsConfigProvider = StreamProvider<AlertsConfig>((ref) {
@@ -483,7 +484,7 @@ class ReportScheduleDatasource {
 }
 
 final reportScheduleDatasourceProvider = Provider<ReportScheduleDatasource>(
-  (_) => ReportScheduleDatasource(),
+  (ref) => ReportScheduleDatasource(db: ref.watch(firestoreProvider)),
 );
 
 final reportScheduleConfigProvider = StreamProvider<ReportScheduleConfig>((ref) {

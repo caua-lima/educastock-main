@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/consumption_forecast.dart';
 import '../../data/repositories/consumption_forecast_firestore_repository.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
+import '../../../../core/firebase/firebase_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Repositório (singleton)
@@ -9,7 +10,7 @@ import '../../../batches/presentation/controllers/batches_provider.dart';
 
 final consumptionForecastRepositoryProvider =
     Provider<ConsumptionForecastFirestoreRepository>(
-  (_) => ConsumptionForecastFirestoreRepository(),
+  (ref) => ConsumptionForecastFirestoreRepository(db: ref.watch(firestoreProvider)),
 );
 
 // ---------------------------------------------------------------------------
