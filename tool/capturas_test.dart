@@ -34,17 +34,15 @@ class _FakeAuth extends AuthRemoteDatasource {
 }
 
 Future<void> _fonts() async {
-  final dir = Directory('${Platform.environment['FLUTTER_ROOT']}/bin/cache/artifacts/material_fonts');
-  Future<ByteData> b(String n) async => ByteData.sublistView(await File('${dir.path}/$n').readAsBytes());
-  for (final f in ['Roboto', AppTypography.fontNunito, AppTypography.fontPoppins, AppTypography.fontProductName]) {
-    await (FontLoader(f)
-          ..addFont(b('roboto-regular.ttf'))
-          ..addFont(b('roboto-medium.ttf'))
-          ..addFont(b('roboto-bold.ttf'))
-          ..addFont(b('roboto-black.ttf')))
-        .load();
+  // A mesma fonte empacotada no app (assets/fonts) e os ícones Material do SDK.
+  Future<ByteData> b(File f) async => ByteData.sublistView(await f.readAsBytes());
+  final loader = FontLoader(AppTypography.fontFamily);
+  for (final f in Directory('assets/fonts').listSync().whereType<File>().where((f) => f.path.endsWith('.ttf'))) {
+    loader.addFont(b(f));
   }
-  await (FontLoader('MaterialIcons')..addFont(b('materialicons-regular.otf'))).load();
+  await loader.load();
+  final dir = Directory('${Platform.environment['FLUTTER_ROOT']}/bin/cache/artifacts/material_fonts');
+  await (FontLoader('MaterialIcons')..addFont(b(File('${dir.path}/materialicons-regular.otf')))).load();
 }
 
 const _telas = {
@@ -54,20 +52,32 @@ const _telas = {
   'historico': '/history',
   'relatorios': '/reports',
   'doacoes': '/doacoes',
+  'alertas': '/alerts',
+  'configuracoes': '/settings',
+  'scanner': '/scanner',
 };
 const _tamanhos = {'celular-390': Size(390, 844), 'pc-1440': Size(1440, 900)};
 
+/// Variações: tema claro/escuro e fonte ampliada (200%, só no celular, onde aperta).
+const _variacoes = <String, ({bool escuro, double fonte, bool soCelular})>{
+  '': (escuro: false, fonte: 1.0, soCelular: false),
+  '-escuro': (escuro: true, fonte: 1.0, soCelular: false),
+  '-fonte200': (escuro: false, fonte: 2.0, soCelular: true),
+};
+
 void main() {
   setUpAll(() async {
-    AppTypography.useGoogleFonts = false;
     SharedPreferences.setMockInitialValues({});
     await initializeDateFormatting('pt_BR');
     await _fonts();
+    await precarregarTelasSobDemanda();
   });
 
   for (final tela in _telas.entries) {
     for (final tam in _tamanhos.entries) {
-      testWidgets('captura ${tela.key} ${tam.key}', (tester) async {
+     for (final v in _variacoes.entries) {
+      if (v.value.soCelular && !tam.key.startsWith('celular')) continue;
+      testWidgets('captura ${tela.key} ${tam.key}${v.key}', (tester) async {
         final db = FakeFirebaseFirestore();
         await seedFakeData(db);
         final c = ProviderContainer(overrides: [
@@ -84,6 +94,12 @@ void main() {
             builder: (_, ref, __) => MaterialApp.router(
               debugShowCheckedModeBanner: false,
               theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              themeMode: v.value.escuro ? ThemeMode.dark : ThemeMode.light,
+              builder: (ctx, child) => MediaQuery(
+                data: MediaQuery.of(ctx).copyWith(textScaler: TextScaler.linear(v.value.fonte)),
+                child: child!,
+              ),
               locale: const Locale('pt', 'BR'),
               localizationsDelegates: const [
                 GlobalMaterialLocalizations.delegate,
@@ -100,13 +116,14 @@ void main() {
         for (var i = 0; i < 8; i++) {
           await tester.pump(const Duration(milliseconds: 300));
         }
-        await expectLater(find.byType(MaterialApp), matchesGoldenFile('capturas/${tela.key}-${tam.key}.png'));
+        await expectLater(find.byType(MaterialApp), matchesGoldenFile('capturas/${tela.key}-${tam.key}${v.key}.png'));
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump(const Duration(seconds: 1));
         c.dispose();
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
       });
+     }
     }
   }
 }

@@ -624,9 +624,9 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       align: ContentAlign.bottom,
                       hints: const [
                         '⌨️ Busca por nome parcial: "feij" → "Feijão Carioca"',
-                        '🏷️ Procura também na marca (ex: "Camil", "Tio João")',
-                        '🔤 Ignora maiúsculas, minúsculas e acentos',
-                        '❌ Toque no X para limpar a busca',
+                        'Procura também na marca (ex: "Camil", "Tio João")',
+                        'Ignora maiúsculas, minúsculas e acentos',
+                        'Toque no X para limpar a busca',
                       ],
                     ),
                     TutorialStep(
@@ -636,10 +636,10 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       icon: Icons.tune_rounded,
                       align: ContentAlign.bottom,
                       hints: const [
-                        '🏷️ Filtre por categoria para focar em um tipo',
+                        'Filtre por categoria para focar em um tipo',
                         '⏰ "Perecíveis" mostra só produtos com validade',
-                        '📦 "Não perecíveis": material escolar, roupas, etc',
-                        '🔢 Ordene por nome ou categoria para inventário físico',
+                        '"Não perecíveis": material escolar, roupas, etc',
+                        'Ordene por nome ou categoria para inventário físico',
                       ],
                     ),
                     TutorialStep(
@@ -649,10 +649,10 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       icon: Icons.inventory_2_rounded,
                       align: ContentAlign.bottom,
                       hints: const [
-                        '🟢 Verde = lote mais próximo está OK (>30 dias)',
-                        '🟡 Amarelo = atenção! Vence em até 30 dias',
-                        '🔴 Vermelho = crítico! Vence em 7 dias ou venceu',
-                        '👆 Toque para ver todos os lotes, valor e localizações',
+                        'Verde = lote mais próximo está OK (>30 dias)',
+                        'Amarelo = atenção! Vence em até 30 dias',
+                        'Vermelho = crítico! Vence em 7 dias ou venceu',
+                        'Toque para ver todos os lotes, valor e localizações',
                       ],
                     ),
                   ],
@@ -847,7 +847,7 @@ class _CsvImportSheetState extends ConsumerState<_CsvImportSheet> {
         }
         if (!mounted) return;
         final extra = (red > 0 || yellow > 0)
-            ? ' · 🤖 IA: $red crítico${red == 1 ? '' : 's'}, $yellow em atenção'
+            ? ' · Previsão de risco: $red crítico${red == 1 ? '' : 's'}, $yellow em atenção'
             : '';
         showCasaSnackbar(
           context,
@@ -938,7 +938,7 @@ class _CsvImportSheetState extends ConsumerState<_CsvImportSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('📋 Formato esperado do CSV:',
+                  Text('Formato esperado do CSV:',
                       style: AppTypography.labelMedium
                           .copyWith(color: AppColors.secondaryBlue600)),
                   const SizedBox(height: AppSpacing.xs),

@@ -67,10 +67,10 @@ class DashboardPage extends ConsumerWidget {
                     icon: Icons.dashboard_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      '👆 Toque no card AZUL → ir para Estoque',
-                      '👆 Toque no card VERMELHO/AMARELO → ir para Alertas',
-                      '🔴 Vermelho = AÇÃO IMEDIATA necessária',
-                      '🔄 Números atualizam automaticamente em tempo real',
+                      'Toque no card AZUL → ir para Estoque',
+                      'Toque no card VERMELHO/AMARELO → ir para Alertas',
+                      'Vermelho = AÇÃO IMEDIATA necessária',
+                      'Números atualizam automaticamente em tempo real',
                     ],
                   ),
                   TutorialStep(
@@ -80,12 +80,12 @@ class DashboardPage extends ConsumerWidget {
                     icon: Icons.grid_view_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      '📷 Escanear: entrada por código de barras (camera)',
-                      '📦 Estoque: ver e editar produtos cadastrados',
-                      '📤 Saída: distribuir produtos manualmente',
-                      '📋 Receitas: distribuição por modelo (kits)',
-                      '🔔 Alertas: ver tudo que precisa de atenção',
-                      '🏷️ Localizações: gerenciar prateleiras do depósito',
+                      'Escanear: entrada por código de barras (camera)',
+                      'Estoque: ver e editar produtos cadastrados',
+                      'Saída: distribuir produtos manualmente',
+                      'Receitas: distribuição por modelo (kits)',
+                      'Alertas: ver tudo que precisa de atenção',
+                      'Localizações: gerenciar prateleiras do depósito',
                     ],
                   ),
                   TutorialStep(
@@ -95,11 +95,11 @@ class DashboardPage extends ConsumerWidget {
                     icon: Icons.psychology_rounded,
                     align: ContentAlign.top,
                     hints: const [
-                      '🤖 IA roda direto no celular (privacidade total)',
-                      '🔴 Alto risco: provavelmente vai vencer — distribua HOJE',
-                      '🟡 Médio: monitore nos próximos dias',
-                      '🟢 Baixo: situação controlada — relax',
-                      '👆 Toque "Ver detalhes" para análise lote por lote',
+                      'IA roda direto no celular (privacidade total)',
+                      'Alto risco: provavelmente vai vencer — distribua HOJE',
+                      'Médio: monitore nos próximos dias',
+                      'Baixo: situação controlada — relax',
+                      'Toque "Ver detalhes" para análise lote por lote',
                     ],
                   ),
                   TutorialStep(
@@ -109,11 +109,11 @@ class DashboardPage extends ConsumerWidget {
                     icon: Icons.trending_up_rounded,
                     align: ContentAlign.top,
                     hints: const [
-                      '📈 Prevê consumo dos próximos 30 dias',
-                      '🛒 Sugestão de compra = consumo × 1.2 - estoque atual',
-                      '↗️ Tendência crescendo? Aumente o pedido',
-                      '↘️ Caindo? Diminua para não desperdiçar',
-                      '🔄 Re-execute notebook Colab mensalmente',
+                      'Prevê consumo dos próximos 30 dias',
+                      'Sugestão de compra = consumo × 1.2 - estoque atual',
+                      'Tendência crescendo? Aumente o pedido',
+                      'Caindo? Diminua para não desperdiçar',
+                      'Re-execute notebook Colab mensalmente',
                     ],
                   ),
                   TutorialStep(
@@ -123,10 +123,10 @@ class DashboardPage extends ConsumerWidget {
                     icon: Icons.warning_amber_rounded,
                     align: ContentAlign.top,
                     hints: const [
-                      '🚨 Vence em 1-3 dias? Distribua HOJE!',
-                      '🤝 Não consegue distribuir? Doe para outra ONG',
-                      '🗑️ Vencido? Registre descarte em Saída → Vencimento',
-                      '👆 "Ver todos" abre a lista completa de alertas',
+                      'Vence em 1-3 dias? Distribua HOJE!',
+                      'Não consegue distribuir? Doe para outra ONG',
+                      'Vencido? Registre descarte em Saída → Vencimento',
+                      '"Ver todos" abre a lista completa de alertas',
                     ],
                   ),
                 ],
@@ -440,7 +440,7 @@ class _DashboardHeader extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${_greeting()}, ${_firstName()} 👋',
+                          '${_greeting()}, ${_firstName()}',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,

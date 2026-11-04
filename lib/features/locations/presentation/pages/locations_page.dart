@@ -74,7 +74,7 @@ class LocationsPage extends ConsumerWidget {
                   icon: Icons.location_on_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🗑️ Desativar não exclui — apenas oculta para novos lotes',
+                    'Desativar não exclui — apenas oculta para novos lotes',
                     'Lotes existentes na localização continuam ali',
                     'Você pode reativar a qualquer momento via banco de dados',
                     'A capacidade ajuda alertas de "prateleira cheia"',
@@ -265,7 +265,7 @@ class _DepositBanner extends StatelessWidget {
                 const Text(
                   'Depósito da ONG',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
+                    fontFamily: AppTypography.fontFamily,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -515,7 +515,7 @@ class _LocationCard extends ConsumerWidget {
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
-                    fontFamily: 'Poppins',
+                    fontFamily: AppTypography.fontFamily,
                     height: 1,
                   ),
                 ),
@@ -537,7 +537,7 @@ class _LocationCard extends ConsumerWidget {
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: titleColor,
-                              fontFamily: 'Poppins',
+                              fontFamily: AppTypography.fontFamily,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

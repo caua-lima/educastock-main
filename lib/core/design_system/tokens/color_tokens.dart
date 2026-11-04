@@ -8,6 +8,10 @@ abstract class AppColors {
   static const brandPrimary500 = Color(0xFF2F74C0);
   static const brandPrimary100 = Color(0xFFDCEBFA);
 
+  /// Azul da marca clareado para TEXTO/ícone sobre fundo escuro (tema escuro):
+  /// 8,3:1 sobre a superfície escura; o 500 dava 3,8:1, abaixo do AA (4,5:1).
+  static const brandPrimary300 = Color(0xFF7FB3EE);
+
   // Secondary
   static const secondaryBlue600 = Color(0xFF2563EB);
   static const secondarySky500 = Color(0xFF38BDF8);
@@ -17,6 +21,9 @@ abstract class AppColors {
   static const success600 = Color(0xFF2E7D32);
   static const warning600 = Color(0xFFB7791F);
   static const danger600 = Color(0xFFC53030);
+
+  /// Vermelho de erro para o tema escuro (6,5:1 sobre a superfície escura; o 600 dava 3,3:1).
+  static const danger400 = Color(0xFFF87171);
 
   // Neutral
   static const neutral900 = Color(0xFF111827);

@@ -312,9 +312,9 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                   icon: Icons.filter_alt_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🔵 "create" = novos cadastros (produtos, lotes, etc)',
-                    '🟡 "update" = edições e alterações',
-                    '🔴 "delete" = exclusões e descartes',
+                    '"create" = novos cadastros (produtos, lotes, etc)',
+                    '"update" = edições e alterações',
+                    '"delete" = exclusões e descartes',
                     'Combine filtros para investigar incidentes específicos',
                   ],
                 ),

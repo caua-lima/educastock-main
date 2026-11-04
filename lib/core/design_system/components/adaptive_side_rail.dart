@@ -45,7 +45,10 @@ class AdaptiveSideRail extends StatelessWidget {
     this.onSearch,
   });
 
-  static const double collapsedWidth = 88;
+  /// Largura recolhida: cabe "Configurações" inteiro na fonte padrão (com 88 o
+  /// rótulo saía cortado). Com fonte ampliada o nome completo fica na dica e na leitura
+  /// de tela.
+  static const double collapsedWidth = 104;
   static const double extendedWidth = 236;
 
   @override
@@ -71,7 +74,7 @@ class AdaptiveSideRail extends StatelessWidget {
               ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(10, 4, 10, 12),
+                padding: EdgeInsets.fromLTRB(extended ? 10 : 8, 4, extended ? 10 : 8, 12),
                 children: [
                   for (final d in primary) _RailItem(dest: d, extended: extended),
                   if (secondary.isNotEmpty) ...[
@@ -272,7 +275,7 @@ class _RailItem extends StatelessWidget {
               child: Padding(
                 padding: extended
                     ? const EdgeInsets.symmetric(horizontal: 14, vertical: 12)
-                    : const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                    : const EdgeInsets.symmetric(horizontal: 2, vertical: 10),
                 child: content,
               ),
             ),

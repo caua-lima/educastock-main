@@ -1,24 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 abstract class AppTypography {
-  // Poppins — títulos e destaques
-  static const String fontPoppins = 'Poppins';
+  /// Família única do app: Roboto empacotada em `assets/fonts` (Apache 2.0, ver
+  /// `LICENSE-Roboto.txt`), pesos 400/500/700/900. Antes os estilos pediam Poppins e
+  /// Nunito Sans (nunca registradas — caíam na fonte do sistema, diferente em cada
+  /// aparelho) e Plus Jakarta Sans baixada em tempo de execução (sem internet, o nome
+  /// do produto mudava de fonte). Agora o texto é igual em todo lugar e funciona offline.
+  static const String fontFamily = 'Roboto';
 
-  // Nunito Sans — textos, formulários, números
-  static const String fontNunito = 'NunitoSans';
+  // Nomes antigos mantidos para não espalhar mudança: todos apontam para a mesma família.
+  static const String fontPoppins = fontFamily;
+  static const String fontNunito = fontFamily;
+  static const String fontProductName = fontFamily;
 
-  /// Família usada quando o download do Google Fonts está desligado (testes).
-  static const String fontProductName = 'PlusJakartaSans';
-
-  /// Os testes não têm internet para baixar a fonte: desligam isto e registram a família
-  /// [fontProductName] localmente. No app fica sempre ligado.
-  @visibleForTesting
-  static bool useGoogleFonts = true;
-
-  /// Fonte distinta para NOMES DE PRODUTOS — usada em todas as áreas
-  /// que listam produtos (Estoque, Saída, Receita, etc).
-  /// Plus Jakarta Sans é moderna, com bom peso visual e excelente leitura.
+  /// Estilo dos NOMES DE PRODUTOS (Estoque, Saída, Receita etc.): mesmo peso e
+  /// tamanho de antes, na fonte empacotada.
   static TextStyle productName({
     double size = 14,
     FontWeight weight = FontWeight.w800,
@@ -26,15 +22,14 @@ abstract class AppTypography {
     double height = 1.15,
     double letterSpacing = -0.2,
   }) {
-    final style = TextStyle(
+    return TextStyle(
+      fontFamily: fontProductName,
       fontSize: size,
       fontWeight: weight,
       color: color,
       height: height,
       letterSpacing: letterSpacing,
     );
-    if (!useGoogleFonts) return style.copyWith(fontFamily: fontProductName);
-    return GoogleFonts.plusJakartaSans(textStyle: style);
   }
 
   // Display

@@ -195,7 +195,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                         ),
                         // ─── Filtros por Risco ML ───────────────────────────
                         _HeaderFilterChip(
-                          label: '🤖 Risco Crítico',
+                          label: 'Risco crítico (IA)',
                           selected: _riskFilter == RiskLevel.vermelho,
                           color: AppColors.danger600,
                           onTap: () => setState(() => _riskFilter =
@@ -205,7 +205,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                         ),
                         const SizedBox(width: 6),
                         _HeaderFilterChip(
-                          label: '🤖 Atenção',
+                          label: 'Risco atenção (IA)',
                           selected: _riskFilter == RiskLevel.amarelo,
                           color: AppColors.warning600,
                           onTap: () => setState(() => _riskFilter =
@@ -236,10 +236,10 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   icon: Icons.notification_important_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🔴 Vermelho (crítico): vence em até 7 dias',
-                    '🟡 Amarelo (atenção): vence em até 30 dias',
-                    '🔵 Azul (info): alertas manuais customizados',
-                    '👆 Toque longo para ver ações (distribuir, ver produto)',
+                    'Vermelho (crítico): vence em até 7 dias',
+                    'Amarelo (atenção): vence em até 30 dias',
+                    'Azul (info): alertas manuais customizados',
+                    'Toque longo para ver ações (distribuir, ver produto)',
                   ],
                 ),
                 TutorialStep(
@@ -250,9 +250,9 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   icon: Icons.filter_alt_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '👆 1 toque: ativa o filtro',
-                    '👆 2 toques: limpa o filtro',
-                    '🔢 Número no chip = quantos alertas naquela categoria',
+                    '1 toque: ativa o filtro',
+                    '2 toques: limpa o filtro',
+                    'Número no chip = quantos alertas naquela categoria',
                   ],
                 ),
                 TutorialStep(
@@ -263,9 +263,9 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   icon: Icons.list_alt_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '👈 Arrastar para esquerda = excluir',
-                    '👇 Toque longo = mais ações (distribuir, abrir produto)',
-                    '📊 Lista atualiza automaticamente quando estoque muda',
+                    'Arrastar para esquerda = excluir',
+                    'Toque longo = mais ações (distribuir, abrir produto)',
+                    'Lista atualiza automaticamente quando estoque muda',
                   ],
                 ),
               ],
@@ -503,11 +503,13 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   children: AlertLevel.values.map((lvl) {
                     final color = _colorForLevel(lvl);
                     final label = switch (lvl) {
-                      AlertLevel.critical => '🔴 Crítico',
-                      AlertLevel.warning => '🟡 Atenção',
-                      AlertLevel.info => '🔵 Info',
+                      AlertLevel.critical => 'Crítico',
+                      AlertLevel.warning => 'Atenção',
+                      AlertLevel.info => 'Info',
                     };
                     return ChoiceChip(
+                      // Ícone com a cor do nível (antes era emoji colorido).
+                      avatar: Icon(Icons.circle, size: 12, color: color),
                       label: Text(label),
                       selected: selectedLevel == lvl,
                       selectedColor: color.withValues(alpha: 0.18),

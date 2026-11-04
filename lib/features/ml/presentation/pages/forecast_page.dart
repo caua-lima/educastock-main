@@ -48,7 +48,7 @@ class _ForecastPageState extends ConsumerState<ForecastPage> {
                   icon: Icons.psychology_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🤖 IA estatística rodando em Google Colab',
+                    'IA estatística rodando em Google Colab',
                     'Precisa de pelo menos 30 dias de histórico',
                     'Re-execute mensalmente ou após eventos atípicos',
                     'Mais histórico = previsões mais precisas',
@@ -87,9 +87,9 @@ class _ForecastPageState extends ConsumerState<ForecastPage> {
                   icon: Icons.add_shopping_cart_rounded,
                   align: ContentAlign.top,
                   hints: const [
-                    '🔴 Crítico: menos de 7 dias — comprar HOJE',
-                    '🟡 Baixo: menos de 14 dias — compra programada',
-                    '↗️ Tendência crescente: aumente a quantidade',
+                    'Crítico: menos de 7 dias — comprar HOJE',
+                    'Baixo: menos de 14 dias — compra programada',
+                    'Tendência crescente: aumente a quantidade',
                     'Quantidade sugerida = consumo 30d × 1.2 - estoque atual',
                   ],
                 ),

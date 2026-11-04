@@ -737,9 +737,9 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                   icon: Icons.swap_horiz_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '📦 Avulso: você escolhe item por item',
-                    '📋 Receita: kit pronto (ex: Kit Lanche)',
-                    '🚀 Receitas são mais rápidas para distribuições padrão',
+                    'Avulso: você escolhe item por item',
+                    'Receita: kit pronto (ex: Kit Lanche)',
+                    'Receitas são mais rápidas para distribuições padrão',
                     'Pode alternar entre modos sem perder seleções',
                   ],
                 ),
@@ -751,9 +751,9 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                   align: ContentAlign.bottom,
                   hints: const [
                     '⌨️ Busca em tempo real, sem precisar enter',
-                    '🏷️ Mostra apenas produtos COM estoque',
-                    '🎨 Use chips de categoria para refinar',
-                    '🔴/🟡 As cores indicam validade próxima',
+                    'Mostra apenas produtos COM estoque',
+                    'Use chips de categoria para refinar',
+                    'As cores indicam validade próxima',
                   ],
                 ),
                 if (_mode == _OutputMode.products)
@@ -764,11 +764,11 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                     icon: Icons.inventory_2_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      '🔴 Vermelho: lote vencido — confira antes de distribuir',
-                      '🟡 Amarelo: vence em 30 dias — prioridade alta',
-                      '🟢 Verde: validade segura — distribuição normal',
-                      '➕➖ Use +/- para ajustar quantidade',
-                      '🔢 Badge no canto = quantidade selecionada',
+                      'Vermelho: lote vencido — confira antes de distribuir',
+                      'Amarelo: vence em 30 dias — prioridade alta',
+                      'Verde: validade segura — distribuição normal',
+                      'Use +/- para ajustar quantidade',
+                      'Badge no canto = quantidade selecionada',
                     ],
                   )
                 else
@@ -779,10 +779,10 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                     icon: Icons.menu_book_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      '📋 Cada receita = vários produtos de uma vez',
-                      '✅ Sistema verifica estoque antes de executar',
-                      '👆 Toque uma vez para selecionar',
-                      '🔙 Pode voltar para Avulso a qualquer momento',
+                      'Cada receita = vários produtos de uma vez',
+                      'Sistema verifica estoque antes de executar',
+                      'Toque uma vez para selecionar',
+                      'Pode voltar para Avulso a qualquer momento',
                     ],
                   ),
                 if (_mode == _OutputMode.products ||
@@ -795,10 +795,10 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                     icon: Icons.send_rounded,
                     align: ContentAlign.top,
                     hints: const [
-                      '👀 Tela de revisão antes de confirmar definitivo',
-                      '📉 Estoque é deduzido AUTOMATICAMENTE',
-                      '📜 Aparece no Histórico imediatamente',
-                      '⚠️ Saída confirmada NÃO pode ser desfeita',
+                      'Tela de revisão antes de confirmar definitivo',
+                      'Estoque é deduzido AUTOMATICAMENTE',
+                      'Aparece no Histórico imediatamente',
+                      'Saída confirmada NÃO pode ser desfeita',
                     ],
                   ),
               ];

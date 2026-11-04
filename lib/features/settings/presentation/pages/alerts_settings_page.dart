@@ -108,8 +108,8 @@ class _AlertsSettingsPageState extends ConsumerState<AlertsSettingsPage> {
                   icon: Icons.emergency_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🟥 Recomendado: 7 dias para alimentos frescos',
-                    '🟥 14 dias para refrigerados/laticínios',
+                    'Recomendado: 7 dias para alimentos frescos',
+                    '14 dias para refrigerados/laticínios',
                     'Quanto menor o número, mais urgente o alerta',
                     'Aparece no card vermelho do dashboard',
                   ],
@@ -121,8 +121,8 @@ class _AlertsSettingsPageState extends ConsumerState<AlertsSettingsPage> {
                   icon: Icons.warning_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🟨 Recomendado: 30 dias para planejamento',
-                    '🟨 60 dias se a rotação for lenta',
+                    'Recomendado: 30 dias para planejamento',
+                    '60 dias se a rotação for lenta',
                     'Deve ser MAIOR que o prazo crítico',
                     'Aparece no card amarelo do dashboard',
                   ],

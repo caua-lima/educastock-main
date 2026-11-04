@@ -72,8 +72,8 @@ List<TutorialStep> _chartsTutorialSteps() => [
         icon: Icons.bar_chart_rounded,
         align: ContentAlign.bottom,
         hints: const [
-          '🔴 Vermelho = vencidos — descarte imediato',
-          '🟢 Verde = prazo seguro (>30 dias)',
+          'Vermelho = vencidos — descarte imediato',
+          'Verde = prazo seguro (>30 dias)',
         ],
       ),
       TutorialStep(
@@ -96,8 +96,8 @@ List<TutorialStep> _riskTutorialSteps() => [
         icon: Icons.shield_rounded,
         align: ContentAlign.bottom,
         hints: const [
-          '🔴 Críticos = ação imediata necessária',
-          '🟡 Atenção = monitorar de perto nos próximos dias',
+          'Críticos = ação imediata necessária',
+          'Atenção = monitorar de perto nos próximos dias',
         ],
       ),
       TutorialStep(
@@ -162,8 +162,8 @@ List<TutorialStep> _forecastTutorialSteps() => [
         icon: Icons.dashboard_rounded,
         align: ContentAlign.bottom,
         hints: const [
-          '🔴 Críticos = estoque muito baixo para consumo previsto',
-          '📦 Reposição = toque em "Gerar Pedido" para exportar CSV',
+          'Críticos = estoque muito baixo para consumo previsto',
+          'Reposição = toque em "Gerar Pedido" para exportar CSV',
         ],
       ),
       TutorialStep(

@@ -810,7 +810,7 @@ class _AlertBubble extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         totalAlerts == 0
-                            ? 'Tudo em dia ✓'
+                            ? 'Tudo em dia'
                             : '$totalAlerts ${totalAlerts == 1 ? "item precisa" : "itens precisam"} de atenção',
                         style: AppTypography.bodySmall.copyWith(
                           color: cs.onSurfaceVariant,

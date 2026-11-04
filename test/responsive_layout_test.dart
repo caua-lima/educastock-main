@@ -8,6 +8,7 @@
 // (`firestoreProvider`) e o usuário logado é simulado.
 import 'dart:io';
 
+import 'package:educastock/core/design_system/components/adaptive_side_rail.dart';
 import 'package:educastock/core/design_system/tokens/typography_tokens.dart';
 import 'package:educastock/core/firebase/firebase_providers.dart';
 import 'package:educastock/core/offline/offline_queue.dart';
@@ -20,6 +21,7 @@ import 'package:educastock/features/auth/domain/entities/app_user.dart';
 import 'package:educastock/features/auth/presentation/controllers/auth_provider.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,36 +84,31 @@ const _donorRoutes = [
 
 const _publicRoutes = ['/login', '/doador/cadastro'];
 
-/// Carrega a Roboto do SDK do Flutter para medir texto como no app (a fonte padrão dos
-/// testes desenha cada letra como um quadrado e acusaria estouros que não existem).
+/// Carrega as fontes REAIS do app para medir texto como na tela (a fonte padrão dos
+/// testes desenha cada letra como um quadrado e acusaria estouros que não existem):
+/// a Roboto empacotada em assets/fonts e os ícones Material do SDK.
 Future<void> _loadRealFonts() async {
+  Future<ByteData> bytes(File f) async => ByteData.sublistView(await f.readAsBytes());
+  final roboto = Directory('assets/fonts')
+      .listSync()
+      .whereType<File>()
+      .where((f) => f.path.toLowerCase().endsWith('.ttf'))
+      .toList();
+  if (roboto.isEmpty) fail('assets/fonts sem a fonte do app');
+  final loader = FontLoader(AppTypography.fontFamily);
+  for (final f in roboto) {
+    loader.addFont(bytes(f));
+  }
+  await loader.load();
+
   final root = Platform.environment['FLUTTER_ROOT'];
   if (root == null) return;
   final dir = Directory('$root/bin/cache/artifacts/material_fonts');
   if (!dir.existsSync()) return;
-  // Usa as variações que existirem (o conjunto baixado muda entre máquinas e o CI).
-  final files = dir.listSync().whereType<File>().toList();
-  final roboto = files.where((f) {
-    final n = f.uri.pathSegments.last.toLowerCase();
-    return n.startsWith('roboto') && n.endsWith('.ttf') && !n.contains('italic');
-  }).toList();
-  final icons = files.where((f) => f.uri.pathSegments.last.toLowerCase().startsWith('materialicons'));
-  Future<ByteData> bytes(File f) async => ByteData.sublistView(await f.readAsBytes());
-
-  if (roboto.isNotEmpty) {
-    for (final family in {
-      'Roboto',
-      AppTypography.fontNunito,
-      AppTypography.fontPoppins,
-      AppTypography.fontProductName,
-    }) {
-      final loader = FontLoader(family);
-      for (final f in roboto) {
-        loader.addFont(bytes(f));
-      }
-      await loader.load();
-    }
-  }
+  final icons = dir
+      .listSync()
+      .whereType<File>()
+      .where((f) => f.uri.pathSegments.last.toLowerCase().startsWith('materialicons'));
   if (icons.isNotEmpty) {
     await (FontLoader('MaterialIcons')..addFont(bytes(icons.first))).load();
   }
@@ -257,6 +254,19 @@ Future<void> _checkRoute(WidgetTester tester, String route, AppUser? user,
       }
       final ex = tester.takeException();
       if (ex != null) problems.add('$currentSize → exceção: ${ex.toString().split('\n').first}');
+      // Navegação lateral: nenhum rótulo cortado com "…" na fonte padrão (a reauditoria
+      // viu "Configurações" truncado em largura intermediária).
+      if (textScale == 1.0) {
+        for (final e in find
+            .descendant(of: find.byType(AdaptiveSideRail), matching: find.byType(RichText))
+            .evaluate()) {
+          final rp = e.renderObject;
+          if (rp is RenderParagraph && rp.didExceedMaxLines) {
+            final msg = '$currentSize → texto cortado na lateral: "${rp.text.toPlainText()}"';
+            if (!problems.contains(msg)) problems.add(msg);
+          }
+        }
+      }
     }
   } finally {
     FlutterError.onError = originalOnError;
@@ -386,7 +396,6 @@ Future<void> _checkHelpAndTutorial(WidgetTester tester, String route, double esc
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    AppTypography.useGoogleFonts = false;
     SharedPreferences.setMockInitialValues({});
     await initializeDateFormatting('pt_BR');
     await _loadRealFonts();
