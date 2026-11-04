@@ -54,3 +54,6 @@ node_modules/
 .claude/
 *.docx#
 /flutter/
+
+# Cache do Firebase CLI (hosting deploy)
+.firebase/
