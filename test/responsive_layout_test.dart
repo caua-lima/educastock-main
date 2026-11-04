@@ -84,28 +84,34 @@ Future<void> _loadRealFonts() async {
   if (root == null) return;
   final dir = Directory('$root/bin/cache/artifacts/material_fonts');
   if (!dir.existsSync()) return;
-  Future<ByteData> bytes(String name) async =>
-      ByteData.sublistView(await File('${dir.path}/$name').readAsBytes());
+  // Usa as variações que existirem (o conjunto baixado muda entre máquinas e o CI).
+  final files = dir.listSync().whereType<File>().toList();
+  final roboto = files.where((f) {
+    final n = f.uri.pathSegments.last.toLowerCase();
+    return n.startsWith('roboto') && n.endsWith('.ttf') && !n.contains('italic');
+  }).toList();
+  final icons = files.where((f) => f.uri.pathSegments.last.toLowerCase().startsWith('materialicons'));
+  Future<ByteData> bytes(File f) async => ByteData.sublistView(await f.readAsBytes());
 
-  final families = <String>{
-    'Roboto',
-    AppTypography.fontNunito,
-    AppTypography.fontPoppins,
-    AppTypography.fontProductName,
-  };
-  for (final family in families) {
-    final loader = FontLoader(family)
-      ..addFont(bytes('roboto-regular.ttf'))
-      ..addFont(bytes('roboto-medium.ttf'))
-      ..addFont(bytes('roboto-bold.ttf'))
-      ..addFont(bytes('roboto-black.ttf'));
-    await loader.load();
+  if (roboto.isNotEmpty) {
+    for (final family in {
+      'Roboto',
+      AppTypography.fontNunito,
+      AppTypography.fontPoppins,
+      AppTypography.fontProductName,
+    }) {
+      final loader = FontLoader(family);
+      for (final f in roboto) {
+        loader.addFont(bytes(f));
+      }
+      await loader.load();
+    }
   }
-  final icons = FontLoader('MaterialIcons')..addFont(bytes('materialicons-regular.otf'));
-  await icons.load();
+  if (icons.isNotEmpty) {
+    await (FontLoader('MaterialIcons')..addFont(bytes(icons.first))).load();
+  }
 }
 
-/// Datasource de login sem Firebase Auth (e-mail já verificado).
 class _FakeAuthDatasource extends AuthRemoteDatasource {
   _FakeAuthDatasource(FakeFirebaseFirestore db) : super(firestore: db);
 
