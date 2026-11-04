@@ -1,3 +1,5 @@
+// Script de capturas: fica fora de test/ de propósito, mas usa os mesmos ganchos de teste.
+// ignore_for_file: invalid_use_of_visible_for_testing_member
 // Gera capturas das telas principais com dados de exemplo (sem Firebase), em celular e PC.
 //
 //   flutter test tool/capturas_test.dart --update-goldens
