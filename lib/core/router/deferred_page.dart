@@ -20,6 +20,13 @@ class DeferredPage extends StatefulWidget {
 
   static final Set<String> _loaded = {};
 
+  /// A biblioteca da tela [id] já foi carregada? (usado pelos testes de layout para
+  /// medir a tela de verdade, não a de "carregando").
+  static bool estaCarregada(String id) => _loaded.contains(id);
+
+  /// Marca a biblioteca como carregada (pré-carga feita fora da tela).
+  static void marcarCarregada(String id) => _loaded.add(id);
+
   @override
   State<DeferredPage> createState() => _DeferredPageState();
 }

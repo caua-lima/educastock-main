@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 import '../tokens/typography_tokens.dart';
 
 /// Card unificado para exibir produto em listas (Estoque, Saída, Receita).
-/// Layout: 2 cards por linha, imagem grande no topo, nome com fonte distinta,
-/// metadata embaixo e área opcional de ações (ex: stepper de quantidade).
+/// Layout: cabeçalho de altura fixa (foto ou ícone sobre fundo levemente
+/// tingido — o estado fica no selo e na borda, não pinta o card inteiro), nome
+/// legível com 2 linhas reservadas na fonte em uso, metadata embaixo e área
+/// opcional de ações (ex: stepper de quantidade).
+///
+/// Nas grades, use [CasaProductCard.alturaSugerida] como `mainAxisExtent`: a
+/// altura acompanha a fonte do sistema (até 200%) em vez de proporção fixa.
 ///
 /// Áreas:
 ///  - [headerBadgeLeft] / [headerBadgeRight]: pequenos badges sobrepostos
@@ -49,6 +54,18 @@ class CasaProductCard extends StatelessWidget {
   static const paletteBlue    = [Color(0xFF2563EB), Color(0xFF1D4ED8)];
   static const paletteGray    = [Color(0xFF6B7280), Color(0xFF4B5563)];
 
+  /// Altura do cabeçalho (foto ou ícone).
+  static const alturaCabecalho = 84.0;
+
+  /// Altura total sugerida para a grade, pela fonte em uso.
+  static double alturaSugerida(BuildContext context, {bool comAcao = false}) {
+    final s = MediaQuery.textScalerOf(context);
+    final nome = s.scale(14) * 1.25 * 2; // 2 linhas reservadas
+    final rodape = s.scale(12) * 1.35 + 10; // selos de estoque/categoria
+    final acao = comAcao ? 14 + 34 + s.scale(17) * 0.3 : 0;
+    return alturaCabecalho + 8 + nome + 8 + rodape + 10 + acao + 4;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -77,33 +94,19 @@ class CasaProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ─── Header com imagem grande / ícone categoria ─────────────
-            AspectRatio(
-              aspectRatio: 16 / 9,
+            // ─── Cabeçalho de altura fixa: foto ou ícone ────────────────
+            SizedBox(
+              height: alturaCabecalho,
               child: Stack(
                 children: [
                   // Background gradient (visível como fallback)
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [accent, accentDark],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                        color: Color.alphaBlend(
+                          accent.withValues(alpha: isDark ? 0.24 : 0.12),
+                          cardBg,
                         ),
-                      ),
-                    ),
-                  ),
-                  // Círculo decorativo
-                  Positioned(
-                    right: -16,
-                    top: -16,
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.10),
                       ),
                     ),
                   ),
@@ -114,26 +117,17 @@ class CasaProductCard extends StatelessWidget {
                             imageUrl: imageUrl!,
                             fit: BoxFit.cover,
                             placeholder: (_, __) => Center(
-                              child: Icon(
-                                fallbackIcon,
-                                color: Colors.white.withValues(alpha: 0.7),
-                                size: 42,
-                              ),
+                              child: Icon(fallbackIcon, color: accent, size: 30),
                             ),
                             errorWidget: (_, __, ___) => Center(
                               child: Container(
                                 width: 52,
                                 height: 52,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.18),
+                                  color: accent.withValues(alpha: isDark ? 0.22 : 0.14),
                                   borderRadius: BorderRadius.circular(13),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.32),
-                                    width: 1.4,
-                                  ),
                                 ),
-                                child: Icon(fallbackIcon,
-                                    color: Colors.white, size: 26),
+                                child: Icon(fallbackIcon, color: isDark ? Colors.white : accentDark, size: 26),
                               ),
                             ),
                           )
@@ -142,17 +136,12 @@ class CasaProductCard extends StatelessWidget {
                               width: 52,
                               height: 52,
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.18),
+                                color: accent.withValues(alpha: isDark ? 0.22 : 0.14),
                                 borderRadius: BorderRadius.circular(13),
-                                border: Border.all(
-                                  color:
-                                      Colors.white.withValues(alpha: 0.32),
-                                  width: 1.4,
-                                ),
                               ),
                               child: Icon(
                                 fallbackIcon,
-                                color: Colors.white,
+                                color: isDark ? Colors.white : accentDark,
                                 size: 26,
                               ),
                             ),
@@ -175,9 +164,10 @@ class CasaProductCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Nome com altura RESERVADA de 2 linhas (mesmo se 1 linha)
+                    // Nome com altura RESERVADA de 2 linhas na fonte em uso
+                    // (antes 34 px fixos: estourava com fonte grande).
                     SizedBox(
-                      height: 34,
+                      height: MediaQuery.textScalerOf(context).scale(14) * 1.25 * 2,
                       child: Text(
                         name,
                         maxLines: 2,
@@ -185,7 +175,7 @@ class CasaProductCard extends StatelessWidget {
                         style: AppTypography.productName(
                           size: 14,
                           color: cs.onSurface,
-                        ),
+                        ).copyWith(height: 1.2),
                       ),
                     ),
                     if (footer != null) ...[
@@ -366,13 +356,13 @@ class CasaProductBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 10, color: accent),
+            Icon(icon, size: 12, color: accent),
             const SizedBox(width: 3),
           ],
           Text(
             label,
             style: TextStyle(
-              fontSize: 9.5,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
               color: accent,
               letterSpacing: 0.2,

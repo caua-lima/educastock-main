@@ -698,17 +698,19 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                           : null,
                     );
                   }
-                  return GridView.builder(
+                  return LayoutBuilder(
+                   builder: (context, box) => GridView.builder(
                     padding: const EdgeInsets.fromLTRB(AppSpacing.md,
                         // Folga para os botões flutuantes (teclado + Escanear) não
                         // cobrirem a última linha de produtos.
                         AppSpacing.xs, AppSpacing.md, 140),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 240,
-                      mainAxisSpacing: AppSpacing.md,
-                      crossAxisSpacing: AppSpacing.md,
-                      childAspectRatio: 0.92,
+                    // Colunas pela largura e altura pela fonte (antes proporção fixa:
+                    // em 320 px ou fonte grande o rodapé do cartão era cortado).
+                    gridDelegate: productCardGridDelegate(
+                      box.maxWidth - 2 * AppSpacing.md,
+                      bodyHeight: 92,
+                      spacing: AppSpacing.md,
+                      textScale: MediaQuery.textScalerOf(context).scale(1),
                     ),
                     itemCount: filtered.length,
                     itemBuilder: (_, i) {
@@ -731,19 +733,21 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       }
                       return card;
                     },
+                   ),
                   );
                 },
-                loading: () => GridView.builder(
+                loading: () => LayoutBuilder(
+                  builder: (context, box) => GridView.builder(
                   padding: const EdgeInsets.all(AppSpacing.md),
-                  gridDelegate:
-                      const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 240,
-                    mainAxisSpacing: AppSpacing.md,
-                    crossAxisSpacing: AppSpacing.md,
-                    childAspectRatio: 0.92,
+                  gridDelegate: productCardGridDelegate(
+                    box.maxWidth - 2 * AppSpacing.md,
+                    bodyHeight: 92,
+                    spacing: AppSpacing.md,
+                    textScale: MediaQuery.textScalerOf(context).scale(1),
                   ),
                   itemCount: 6,
                   itemBuilder: (_, __) => const CasaCardSkeleton(),
+                  ),
                 ),
                 error: (e, _) => CasaEmptyState(
                   icon: Icons.error_outline_rounded,
@@ -1813,6 +1817,7 @@ class _ProductGridCard extends ConsumerWidget {
       expiryBadgeIcon = Icons.do_not_disturb_on_outlined;
     }
 
+    final corTexto = Theme.of(context).brightness == Brightness.dark ? palette[0] : palette[1];
     final isCritical = product.isPerishable && batchData != null &&
         (batchData.isExpired || batchData.daysToExpiry <= 7);
     final isWarning = product.isPerishable && batchData != null &&
@@ -1861,18 +1866,24 @@ class _ProductGridCard extends ConsumerWidget {
                 : null),
         footer: Row(
           children: [
-            Container(
+            Flexible(
+              flex: 3,
+              child: Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
                 color: palette[0].withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(7),
               ),
-              child: Row(
+              // A quantidade nunca é cortada: em espaço mínimo ela só diminui.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.inventory_2_rounded,
-                      size: 11, color: palette[0]),
+                      size: 13, color: corTexto),
                   const SizedBox(width: 4),
                   Text(
                     inactive
@@ -1881,23 +1892,26 @@ class _ProductGridCard extends ConsumerWidget {
                             ? '$totalQty ${product.unit}'
                             : '— ${product.unit}',
                     style: AppTypography.labelSmall.copyWith(
-                      color: palette[0],
+                      color: corTexto,
                       fontWeight: FontWeight.w800,
-                      fontSize: 10.5,
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
+              ),
+            ),
             ),
             const SizedBox(width: 6),
             Expanded(
+              flex: 2,
               child: Text(
                 catLabel,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.labelSmall.copyWith(
                   color: cs.onSurfaceVariant,
-                  fontSize: 10.5,
+                  fontSize: 12,
                 ),
               ),
             ),

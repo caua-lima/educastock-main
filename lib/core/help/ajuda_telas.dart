@@ -163,11 +163,6 @@ const Map<String, AjudaTela> _porRota = {
     finalidade: 'Receitas com os ingredientes do estoque, usadas para distribuir por receita.',
     icone: Icons.restaurant_menu_rounded,
   ),
-  AppRoutes.recipeCreate: AjudaTela(
-    titulo: 'Nova receita',
-    finalidade: 'Monte a receita escolhendo os produtos do catálogo e as quantidades.',
-    icone: Icons.restaurant_menu_rounded,
-  ),
   AppRoutes.settings: AjudaTela(
     titulo: 'Configurações',
     finalidade: 'Tema (claro, escuro ou do sistema), conta, usuárias, categorias e alertas.',

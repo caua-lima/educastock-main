@@ -1216,20 +1216,20 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
                   const Icon(Icons.shelves, size: 15, color: Colors.white),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Text(
-              'Localização no Depósito',
-              style: AppTypography.labelLarge.copyWith(
-                  color: cs.onSurface, fontWeight: FontWeight.w700),
+            // O título quebra linha com fonte grande (antes estourava à direita).
+            Expanded(
+              child: Text(
+                'Localização no Depósito',
+                style: AppTypography.labelLarge.copyWith(
+                    color: cs.onSurface, fontWeight: FontWeight.w700),
+              ),
             ),
-            const Spacer(),
             TextButton(
               onPressed: widget.onManageLocations,
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.brandPrimary600,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                textStyle: const TextStyle(fontSize: 11),
+                foregroundColor: Theme.of(context).colorScheme.primary,
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
               child: const Text('Gerenciar'),
             ),

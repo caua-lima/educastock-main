@@ -1,6 +1,8 @@
-// Teste de responsividade: abre CADA tela do app em 5 tamanhos (celular pequeno, celular,
-// tablet, notebook e monitor) com dados falsos parecidos com os reais, e falha se qualquer
-// tela estourar o layout ("RenderFlex overflowed"), lançar exceção ou não montar.
+// Teste de responsividade: abre CADA tela do app nas larguras 320, 360, 390, 768, 1024 e
+// 1440 e com o celular deitado, nos temas claro e escuro, com fonte 100% e 200%, usando
+// dados falsos parecidos com os reais. Falha se qualquer tela estourar o layout
+// ("RenderFlex overflowed"), lançar exceção ou não montar. Também abre a ajuda de cada
+// tela e percorre o tutorial até "Concluir". Nenhuma exceção é aceita.
 //
 // Roda sem Firebase: o Firestore é trocado por um falso com um único override
 // (`firestoreProvider`) e o usuário logado é simulado.
@@ -11,6 +13,7 @@ import 'package:educastock/core/firebase/firebase_providers.dart';
 import 'package:educastock/core/offline/offline_queue.dart';
 import 'package:educastock/core/offline/offline_sync_controller.dart';
 import 'package:educastock/core/router/app_router.dart';
+import 'package:educastock/core/router/deferred_page.dart';
 import 'package:educastock/core/theme/app_theme.dart';
 import 'package:educastock/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:educastock/features/auth/domain/entities/app_user.dart';
@@ -27,11 +30,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'support/fake_data.dart';
 
 const _sizes = <String, Size>{
-  'celular pequeno 360x740': Size(360, 740),
-  'celular 412x915': Size(412, 915),
-  'tablet 820x1180': Size(820, 1180),
-  'notebook 1366x768': Size(1366, 768),
-  'monitor 1920x1080': Size(1920, 1080),
+  'celular 320x640': Size(320, 640),
+  'celular 360x740': Size(360, 740),
+  'celular 390x844': Size(390, 844),
+  'celular deitado 740x360': Size(740, 360),
+  'tablet 768x1024': Size(768, 1024),
+  'tablet deitado 1024x768': Size(1024, 768),
+  'computador 1440x900': Size(1440, 900),
 };
 
 const _staffRoutes = [
@@ -121,13 +126,14 @@ class _FakeAuthDatasource extends AuthRemoteDatasource {
 
 class _TestApp extends ConsumerWidget {
   final double textScale;
-  const _TestApp({this.textScale = 1.0});
+  final bool dark;
+  const _TestApp({this.textScale = 1.0, this.dark = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
+      theme: dark ? AppTheme.dark : AppTheme.light,
       locale: const Locale('pt', 'BR'),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -189,20 +195,8 @@ Future<void> _scrollThrough(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-/// Pontos que ainda estouram com fonte em 200% (dívida registrada, não escondida).
-/// Qualquer estouro NOVO fora desta lista reprova o teste. Ao corrigir um, remova-o daqui.
-const _knownBigTextIssues = {
-  'lib/features/alerts/presentation/pages/alerts_page.dart:985', // linha hora + origem do alerta
-  'lib/features/batches/presentation/pages/batch_form_page.dart:1195', // título de seção com ícone
-  'lib/features/locations/presentation/pages/locations_page.dart:336', // cabeçalho de cômodo
-  'lib/features/products/presentation/pages/product_detail_page.dart:473', // cabeçalho expansível
-  'lib/features/products/presentation/pages/product_detail_page.dart:1476', // selos do lote
-  'lib/features/settings/presentation/pages/categories_settings_page.dart:113', // cabeçalho
-  'lib/features/settings/presentation/pages/users_management_page.dart:204', // seletor de perfil
-};
-
 Future<void> _checkRoute(WidgetTester tester, String route, AppUser? user,
-    {double textScale = 1.0, Map<String, Size> sizes = _sizes, Set<String> known = const {}}) async {
+    {double textScale = 1.0, Map<String, Size> sizes = _sizes, bool dark = false, Set<String> known = const {}}) async {
   final problems = <String>[];
   final originalOnError = FlutterError.onError;
   String currentSize = '';
@@ -227,10 +221,11 @@ Future<void> _checkRoute(WidgetTester tester, String route, AppUser? user,
     final first = sizes.values.first;
     tester.view.physicalSize = first;
     await tester.pumpWidget(UncontrolledProviderScope(
-        container: container, child: _TestApp(textScale: textScale)));
+        container: container, child: _TestApp(textScale: textScale, dark: dark)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     container.read(routerProvider).go(route);
+    await _esperarTelaSobDemanda(tester, route);
 
     for (final entry in sizes.entries) {
       currentSize = entry.key;
@@ -277,6 +272,117 @@ Future<void> _checkRoute(WidgetTester tester, String route, AppUser? user,
   expect(problems, isEmpty, reason: 'Problemas de layout em $route:\n  ${problems.join('\n  ')}');
 }
 
+/// Telas carregadas sob demanda (`DeferredPage`) usam o relógio real para carregar.
+/// Espera o carregamento terminar; se não terminar, o teste FALHA — antes o teste media
+/// a tela de "carregando" e passava sem nunca desenhar Previsão/Análise de risco.
+Future<void> _esperarTelaSobDemanda(WidgetTester tester, String route) async {
+  Finder carregando() => find.byWidgetPredicate(
+      (w) => w is DeferredPage && !DeferredPage.estaCarregada(w.id));
+  for (var i = 0; i < 6; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+  for (var i = 0; i < 200 && carregando().evaluate().isNotEmpty; i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+    await tester.pump(const Duration(milliseconds: 25));
+  }
+  expect(carregando(), findsNothing, reason: 'a tela $route não terminou de carregar');
+}
+
+/// Vários quadros curtos: o tutorial rola até o alvo e mede a posição ao longo de
+/// alguns quadros (um único pump longo avança só um quadro).
+Future<void> _quadros(WidgetTester tester, [int n = 12]) async {
+  for (var i = 0; i < n; i++) {
+    await tester.pump(const Duration(milliseconds: 80));
+  }
+}
+
+/// Abre a ajuda da tela e, se houver tutorial, percorre todos os passos até Concluir.
+Future<void> _checkHelpAndTutorial(WidgetTester tester, String route, double escala, Size tamanho, bool escuro) async {
+  final problems = <String>[];
+  final originalOnError = FlutterError.onError;
+  FlutterError.onError = (d) {
+    final m = _describe(d);
+    if (!problems.contains(m)) problems.add(m);
+  };
+  final db = FakeFirebaseFirestore();
+  await seedFakeData(db);
+  final container = ProviderContainer(overrides: [
+    firestoreProvider.overrideWithValue(db),
+    authStateProvider.overrideWith((ref) => Stream.value(kAdminUser)),
+    authDatasourceProvider.overrideWithValue(_FakeAuthDatasource(db)),
+    offlineQueueProvider.overrideWithValue(OfflineQueue(InMemoryQueueStore())),
+  ]);
+  var passos = 0;
+  var concluiu = false;
+  var achouAjuda = false;
+  try {
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = tamanho;
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: container, child: _TestApp(textScale: escala, dark: escuro)));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    container.read(routerProvider).go(route);
+    await _esperarTelaSobDemanda(tester, route);
+    await _quadros(tester);
+    final ajuda = find.byTooltip('Ajuda');
+    // Painel no celular: a ajuda fica no menu da conta.
+    final menuConta = find.byTooltip('Menu da conta');
+    achouAjuda = ajuda.evaluate().isNotEmpty || menuConta.evaluate().isNotEmpty;
+    if (achouAjuda) {
+      if (ajuda.evaluate().isNotEmpty) {
+        await tester.tap(ajuda.first, warnIfMissed: false);
+      } else {
+        await tester.tap(menuConta.first, warnIfMissed: false);
+        await _quadros(tester);
+        await tester.tap(find.text('Ajuda').last, warnIfMissed: false);
+      }
+      await _quadros(tester);
+      final verTutorial = find.text('Ver tutorial');
+      if (verTutorial.evaluate().isNotEmpty) {
+        await tester.tap(verTutorial);
+        await _quadros(tester);
+      }
+      // Percorre o tutorial (se abriu) até o fim.
+      for (var i = 0; i < 20; i++) {
+        final proximo = find.text('Próximo');
+        final concluir = find.text('Concluir');
+        if (concluir.evaluate().isNotEmpty) {
+          await tester.tap(concluir);
+          await _quadros(tester);
+          concluiu = true;
+          break;
+        }
+        if (proximo.evaluate().isEmpty) break;
+        passos++;
+        await tester.tap(proximo);
+        await _quadros(tester);
+      }
+      // Fecha a ajuda se ela ficou aberta (tela sem tutorial).
+      final fechar = find.text('Entendido');
+      if (fechar.evaluate().isNotEmpty) {
+        await tester.tap(fechar);
+        await tester.pump(const Duration(milliseconds: 600));
+      }
+      if (find.textContaining('Passo ').evaluate().isNotEmpty) problems.add('tutorial ficou aberto');
+    }
+    final ex = tester.takeException();
+    if (ex != null) problems.add('exceção: ${ex.toString().split('\n').first}');
+  } finally {
+    FlutterError.onError = originalOnError;
+  }
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pump(const Duration(seconds: 2));
+  container.dispose();
+  tester.view.resetPhysicalSize();
+  tester.view.resetDevicePixelRatio();
+  expect(problems, isEmpty, reason: 'Ajuda/tutorial em $route:\n  ${problems.join('\n  ')}');
+  // Registro do que foi percorrido (evidência no log do teste).
+  // ignore: avoid_print
+  print('AJUDA-TUTORIAL $route: ajuda=$achouAjuda, passos=${concluiu ? passos + 1 : passos}, concluiu=$concluiu');
+  if (passos > 0 && !concluiu) fail('tutorial de $route não chegou ao fim ($passos passos)');
+}
+
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -284,6 +390,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await initializeDateFormatting('pt_BR');
     await _loadRealFonts();
+    // Telas sob demanda carregadas antes (zona real): dentro do relógio simulado de
+    // cada teste a 2ª carga ficava presa e a tela nunca era desenhada.
+    await precarregarTelasSobDemanda();
   });
 
   group('Equipe', () {
@@ -298,18 +407,47 @@ void main() {
     }
   });
 
-  // Fonte do sistema ampliada a 200% (acessibilidade), sem o limite do app.
-  const bigText = {'celular 412x915': Size(412, 915), 'notebook 1366x768': Size(1366, 768)};
+  // Fonte do sistema ampliada a 200% (acessibilidade), sem o limite do app. As sete
+  // exceções que este teste aceitava foram corrigidas nos componentes — nenhuma é aceita.
+  const bigText = {
+    'celular 320x640': Size(320, 640),
+    'celular 390x844': Size(390, 844),
+    'celular deitado 915x412': Size(915, 412),
+    'tablet 768x1024': Size(768, 1024),
+    'computador 1440x900': Size(1440, 900),
+  };
   group('Fonte 200%', () {
     for (final route in _staffRoutes) {
       testWidgets('layout 200% $route',
-          (tester) => _checkRoute(tester, route, kAdminUser,
-              textScale: 2.0, sizes: bigText, known: _knownBigTextIssues));
+          (tester) => _checkRoute(tester, route, kAdminUser, textScale: 2.0, sizes: bigText));
     }
     for (final route in _donorRoutes) {
       testWidgets('layout 200% $route',
-          (tester) => _checkRoute(tester, route, kDonorUser,
-              textScale: 2.0, sizes: bigText, known: _knownBigTextIssues));
+          (tester) => _checkRoute(tester, route, kDonorUser, textScale: 2.0, sizes: bigText));
+    }
+  });
+
+  // Tema escuro: os mesmos estouros/exceções, em celular e computador, 100% e 200%.
+  const darkSizes = {'celular 390x844': Size(390, 844), 'computador 1440x900': Size(1440, 900)};
+  group('Tema escuro', () {
+    for (final route in [..._staffRoutes, ..._donorRoutes]) {
+      final user = route.startsWith('/doador') ? kDonorUser : kAdminUser;
+      testWidgets('layout escuro $route', (tester) => _checkRoute(tester, route, user, dark: true, sizes: darkSizes));
+      testWidgets('layout escuro 200% $route',
+          (tester) => _checkRoute(tester, route, user, dark: true, textScale: 2.0, sizes: const {'celular 390x844': Size(390, 844)}));
+    }
+  });
+
+  // Ajuda e tutorial nas telas reais: o botão Ajuda abre a ajuda curta; "Ver tutorial"
+  // percorre todos os passos até "Concluir" sem estouro, sem exceção e sem sobrar overlay.
+  group('Ajuda e tutorial', () {
+    for (final route in _staffRoutes.where((r) => !r.contains('?') && r != '/doacoes/d-1/receber')) {
+      for (final (rotulo, escala, tamanho, escuro) in [
+        ('celular 390 200% escuro', 2.0, const Size(390, 844), true),
+        ('computador 1440 claro', 1.0, const Size(1440, 900), false),
+      ]) {
+        testWidgets('ajuda/tutorial $route ($rotulo)', (tester) => _checkHelpAndTutorial(tester, route, escala, tamanho, escuro));
+      }
     }
   });
 

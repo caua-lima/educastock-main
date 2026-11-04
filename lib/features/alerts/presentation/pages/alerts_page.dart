@@ -962,9 +962,9 @@ class _ModernAlertCard extends ConsumerWidget {
                                     style: AppTypography.labelMedium.copyWith(
                                       color: cs.onSurface,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 14,
+                                      fontSize: 15,
                                     ),
-                                    maxLines: 1,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -982,46 +982,43 @@ class _ModernAlertCard extends ConsumerWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: AppSpacing.sm),
-                            Row(
+                            // Hora + "Ver produto": quebram linha com fonte
+                            // grande em vez de estourar.
+                            Wrap(
+                              spacing: AppSpacing.md,
+                              runSpacing: 2,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                Icon(Icons.access_time_rounded,
-                                    size: 12,
-                                    color: cs.onSurfaceVariant
-                                        .withValues(alpha: 0.7)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _relativeTime(alert.createdAt),
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: cs.onSurfaceVariant,
-                                    fontSize: 11,
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.access_time_rounded,
+                                        size: 14, color: cs.onSurfaceVariant),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _relativeTime(alert.createdAt),
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: cs.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                if (!alert.isManual) ...[
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Container(
-                                    width: 3,
-                                    height: 3,
-                                    decoration: BoxDecoration(
-                                      color: cs.onSurfaceVariant
-                                          .withValues(alpha: 0.5),
-                                      shape: BoxShape.circle,
-                                    ),
+                                if (!alert.isManual)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.touch_app_outlined,
+                                          size: 14, color: cs.onSurfaceVariant),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Ver produto',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: cs.onSurfaceVariant,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Icon(Icons.touch_app_outlined,
-                                      size: 12,
-                                      color: cs.onSurfaceVariant
-                                          .withValues(alpha: 0.7)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Ver produto',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: cs.onSurfaceVariant,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
                               ],
                             ),
                           ],

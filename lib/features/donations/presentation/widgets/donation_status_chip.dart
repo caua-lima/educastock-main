@@ -46,12 +46,14 @@ class DonationStatusChip extends StatelessWidget {
           children: [
             Icon(_icon, size: 12, color: _color),
             const SizedBox(width: 4),
-            Text(
+            Flexible(
+             child: Text(
               status.label,
               style: AppTypography.labelSmall.copyWith(
                 color: _color,
                 fontWeight: FontWeight.w700,
               ),
+            ),
             ),
           ],
         ),

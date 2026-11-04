@@ -203,6 +203,10 @@ class UsersManagementPage extends ConsumerWidget {
                       key: i == 0 ? _keyUserRole : null,
                       child: DropdownButtonFormField<UserRole>(
                         initialValue: user.role,
+                        // Ocupa a largura do campo e deixa o item crescer com a
+                        // fonte (antes o perfil estourava à direita em 200%).
+                        isExpanded: true,
+                        itemHeight: null,
                         decoration: const InputDecoration(
                           labelText: 'Perfil de acesso',
                           prefixIcon: Icon(Icons.verified_user_outlined, size: 20),
@@ -230,7 +234,7 @@ class UsersManagementPage extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              'Permitir login desta usuaria',
+                              'Permitir login desta usuária',
                               style: AppTypography.bodyMedium,
                             ),
                           ),

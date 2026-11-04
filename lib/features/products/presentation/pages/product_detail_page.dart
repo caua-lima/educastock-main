@@ -277,8 +277,11 @@ class _ProductSliverAppBar extends ConsumerWidget {
         ? 'U'
         : user!.name.trim().substring(0, 1).toUpperCase();
 
+    // Cabeçalho cresce com a fonte do sistema (até 200%): o nome, a marca e os
+    // selos não são cortados.
+    final escalaTexto = MediaQuery.textScalerOf(context).scale(1);
     return SliverAppBar(
-      expandedHeight: 210,
+      expandedHeight: 210 + (escalaTexto - 1).clamp(0.0, 1.5) * 130,
       pinned: true,
       backgroundColor: AppColors.brandPrimary600,
       foregroundColor: Colors.white,
@@ -1157,50 +1160,58 @@ class _BatchCard extends StatelessWidget {
             ),
             child: Row(
               children: [
+                // Situação + validade quebram linha (antes estouravam em 320 px).
+                Expanded(
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 2,
+                    children: [
                 Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: sc,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                          color: sc.withValues(alpha: 0.55),
-                          blurRadius: 5,
-                          spreadRadius: 1)
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: sc,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: sc.withValues(alpha: 0.55),
+                                  blurRadius: 5,
+                                  spreadRadius: 1)
+                            ],
+                          ),
+                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_statusIcon(), size: 15, color: sc),
+                          const SizedBox(width: 5),
+                          Text(
+                            _statusLabel(),
+                            style: TextStyle(
+                              color: sc,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (!batch.noExpiry)
+                        Text(
+                          batch.isExpired
+                              ? 'Vencido ${batch.expiryDate != null ? fmt.format(batch.expiryDate!) : ''}'
+                              : batch.expiryDate != null
+                                  ? '${fmt.format(batch.expiryDate!)} ($days d)'
+                                  : 'Sem data',
+                          style: TextStyle(
+                              color: onCardSub,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600),
+                        ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 7),
-                Icon(_statusIcon(), size: 15, color: sc),
-                const SizedBox(width: 5),
-                Text(
-                  _statusLabel(),
-                  style: TextStyle(
-                    color: sc,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13.5,
-                  ),
-                ),
-                if (!batch.noExpiry) ...[
-                  Text('  ·  ',
-                      style: TextStyle(color: onCardSub, fontSize: 12.5)),
-                  Expanded(
-                    child: Text(
-                      batch.isExpired
-                          ? 'Vencido ${batch.expiryDate != null ? fmt.format(batch.expiryDate!) : ''}'
-                          : batch.expiryDate != null
-                              ? '${fmt.format(batch.expiryDate!)} ($days d)'
-                              : 'Sem data',
-                      style: TextStyle(
-                          color: onCardSub,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ] else
-                  const Spacer(),
+                const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 3),
@@ -1394,12 +1405,15 @@ class _InlineActionBtn extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: color),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: AppTypography.labelMedium.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.labelMedium.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12.5,
+                  ),
                 ),
               ),
             ],
@@ -1476,14 +1490,17 @@ class _InfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 10.5, color: color.withValues(alpha: 0.9)),
+          Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              color: cs.onSurface.withValues(alpha: 0.8),
-              fontWeight: FontWeight.w600,
+          // Quebra linha em vez de estourar (fonte grande / origem longa).
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: cs.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

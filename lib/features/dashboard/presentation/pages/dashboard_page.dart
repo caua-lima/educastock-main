@@ -159,11 +159,19 @@ class DashboardPage extends ConsumerWidget {
                       : constraints.maxWidth >= 620
                           ? 4
                           : 3;
-                  return GridView.count(
-                    crossAxisCount: cross,
-                    mainAxisSpacing: AppSpacing.sm,
-                    crossAxisSpacing: AppSpacing.sm,
-                    childAspectRatio: 1.0,
+                  // Altura pelo conteúdo real (ícone + nome em até 2 linhas na fonte
+                  // em uso), não por proporção fixa: em 320 px ou fonte grande o
+                  // quadrado não cabia e o nome era cortado.
+                  final largura = (constraints.maxWidth - (cross - 1) * AppSpacing.sm) / cross;
+                  final linhaNome = MediaQuery.textScalerOf(context).scale(13.5) * 1.25;
+                  final altura = (8 + 54 + 8 + linhaNome * 2 + 10).clamp(largura * 0.8, double.infinity);
+                  return GridView(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cross,
+                      mainAxisSpacing: AppSpacing.sm,
+                      crossAxisSpacing: AppSpacing.sm,
+                      mainAxisExtent: altura,
+                    ),
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
@@ -468,7 +476,8 @@ class _DashboardHeader extends ConsumerWidget {
                         _HeaderMenu(
                           initial: initial,
                           size: avatarSize,
-                          onHelp: onHelpTap,
+                          // Ajuda curta primeiro; o tutorial é oferecido nela.
+                          onHelp: () => abrirAjudaDaTela(context, iniciarTutorial: onHelpTap),
                           onSettings: onSettingsTap,
                         ),
                       ],
@@ -825,7 +834,7 @@ class _QuickActionTileState extends State<_QuickActionTile> {
                       // Label centralizada
                       Text(
                         widget.label,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: AppTypography.productName(
@@ -1815,7 +1824,7 @@ class _HeaderMenu extends ConsumerWidget {
           value: 'help',
           child: ListTile(
             leading: Icon(Icons.help_outline_rounded),
-            title: Text('Dicas de uso'),
+            title: Text('Ajuda'),
             contentPadding: EdgeInsets.zero,
           ),
         ),

@@ -463,6 +463,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                     DropdownButtonFormField<ProductCategory>(
                       key: _keyCategoryField,
                       initialValue: _category,
+                      // Largura do campo e item que cresce com a fonte (320 px / 200%).
+                      isExpanded: true,
+                      itemHeight: null,
                       decoration: const InputDecoration(
                         labelText: 'Categoria *',
                         prefixIcon: Icon(Icons.category_outlined, size: 20),
@@ -481,6 +484,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                     const SizedBox(height: AppSpacing.md),
                     DropdownButtonFormField<String>(
                       initialValue: _unit,
+                      // Largura do campo e item que cresce com a fonte (320 px / 200%).
+                      isExpanded: true,
+                      itemHeight: null,
                       decoration: const InputDecoration(
                         labelText: 'Unidade de Medida *',
                         prefixIcon: Icon(Icons.straighten_outlined, size: 20),

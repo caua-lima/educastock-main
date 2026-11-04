@@ -56,6 +56,11 @@ class ModernProfileAppBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Celular estreito (ou fonte grande): o ícone decorativo sai e tema/perfil
+    // vão para "Mais opções" — o título não é espremido e nada some.
+    final larguraUtil = MediaQuery.sizeOf(context).width /
+        MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+    final estreito = larguraUtil < 430;
     final normalizedName = profileName?.trim();
     final initial = (normalizedName == null || normalizedName.isEmpty)
         ? 'U'
@@ -105,7 +110,7 @@ class ModernProfileAppBar extends ConsumerWidget {
                           ),
 
                         // ── Ícone da página (se fornecido) ─────────
-                        if (pageIcon != null) ...[
+                        if (pageIcon != null && !estreito) ...[
                           Container(
                             width: 38,
                             height: 38,
@@ -215,7 +220,12 @@ class ModernProfileAppBar extends ConsumerWidget {
                           onDarkBg: true,
                         ),
 
+                        // ── Celular estreito: tema e perfil no menu ────
+                        if (estreito)
+                          _MenuMaisOpcoes(onPerfil: onProfileTap),
+
                         // ── Toggle dark/light ──────────────────────
+                        if (!estreito)
                         Padding(
                           padding:
                               const EdgeInsets.only(left: AppSpacing.xs),
@@ -223,9 +233,13 @@ class ModernProfileAppBar extends ConsumerWidget {
                         ),
 
                         // ── Avatar de perfil ───────────────────────
-                        if (profileName != null || onProfileTap != null) ...[
+                        if (!estreito && (profileName != null || onProfileTap != null)) ...[
                           const SizedBox(width: AppSpacing.xs),
-                          GestureDetector(
+                          Semantics(
+                            button: onProfileTap != null,
+                            label: 'Perfil${normalizedName == null || normalizedName.isEmpty ? '' : ' de $normalizedName'}',
+                            excludeSemantics: true,
+                            child: GestureDetector(
                             onTap: onProfileTap,
                             child: Container(
                               width: 36,
@@ -249,6 +263,7 @@ class ModernProfileAppBar extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                          ),
                           ),
                         ],
                       ],
@@ -436,11 +451,24 @@ class CasaAlertsBellButton extends ConsumerWidget {
             ? AppColors.warning600
             : Theme.of(context).colorScheme.onSurfaceVariant);
 
+    final rotulo = count > 0
+        ? 'Alertas: $count ${count == 1 ? 'lote vencido ou perto de vencer' : 'lotes vencidos ou perto de vencer'}'
+        : 'Alertas: nenhum lote perto de vencer';
     return Padding(
       padding: const EdgeInsets.only(left: AppSpacing.xs),
-      child: GestureDetector(
+      child: Tooltip(
+       message: 'Alertas de validade',
+       child: Semantics(
+        button: true,
+        label: rotulo,
+        excludeSemantics: true,
+        child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => _showBubble(context, ref),
-        child: Stack(
+        child: Padding(
+         // Alvo de toque maior que o círculo visível.
+         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+         child: Stack(
           clipBehavior: Clip.none,
           children: [
             AnimatedContainer(
@@ -484,7 +512,48 @@ class CasaAlertsBellButton extends ConsumerWidget {
               ),
           ],
         ),
+        ),
+        ),
+       ),
       ),
+    );
+  }
+}
+
+/// Celular estreito: tema e perfil num menu "Mais opções" (nada some).
+class _MenuMaisOpcoes extends ConsumerWidget {
+  final VoidCallback? onPerfil;
+  const _MenuMaisOpcoes({this.onPerfil});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final escuro = Theme.of(context).brightness == Brightness.dark;
+    return PopupMenuButton<String>(
+      tooltip: 'Mais opções',
+      icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+      onSelected: (v) {
+        if (v == 'tema') ref.read(themeModeProvider.notifier).toggleDark(!escuro);
+        if (v == 'perfil') onPerfil?.call();
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: 'tema',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(escuro ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+            title: Text(escuro ? 'Tema claro' : 'Tema escuro'),
+          ),
+        ),
+        if (onPerfil != null)
+          const PopupMenuItem(
+            value: 'perfil',
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.person_outline_rounded),
+              title: Text('Perfil e configurações'),
+            ),
+          ),
+      ],
     );
   }
 }

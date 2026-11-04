@@ -123,7 +123,9 @@ class CategoriesSettingsPage extends ConsumerWidget {
                             color: Colors.white, size: 22),
                       ),
                       const SizedBox(width: AppSpacing.md),
-                      Column(
+                      // Ocupa o espaço restante e quebra linha (fonte grande).
+                      Expanded(
+                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -133,10 +135,11 @@ class CategoriesSettingsPage extends ConsumerWidget {
                           ),
                           Text(
                             'Categorias disponíveis no cadastro',
-                            style: AppTypography.bodySmall.copyWith(
-                                color: Colors.white.withValues(alpha: 0.8)),
+                            style: AppTypography.bodyMedium.copyWith(
+                                color: Colors.white.withValues(alpha: 0.9)),
                           ),
                         ],
+                       ),
                       ),
                     ],
                   ),

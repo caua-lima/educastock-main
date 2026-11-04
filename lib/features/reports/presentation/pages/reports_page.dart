@@ -201,8 +201,10 @@ class _TabActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: AppSpacing.xs,
       children: [
         Consumer(
           builder: (context, ref, _) => IconButton(
@@ -2543,9 +2545,9 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 4),
         Text(label,
             style: TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: color)),
+                color: Theme.of(context).colorScheme.onSurface)),
       ],
     );
   }
@@ -3191,13 +3193,13 @@ class _TopProductsChart extends StatelessWidget {
             );
           }),
           Divider(height: 12, color: cs.outlineVariant.withValues(alpha: 0.3)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            alignment: WrapAlignment.end,
             children: [
               Text(
                 'Total em estoque: ',
                 style: AppTypography.bodySmall
-                    .copyWith(color: cs.onSurfaceVariant, fontSize: 10),
+                    .copyWith(color: cs.onSurfaceVariant, fontSize: 12),
               ),
               Text(
                 '$totalItems unidades',
@@ -4482,15 +4484,15 @@ class _MlConfidenceDistChart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xs,
             children: [
               _LegendDot(
                   color: AppColors.danger600, label: 'Crítico'),
-              const SizedBox(width: AppSpacing.md),
               _LegendDot(
                   color: AppColors.warning600, label: 'Atenção'),
-              const SizedBox(width: AppSpacing.md),
               _LegendDot(
                   color: AppColors.success600, label: 'Seguro'),
             ],
@@ -5238,13 +5240,14 @@ class _ForecastCoverageChart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xs,
             children: [
               _LegendDot(
                   color: AppColors.secondaryBlue600,
                   label: 'Estoque Atual'),
-              const SizedBox(width: AppSpacing.md),
               _LegendDot(
                   color: AppColors.success600.withValues(alpha: 0.6),
                   label: 'Previsão 30d'),
@@ -5575,16 +5578,16 @@ class _ForecastReplenishCard extends StatelessWidget {
                         : 'Previsão mensal: ${forecast.forecastMonthly.toStringAsFixed(0)} un. · Sem saídas registradas',
                     style: AppTypography.bodySmall.copyWith(
                       color: cs.onSurfaceVariant,
-                      fontSize: 10,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Row(
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
                     children: [
                       SourceBadge(forecast: forecast),
-                      const SizedBox(width: 4),
                       TrendChip(
                         trend: forecast.trend,
                         trendPercent: forecast.trendPercent,
@@ -6464,31 +6467,30 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
                             color: color, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 6),
+                      // Nome e números: os números descem para a linha de baixo
+                      // quando não cabem (320 px / fonte grande).
                       Expanded(
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: cs.onSurface,
-                              fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 2,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: cs.onSurface,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              '${e.value.value} lotes · ${pct.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: cs.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        '${e.value.value} lotes',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: cs.onSurfaceVariant,
-                            fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${pct.toStringAsFixed(0)}%',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: color,
-                            fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
