@@ -214,7 +214,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                 if (tmpRange != null) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    '${DateFormat('dd/MM/yyyy').format(tmpRange!.start)} → ${DateFormat('dd/MM/yyyy').format(tmpRange!.end)}',
+                    '${DateFormat('dd/MM/yyyy').format(tmpRange!.start)} a ${DateFormat('dd/MM/yyyy').format(tmpRange!.end)}',
                     style: AppTypography.bodySmall,
                   ),
                 ],
@@ -339,7 +339,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                   align: ContentAlign.bottom,
                   hints: const [
                     'Cada ação é registrada com timestamp e autor',
-                    'Mudanças de quantidade aparecem como "antes → depois"',
+                    'Mudanças de quantidade aparecem como "antes › depois"',
                     'Mesmo admins NÃO podem apagar logs (proteção)',
                     'Investigação de roubo/perda começa por aqui',
                   ],
@@ -564,7 +564,7 @@ class _AuditLogTile extends StatelessWidget {
                           BorderRadius.circular(AppRadius.small),
                     ),
                     child: Text(
-                      'Antes: ${log['before']}  →  Depois: ${log['after']}',
+                      'Antes: ${log['before']}  ›  Depois: ${log['after']}',
                       style: AppTypography.labelSmall.copyWith(
                         color: cs.onSurfaceVariant,
                         fontFamily: 'monospace',

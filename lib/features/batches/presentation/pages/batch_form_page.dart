@@ -378,7 +378,7 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
                   align: ContentAlign.bottom,
                   hints: const [
                     'Padrão: "Prateleira A · Nível 1"',
-                    'Não tem a localização? Crie em Configurações → Depósito',
+                    'Não tem a localização? Crie em Configurações › Depósito',
                     'Use nomes especiais para áreas (geladeira, freezer)',
                     'Localização correta acelera distribuição em 70%',
                   ],

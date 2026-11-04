@@ -67,8 +67,8 @@ class DashboardPage extends ConsumerWidget {
                     icon: Icons.dashboard_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      'Toque no card AZUL → ir para Estoque',
-                      'Toque no card VERMELHO/AMARELO → ir para Alertas',
+                      'Toque no card AZUL › ir para Estoque',
+                      'Toque no card VERMELHO/AMARELO › ir para Alertas',
                       'Vermelho = AÇÃO IMEDIATA necessária',
                       'Números atualizam automaticamente em tempo real',
                     ],
@@ -125,7 +125,7 @@ class DashboardPage extends ConsumerWidget {
                     hints: const [
                       'Vence em 1-3 dias? Distribua HOJE!',
                       'Não consegue distribuir? Doe para outra ONG',
-                      'Vencido? Registre descarte em Saída → Vencimento',
+                      'Vencido? Registre descarte em Saída › Vencimento',
                       '"Ver todos" abre a lista completa de alertas',
                     ],
                   ),

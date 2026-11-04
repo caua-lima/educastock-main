@@ -83,7 +83,7 @@ class _ForecastPageState extends ConsumerState<ForecastPage> {
                 TutorialStep(
                   key: _keyForecastList,
                   title: 'Sugestões de Reposição',
-                  description: 'Lista ordenada por urgência. Cada card mostra: produto, dias restantes de estoque, consumo médio, tendência (↑↓), quantidade sugerida para comprar (já com margem de 20%). O sistema sugere quantidade ideal para 30 dias.',
+                  description: 'Lista ordenada por urgência. Cada card mostra: produto, dias restantes de estoque, consumo médio, tendência (sobe/desce), quantidade sugerida para comprar (já com margem de 20%). O sistema sugere quantidade ideal para 30 dias.',
                   icon: Icons.add_shopping_cart_rounded,
                   align: ContentAlign.top,
                   hints: const [

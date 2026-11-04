@@ -313,14 +313,14 @@ class _ProductSliverAppBar extends ConsumerWidget {
                 key: _keyDetailBatches,
                 title: 'Lotes Ativos',
                 description:
-                    'Lista todos os lotes registrados para este produto. Cada cartão mostra: status colorido, número do lote, quantidade, data de validade com contagem de dias, origem (doação/compra), localização física e preço unitário. Lotes em alerta mostram o menu ⋮ com ações rápidas (distribuir, editar, excluir).',
+                    'Lista todos os lotes registrados para este produto. Cada cartão mostra: status colorido, número do lote, quantidade, data de validade com contagem de dias, origem (doação/compra), localização física e preço unitário. Lotes em alerta mostram o menu de três pontinhos com ações rápidas (distribuir, editar, excluir).',
                 icon: Icons.inventory_rounded,
                 align: ContentAlign.bottom,
                 hints: const [
                   'Borda vermelha = vencido ou crítico (≤ 7 dias)',
                   'Borda amarela = vence em até 30 dias',
                   'Borda verde = validade segura (>30 dias)',
-                  '⋮ Menu (críticos/vencidos) → distribuir, editar, excluir',
+                  'Menu de três pontinhos (críticos/vencidos) › distribuir, editar, excluir',
                   'Toque longo no card abre o menu de ações',
                 ],
               ),
@@ -966,7 +966,7 @@ class _DeleteConfirmDialog extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Esta ação remove o lote sem registrar baixa em estoque.\nPara lotes vencidos, prefira "Registrar descarte" no menu ⋮ para manter auditoria.',
+              'Esta ação remove o lote sem registrar baixa em estoque.\nPara lotes vencidos, prefira "Registrar descarte" no menu de três pontinhos para manter auditoria.',
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: cs.onSurfaceVariant, fontSize: 12.5, height: 1.4),

@@ -312,14 +312,14 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                   hints: const [
                     'Inclua tipo + tamanho/peso quando relevante',
                     'Padronize com a equipe (evite "açucar" e "açúcar")',
-                    'Não use abreviações que confundam ("FC" → "Feijão Carioca")',
+                    'Não use abreviações que confundam ("FC" › "Feijão Carioca")',
                     'Bom nome = busca mais rápida no dia-a-dia',
                   ],
                 ),
                 TutorialStep(
                   key: _keyCategoryField,
                   title: 'Categoria do Produto',
-                  description: 'Selecione a categoria que melhor classifica o produto. As categorias organizam o estoque, alimentam os filtros, relatórios por grupo e gráficos do dashboard. Categorias inativas ficam ocultas (configure em Configurações → Categorias).',
+                  description: 'Selecione a categoria que melhor classifica o produto. As categorias organizam o estoque, alimentam os filtros, relatórios por grupo e gráficos do dashboard. Categorias inativas ficam ocultas (configure em Configurações › Categorias).',
                   icon: Icons.category_rounded,
                   align: ContentAlign.bottom,
                   hints: const [

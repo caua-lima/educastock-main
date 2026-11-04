@@ -2122,7 +2122,7 @@ class _MovementsSummaryGrid extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '↑ $totalIn entr.  ↓ $totalOut saíd.',
+                      'Entr. $totalIn · Saíd. $totalOut',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 11,

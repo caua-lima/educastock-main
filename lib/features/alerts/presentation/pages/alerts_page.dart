@@ -75,7 +75,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                     icon: Icons.notification_important_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      'Vá em Configurações → Alertas para ativar',
+                      'Vá em Configurações › Alertas para ativar',
                       'Defina quantos dias antes do vencimento você quer ser avisado',
                       'Alertas aparecem também na tela inicial do app',
                     ],
@@ -88,7 +88,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
         const Expanded(child: CasaEmptyState(
             icon: Icons.notifications_off_outlined,
             title: 'Alertas desativados',
-            description: 'Ative em Configurações → Alertas para monitorar prazos.',
+            description: 'Ative em Configurações › Alertas para monitorar prazos.',
           )),
         ]),
       );
@@ -319,8 +319,10 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   )
                 else
                   SliverPadding(
+                    // Fundo reserva a altura do botão "Alerta manual" (56 + margem):
+                    // o último alerta e o "Ver produto" não ficam embaixo dele.
                     padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xxxl),
+                        AppSpacing.lg, 0, AppSpacing.lg, 104),
                     sliver: SliverList.separated(
                       itemCount: filtered.length,
                       separatorBuilder: (_, __) =>

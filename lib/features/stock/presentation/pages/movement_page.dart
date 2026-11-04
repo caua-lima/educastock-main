@@ -750,7 +750,7 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                   icon: Icons.search_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '⌨️ Busca em tempo real, sem precisar enter',
+                    'Busca em tempo real, sem precisar enter',
                     'Mostra apenas produtos COM estoque',
                     'Use chips de categoria para refinar',
                     'As cores indicam validade próxima',

@@ -170,6 +170,34 @@ List<TabController> _tabControllers(WidgetTester tester) {
 }
 
 /// Rola todas as listas verticais até o fim, em passos de quase uma tela.
+/// Textos que ficam embaixo de um botão flutuante MESMO no fim da rolagem: nesse ponto
+/// não há como rolar para revelá-los (a reauditoria pediu que controles flutuantes não
+/// cubram conteúdo). Preenchido por [_scrollThrough] e lido por [_checkRoute].
+final _cobertosPeloFlutuante = <String>{};
+
+Rect _retangulo(Element e) {
+  final rb = e.renderObject! as RenderBox;
+  return rb.localToGlobal(Offset.zero) & rb.size;
+}
+
+void _conferirFlutuantes(WidgetTester tester) {
+  final botoes = find.byType(FloatingActionButton).evaluate().map(_retangulo).toList();
+  if (botoes.isEmpty) return;
+  final tela = Offset.zero & tester.view.physicalSize / tester.view.devicePixelRatio;
+  final textos = find.descendant(of: find.byType(Scrollable), matching: find.byType(RichText));
+  for (final e in textos.evaluate()) {
+    final r = _retangulo(e);
+    if (!tela.overlaps(r)) continue;
+    for (final b in botoes) {
+      final x = r.intersect(b);
+      if (x.width > 6 && x.height > 6) {
+        final texto = (e.renderObject! as RenderParagraph).text.toPlainText().trim();
+        if (texto.isNotEmpty) _cobertosPeloFlutuante.add(texto);
+      }
+    }
+  }
+}
+
 Future<void> _scrollThrough(WidgetTester tester) async {
   for (var step = 0; step < 12; step++) {
     var moved = false;
@@ -184,6 +212,7 @@ Future<void> _scrollThrough(WidgetTester tester) async {
     if (!moved) break;
     await tester.pump(const Duration(milliseconds: 250));
   }
+  _conferirFlutuantes(tester);
   // Volta ao topo para o próximo tamanho começar do mesmo ponto.
   for (final st in tester.stateList<ScrollableState>(find.byType(Scrollable))) {
     final p = st.position;
@@ -254,6 +283,10 @@ Future<void> _checkRoute(WidgetTester tester, String route, AppUser? user,
       }
       final ex = tester.takeException();
       if (ex != null) problems.add('$currentSize → exceção: ${ex.toString().split('\n').first}');
+      for (final texto in _cobertosPeloFlutuante) {
+        problems.add('$currentSize → botão flutuante cobre "$texto" no fim da rolagem');
+      }
+      _cobertosPeloFlutuante.clear();
       // Navegação lateral: nenhum rótulo cortado com "…" na fonte padrão (a reauditoria
       // viu "Configurações" truncado em largura intermediária).
       if (textScale == 1.0) {

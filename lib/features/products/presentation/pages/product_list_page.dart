@@ -623,7 +623,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       icon: Icons.search_rounded,
                       align: ContentAlign.bottom,
                       hints: const [
-                        '⌨️ Busca por nome parcial: "feij" → "Feijão Carioca"',
+                        'Busca por nome parcial: "feij" › "Feijão Carioca"',
                         'Procura também na marca (ex: "Camil", "Tio João")',
                         'Ignora maiúsculas, minúsculas e acentos',
                         'Toque no X para limpar a busca',
@@ -632,12 +632,12 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                     TutorialStep(
                       key: _keyFilterBtn,
                       title: 'Filtros e Ordenação',
-                      description: 'Toque no ícone de filtro para abrir um painel onde você pode escolher categoria (Alimento, Higiene, etc.), filtrar por perecibilidade e definir a ordem (A→Z, por categoria, perecíveis primeiro). O badge azul mostra quantos filtros estão ativos.',
+                      description: 'Toque no ícone de filtro para abrir um painel onde você pode escolher categoria (Alimento, Higiene, etc.), filtrar por perecibilidade e definir a ordem (A›Z, por categoria, perecíveis primeiro). O badge azul mostra quantos filtros estão ativos.',
                       icon: Icons.tune_rounded,
                       align: ContentAlign.bottom,
                       hints: const [
                         'Filtre por categoria para focar em um tipo',
-                        '⏰ "Perecíveis" mostra só produtos com validade',
+                        '"Perecíveis" mostra só produtos com validade',
                         '"Não perecíveis": material escolar, roupas, etc',
                         'Ordene por nome ou categoria para inventário físico',
                       ],
@@ -1337,7 +1337,7 @@ class _FilterModalState extends State<_FilterModal> {
                       children: [
                         _SortOptionItem(
                           icon: Icons.sort_by_alpha_rounded,
-                          label: 'Nome (A → Z)',
+                          label: 'Nome (A–Z)',
                           selected: _sortMode == _SortMode.name,
                           isFirst: true, isLast: false,
                           cs: cs,

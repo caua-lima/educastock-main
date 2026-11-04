@@ -335,7 +335,7 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   color: cs.surfaceContainerLow,
                   child: Text(
-                    '↑ ↓ para navegar · Enter para abrir · Esc para fechar',
+                    'Setas para navegar · Enter para abrir · Esc para fechar',
                     style: AppTypography.labelSmall.copyWith(color: cs.onSurfaceVariant),
                   ),
                 ),
