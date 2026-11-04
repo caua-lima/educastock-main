@@ -10,8 +10,9 @@ import '../../features/auth/presentation/pages/otp_verification_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
-import '../../features/scanner/presentation/pages/scanner_page.dart';
-import '../../features/scanner/presentation/pages/product_review_page.dart';
+// Telas pesadas carregadas sob demanda (na web saem do arquivo principal).
+import '../../features/scanner/presentation/pages/scanner_page.dart' deferred as scanner;
+import '../../features/scanner/presentation/pages/product_review_page.dart' deferred as review;
 import '../../features/products/presentation/pages/product_list_page.dart';
 import '../../features/products/presentation/pages/product_detail_page.dart';
 import '../../features/products/presentation/pages/product_form_page.dart';
@@ -20,15 +21,15 @@ import '../../features/stock/presentation/pages/movement_page.dart';
 import '../../features/stock/presentation/pages/adjustment_approvals_page.dart';
 import '../../features/alerts/presentation/pages/alerts_page.dart';
 import '../../features/audit/presentation/pages/audit_page.dart';
-import '../../features/reports/presentation/pages/reports_page.dart';
+import '../../features/reports/presentation/pages/reports_page.dart' deferred as reports;
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/locations/presentation/pages/locations_page.dart';
 import '../../features/locations/presentation/pages/location_create_page.dart';
 import '../../features/settings/presentation/pages/users_management_page.dart';
 import '../../features/settings/presentation/pages/categories_settings_page.dart';
 import '../../features/settings/presentation/pages/alerts_settings_page.dart';
-import '../../features/ml/presentation/pages/ml_insights_page.dart';
-import '../../features/ml/presentation/pages/forecast_page.dart';
+import '../../features/ml/presentation/pages/ml_insights_page.dart' deferred as insights;
+import '../../features/ml/presentation/pages/forecast_page.dart' deferred as forecast;
 import '../../features/recipes/presentation/pages/recipes_page.dart';
 import '../../features/recipes/presentation/pages/recipe_create_page.dart';
 import '../../features/recipes/domain/entities/stock_recipe.dart';
@@ -43,7 +44,8 @@ import '../../features/donations/presentation/pages/donor_profile_page.dart';
 import '../../features/donation_ops/presentation/pages/donation_queue_page.dart';
 import '../../features/donation_ops/presentation/pages/donation_review_page.dart';
 import '../../features/donation_ops/presentation/pages/donation_receive_page.dart';
-import '../../features/chatbot/presentation/pages/chat_screen.dart';
+import '../../features/chatbot/presentation/pages/chat_screen.dart' deferred as chat;
+import 'deferred_page.dart';
 
 abstract class AppRoutes {
   static const login = '/login';
@@ -175,13 +177,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       // não-shell (erro: '!keyReservation.contains(key)': is not true).
       GoRoute(
         path: AppRoutes.scanner,
-        builder: (_, __) => _framed(const ScannerPage(), 960),
+        builder: (_, __) => _framed(
+            DeferredPage(id: 'scanner', load: scanner.loadLibrary, builder: () => scanner.ScannerPage()),
+            960),
       ),
       GoRoute(
         path: AppRoutes.productReview,
         builder: (_, state) {
           final barcode = state.uri.queryParameters['barcode'] ?? '';
-          return _framed(ProductReviewPage(barcode: barcode));
+          return _framed(DeferredPage(
+            id: 'review',
+            load: review.loadLibrary,
+            builder: () => review.ProductReviewPage(barcode: barcode),
+          ));
         },
       ),
       // productForm e batchForm também fora do ShellRoute: são formulários
@@ -289,7 +297,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.reports,
-            builder: (_, __) => const ReportsPage(),
+            builder: (_, __) => DeferredPage(
+              id: 'reports',
+              load: reports.loadLibrary,
+              builder: () => reports.ReportsPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.settings,
@@ -317,11 +329,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.mlInsights,
-            builder: (_, __) => const MlInsightsPage(),
+            builder: (_, __) => DeferredPage(
+              id: 'insights',
+              load: insights.loadLibrary,
+              builder: () => insights.MlInsightsPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.mlForecast,
-            builder: (_, __) => const ForecastPage(),
+            builder: (_, __) => DeferredPage(
+              id: 'forecast',
+              load: forecast.loadLibrary,
+              builder: () => forecast.ForecastPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.recipes,
@@ -336,11 +356,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.history,
-            builder: (_, __) => const HistoryPage(),
+            builder: (_, __) => _framed(const HistoryPage(), 1040),
           ),
           GoRoute(
             path: AppRoutes.opsDonations,
-            builder: (_, __) => const DonationQueuePage(),
+            builder: (_, __) => _framed(const DonationQueuePage(), 1040),
           ),
         ],
       ),
@@ -381,7 +401,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.donorAssistant,
-            builder: (_, __) => const ChatScreen(),
+            builder: (_, __) => DeferredPage(
+              id: 'chat',
+              load: chat.loadLibrary,
+              builder: () => chat.ChatScreen(),
+            ),
           ),
         ],
       ),

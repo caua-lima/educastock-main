@@ -5,7 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/utils/auth_error_mapper.dart';
-import '../../data/donation_receipt_pdf.dart';
+// Gerador de PDF carregado só quando o recibo é pedido (deixa o app mais leve na web).
+import '../../data/donation_receipt_pdf.dart' deferred as receipt;
 import '../../domain/entities/donation.dart';
 import '../controllers/donations_provider.dart';
 import '../widgets/donation_status_chip.dart';
@@ -191,7 +192,8 @@ class _DetailBody extends ConsumerWidget {
             variant: CasaButtonVariant.secondary,
             onPressed: () async {
               try {
-                await DonationReceiptPdf.share(donation, point: point);
+                await receipt.loadLibrary();
+                await receipt.DonationReceiptPdf.share(donation, point: point);
               } catch (_) {
                 if (context.mounted) {
                   showCasaSnackbar(context,

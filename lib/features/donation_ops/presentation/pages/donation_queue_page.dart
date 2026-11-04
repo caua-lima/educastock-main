@@ -254,15 +254,23 @@ class _DonationCard extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: AppSpacing.md),
-                CasaButton(
-                  label: action.label,
-                  icon: action.icon,
-                  height: 44,
-                  variant: donation.status == DonationStatus.pendente
-                      ? CasaButtonVariant.primary
-                      : CasaButtonVariant.secondary,
-                  onPressed: () => context.push(action.route),
-                ),
+                LayoutBuilder(builder: (context, box) {
+                  final button = CasaButton(
+                    label: action.label,
+                    icon: action.icon,
+                    height: 44,
+                    variant: donation.status == DonationStatus.pendente
+                        ? CasaButtonVariant.primary
+                        : CasaButtonVariant.secondary,
+                    onPressed: () => context.push(action.route),
+                  );
+                  // No celular o botão ocupa a largura toda; no PC fica compacto à direita.
+                  if (box.maxWidth < 600) return button;
+                  return Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(width: 240, child: button),
+                  );
+                }),
               ],
             ),
           ),

@@ -99,6 +99,13 @@ O app pede o `gemini-2.5-flash` e, se o Google o recusar (foi desativado para co
 * **Consultas**: lotes a vencer calculados em memória a partir do fluxo em tempo real (zero leituras extras), resumo e categorias por `count()` agregado em paralelo, verificador de alertas sem consulta por lote (sem N+1), **paginação por cursor** no histórico e **cache de 5 minutos** nos relatórios.
 * **Telas largas**: o conteúdo dos relatórios é centralizado com largura máxima em monitores ultrawide.
 
+### Responsividade e uso no computador
+* **Celular** (< 720 px): barra de abas inferior. **Tablet** (720–1199 px): navegação lateral recolhida. **Computador** (≥ 1200 px): navegação lateral com nomes, conteúdo centralizado e formulários numa coluna de leitura confortável.
+* Grades de produtos calculam as colunas pela largura (2 no celular, até 6 no computador) e a altura pelo conteúdo, sem cartões gigantes nem estouros em celulares de 360 px. A fonte maior do sistema (acessibilidade) é respeitada até 1,3×.
+* **Busca global** com **Ctrl+K** (⌘K no Mac): produtos por nome, marca ou código de barras e todas as telas do sistema, filtradas pelo papel do usuário. **Alt+1…6** troca de aba.
+* **Carregamento sob demanda** (web): Relatórios, IA de risco, previsão, scanner, assistente e o módulo de exportação (PDF/Excel) só são baixados quando usados, deixando a abertura do app mais leve.
+* **Teste de layout** (`test/responsive_layout_test.dart`): abre as 37 telas em 5 tamanhos (360 px a 1920 px) com dados falsos, rola cada uma até o fim, passa por todas as abas e falha em qualquer estouro de layout. Rode com `flutter test`.
+
 ### Alertas, OCR e modo offline
 * Alertas de validade **gerados automaticamente** quando a equipe abre o app e a cada 6 horas; encerram sozinhos quando o lote sai da janela.
 * **Leitura da validade pela câmera** (Android/iOS) reconhece `DD/MM/AAAA`, `DD/MM/AA`, `MM/AAAA`, meses abreviados (MAR, DEZ…) e corrige confusões O/0.
@@ -110,7 +117,7 @@ O app pede o `gemini-2.5-flash` e, se o Google o recusar (foi desativado para co
 |---|---|---|
 | 1 | Publicar as Cloud Functions | Requer plano Blaze (decisão e cartão do titular do projeto) |
 | 2 | Testar no aparelho Android/iOS real | Scanner, OCR e notificações dependem do hardware |
-| 3 | Limpar código sem uso em `reports_page.dart` | Avisos do analisador; sem efeito no funcionamento |
+| 3 | Incluir as fontes Poppins e Nunito Sans nos assets | O tema já as referencia, mas os arquivos `.ttf` não estão em `assets/fonts/` (hoje o texto cai na Roboto) |
 
 ## Portal do Doador (Sprint 5)
 

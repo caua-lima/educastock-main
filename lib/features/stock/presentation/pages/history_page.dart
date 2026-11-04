@@ -6,7 +6,7 @@ import '../../../../core/design_system/design_system.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
 import '../../../products/presentation/controllers/products_provider.dart';
 import '../../domain/entities/stock_movement.dart';
-import '../../../../core/export/export_sheet.dart';
+import '../../../../core/export/export_launcher.dart';
 import '../../../reports/domain/report_tables.dart';
 import '../controllers/movements_feed_provider.dart';
 import 'output_view_page.dart';
@@ -1325,8 +1325,10 @@ class _SessionCardState extends State<_SessionCard> {
                     ),
                     const SizedBox(width: 6),
                     // Pill do motivo (com ícone)
-                    Flexible(
-                      child: Container(
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
@@ -1357,8 +1359,9 @@ class _SessionCardState extends State<_SessionCard> {
                           ],
                         ),
                       ),
+                      ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     // Badge total
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -1529,9 +1532,12 @@ class _SessionCardState extends State<_SessionCard> {
                   ),
                 ],
 
-                // Linha 4: botão ver relatório (moderno, full-width gradient)
+                // Linha 4: botão de detalhes (largura total no celular, compacto no PC)
                 const SizedBox(height: 12),
-                Material(
+                LayoutBuilder(builder: (context, box) {
+                  // Em telas largas o botão fica compacto, alinhado à direita.
+                  final wide = box.maxWidth >= 600;
+                  final button = Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: widget.onDetailsTap,
@@ -1559,6 +1565,7 @@ class _SessionCardState extends State<_SessionCard> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 11),
                         child: Row(
+                          mainAxisSize: wide ? MainAxisSize.min : MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
@@ -1572,7 +1579,7 @@ class _SessionCardState extends State<_SessionCard> {
                             ),
                             const SizedBox(width: 8),
                             const Text(
-                              'Ver relatório completo',
+                              'Ver detalhes',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
@@ -1587,7 +1594,11 @@ class _SessionCardState extends State<_SessionCard> {
                       ),
                     ),
                   ),
-                ),
+                );
+                  return wide
+                      ? Align(alignment: Alignment.centerRight, child: button)
+                      : button;
+                }),
               ],
             ),
           ),

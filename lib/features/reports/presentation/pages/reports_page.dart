@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/export/export_sheet.dart';
+import '../../../../core/export/export_launcher.dart';
 import '../../../../core/export/report_table.dart';
 import '../../domain/report_tables.dart';
 import '../../../../core/design_system/design_system.dart';
@@ -53,7 +53,7 @@ final _keyForecastReplenish = GlobalKey();
 List<TutorialStep> _chartsTutorialSteps() => [
       TutorialStep(
         key: _keyTrendChart,
-        title: 'Tendência Mensal de Entrada',
+        title: 'Tendência mensal de entradas',
         description:
             'Gráfico de linha com entradas nos últimos 6 meses. Identifique padrões sazonais.',
         icon: Icons.show_chart_rounded,
@@ -879,7 +879,7 @@ class _ChartsTab extends ConsumerWidget {
 
             // ─── Tendência mensal
             _SectionHeader(
-              title: 'Entradas Mensais',
+              title: 'Entradas por mês',
               subtitle: 'Evolução das entradas nos últimos 6 meses',
               icon: Icons.trending_up_rounded,
               color: AppColors.brandPrimary600,
@@ -916,8 +916,8 @@ class _ChartsTab extends ConsumerWidget {
             // ─── Origem (pizza)
             if (originCount.isNotEmpty) ...[
               _SectionHeader(
-                title: 'Lotes por Origem',
-                subtitle: 'Proporção de cada fonte no estoque atual',
+                title: 'De onde vêm os lotes',
+                subtitle: 'Doação, compra e parceiros no estoque atual',
                 icon: Icons.pie_chart_rounded,
                 color: AppColors.secondaryBlue600,
               ),
@@ -932,7 +932,7 @@ class _ChartsTab extends ConsumerWidget {
                 ),
               ),
               const _ChartNote(
-                text: 'Toque em cada fatia para ver o percentual. Ajuda a entender as principais fontes de entrada.',
+                text: 'Passe o mouse ou toque numa fatia para destacar o percentual dela.',
               ),
               const SizedBox(height: AppSpacing.xl),
             ],
@@ -940,8 +940,8 @@ class _ChartsTab extends ConsumerWidget {
             // ─── Top 5 produtos
             if (topProducts.isNotEmpty) ...[
               _SectionHeader(
-                title: 'Top 5 Produtos em Estoque',
-                subtitle: 'Produtos com maior quantidade disponível',
+                title: 'Os 5 produtos com mais estoque',
+                subtitle: 'Quantidade disponível agora',
                 icon: Icons.inventory_2_rounded,
                 color: AppColors.success600,
               ),
@@ -953,7 +953,7 @@ class _ChartsTab extends ConsumerWidget {
                 cs: cs,
               ),
               const _ChartNote(
-                text: 'A barra mostra a proporção de cada produto em relação ao total.',
+                text: 'Cada barra mostra quanto o produto representa do estoque total.',
               ),
               const SizedBox(height: AppSpacing.xl),
             ],
@@ -961,8 +961,8 @@ class _ChartsTab extends ConsumerWidget {
             // ─── Value distribution by product
             if (topProducts.isNotEmpty) ...[
               _SectionHeader(
-                title: 'Valor Estimado por Produto',
-                subtitle: 'Top 5 — valor total em estoque (R\$)',
+                title: 'Valor estimado em estoque',
+                subtitle: 'Os 5 produtos de maior valor (R\$)',
                 icon: Icons.monetization_on_rounded,
                 color: AppColors.success600,
               ),
@@ -973,7 +973,7 @@ class _ChartsTab extends ConsumerWidget {
                 cs: cs,
               ),
               const _ChartNote(
-                text: 'Baseado no preço unitário de cada lote. Itens sem preço não são contabilizados.',
+                text: 'Calculado pelo preço unitário de cada lote. Lotes sem preço ficam de fora.',
               ),
               const SizedBox(height: AppSpacing.xl),
             ],
@@ -984,8 +984,8 @@ class _ChartsTab extends ConsumerWidget {
                 _TipItem(
                   icon: Icons.show_chart_rounded,
                   color: AppColors.brandPrimary600,
-                  title: 'Tendência Mensal',
-                  body: 'Toque nos pontos do gráfico de linha para ver o volume exato de entradas. Picos indicam meses com muitas doações.',
+                  title: 'Tendência mensal',
+                  body: 'Passe o mouse ou toque nos pontos do gráfico para ver o volume exato de entradas. Picos indicam meses com muitas doações.',
                 ),
                 _TipItem(
                   icon: Icons.bar_chart_rounded,
@@ -996,14 +996,14 @@ class _ChartsTab extends ConsumerWidget {
                 _TipItem(
                   icon: Icons.pie_chart_rounded,
                   color: AppColors.secondaryBlue600,
-                  title: 'Lotes por Origem',
-                  body: 'Entenda de onde vem o estoque. Se "Doação" dominar, reforce parcerias. Se "Compra" for alto, revise o orçamento.',
+                  title: 'De onde vêm os lotes',
+                  body: 'Mostra de onde vem o estoque. Se "Doação" dominar, vale fortalecer as parcerias; se "Compra" for alta, revise o orçamento.',
                 ),
                 _TipItem(
                   icon: Icons.inventory_2_rounded,
                   color: AppColors.success600,
-                  title: 'Top 5 Produtos',
-                  body: 'Produtos com maior estoque — úteis para planejar distribuições. Cruze com a previsão de consumo para evitar desperdício.',
+                  title: 'Produtos com mais estoque',
+                  body: 'Bons candidatos para as próximas distribuições. Compare com a previsão de consumo para evitar desperdício.',
                 ),
               ],
               isDark: isDark,
@@ -1138,7 +1138,7 @@ class _MlRiskTab extends ConsumerWidget {
         ],
         if (criticals.isNotEmpty) ...[
           _SectionHeader(
-            title: 'Lotes Críticos',
+            title: 'Lotes críticos',
             subtitle: 'Requerem ação imediata',
             icon: Icons.warning_rounded,
             color: AppColors.danger600,
@@ -1845,7 +1845,7 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
             _TipItem(
               icon: Icons.date_range_rounded,
               color: AppColors.success600,
-              title: 'Período Personalizado',
+              title: 'Período personalizado',
               body: 'Toque em "Personalizado" para selecionar qualquer intervalo de datas. Ideal para auditorias mensais ou trimestrais.',
             ),
           ],
@@ -3661,7 +3661,7 @@ class _ModernStatsBanner extends StatelessWidget {
                     ? null
                     : () => _showBatchListSheet(
                           context,
-                          title: 'Lotes Críticos (≤7 dias)',
+                          title: 'Lotes críticos (até 7 dias)',
                           batches: criticalBatches,
                           color: AppColors.danger600,
                           icon: Icons.warning_rounded,
@@ -3701,7 +3701,7 @@ class _ModernStatsBanner extends StatelessWidget {
                     ? null
                     : () => _showBatchListSheet(
                           context,
-                          title: 'Lotes Vencidos',
+                          title: 'Lotes vencidos',
                           batches: expiredBatches,
                           color: AppColors.danger600,
                           icon: Icons.cancel_outlined,
@@ -4635,7 +4635,7 @@ class _ForecastReportTab extends ConsumerWidget {
           // ─── Replenishment priority list
           if (needsReplenishment.isNotEmpty) ...[
             _SectionHeader(
-              title: 'Lista de Reposição Prioritária',
+              title: 'O que repor primeiro',
               subtitle: 'Ordenado por urgência',
               icon: Icons.priority_high_rounded,
               color: AppColors.warning600,
@@ -4704,7 +4704,7 @@ class _ForecastReportTab extends ConsumerWidget {
             _TipItem(
               icon: Icons.add_shopping_cart_rounded,
               color: AppColors.success600,
-              title: 'Gerar Pedido de Compra',
+              title: 'Gerar pedido de compra',
               body: 'Toque em "Gerar Pedido" para exportar um CSV com todos os produtos que precisam de reposição, incluindo a quantidade sugerida.',
             ),
           ],
@@ -6366,7 +6366,7 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
         color: color,
         value: e.value.value.toDouble(),
         title: isTouched ? '${pct.toStringAsFixed(0)}%' : '',
-        radius: isTouched ? 72 : 60,
+        radius: isTouched ? 46 : 40,
         titleStyle: const TextStyle(
             fontSize: 12, color: Colors.white, fontWeight: FontWeight.w800),
         borderSide: isTouched
@@ -6391,12 +6391,12 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
       child: Row(
         children: [
           SizedBox(
-            width: 140,
-            height: 140,
+            width: 160,
+            height: 160,
             child: PieChart(
               PieChartData(
                 sections: sections,
-                centerSpaceRadius: 30,
+                centerSpaceRadius: 34,
                 sectionsSpace: 2,
                 pieTouchData: PieTouchData(
                   touchCallback: (ev, resp) {
@@ -6419,7 +6419,12 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
           ),
           const SizedBox(width: AppSpacing.lg),
           Expanded(
-            child: Column(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: entries.asMap().entries.map((e) {
                 final color = _pieColors[e.key % _pieColors.length];
@@ -6442,7 +6447,7 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
                         child: Text(
                           label,
                           style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 13,
                               color: cs.onSurface,
                               fontWeight: FontWeight.w600),
                           maxLines: 1,
@@ -6450,9 +6455,9 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
                         ),
                       ),
                       Text(
-                        '${e.value.value}',
+                        '${e.value.value} lotes',
                         style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 12,
                             color: cs.onSurfaceVariant,
                             fontWeight: FontWeight.w500),
                       ),
@@ -6460,7 +6465,7 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
                       Text(
                         '${pct.toStringAsFixed(0)}%',
                         style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 13,
                             color: color,
                             fontWeight: FontWeight.w700),
                       ),
@@ -6468,6 +6473,8 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
                   ),
                 );
               }).toList(),
+            ),
+            ),
             ),
           ),
         ],
