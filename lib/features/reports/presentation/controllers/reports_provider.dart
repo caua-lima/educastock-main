@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../stock/domain/entities/stock_movement.dart';
+import '../../domain/entradas_por_mes.dart';
 import '../../../stock/presentation/controllers/stock_provider.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 
@@ -169,6 +170,17 @@ final movementsReportProvider = FutureProvider.autoDispose
     from: range.start,
     to: range.end.add(const Duration(hours: 23, minutes: 59, seconds: 59)),
   );
+});
+
+/// Entradas por mês nos últimos 6 meses, a partir das movimentações de entrada
+/// (ver `entradas_por_mes.dart`). Erro de consulta aparece como erro, não como zero.
+final entradasPorMesProvider = FutureProvider.autoDispose<Map<String, int>>((ref) async {
+  keepReportCached(ref);
+  final agora = DateTime.now();
+  final hoje = DateTime(agora.year, agora.month, agora.day);
+  final movimentos = await ref.watch(
+      movementsReportProvider(DateTimeRange(start: inicioDaJanela(hoje), end: hoje)).future);
+  return entradasPorMes(movimentos, hoje);
 });
 
 final movementsSummaryProvider = FutureProvider.autoDispose
