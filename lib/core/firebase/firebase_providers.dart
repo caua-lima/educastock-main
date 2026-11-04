@@ -8,3 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Firestore falso (`fake_cloud_firestore`) — é isso que permite abrir as telas em testes de
 /// layout sem Firebase de verdade.
 final firestoreProvider = Provider<FirebaseFirestore>((_) => FirebaseFirestore.instance);
+
+/// Projeto Firebase em uso. Separa a fila offline por projeto: uma pendência criada
+/// num ambiente nunca é enviada para outro.
+final firebaseProjectIdProvider = Provider<String>((ref) {
+  try {
+    return ref.watch(firestoreProvider).app.options.projectId;
+  } catch (_) {
+    return 'desconhecido';
+  }
+});

@@ -51,6 +51,7 @@ SliverGridDelegate productCardGridDelegate(
   double bodyHeight = 126,
   double spacing = 14,
   int maxColumns = 6,
+  double textScale = 1,
 }) {
   final cols = responsiveColumns(width,
       minItemWidth: minItemWidth, spacing: spacing, min: 2, max: maxColumns);
@@ -59,7 +60,8 @@ SliverGridDelegate productCardGridDelegate(
     crossAxisCount: cols,
     mainAxisSpacing: spacing,
     crossAxisSpacing: spacing,
-    mainAxisExtent: cellWidth * 9 / 16 + bodyHeight,
+    // O corpo do cartão cresce com a fonte do sistema (acessibilidade).
+    mainAxisExtent: cellWidth * 9 / 16 + bodyHeight * textScale.clamp(1.0, 2.0),
   );
 }
 

@@ -14,6 +14,8 @@ import '../../../ml/presentation/widgets/risk_widgets.dart';
 import '../../../ml/presentation/controllers/consumption_forecast_provider.dart';
 import '../../../ml/presentation/widgets/forecast_widgets.dart';
 import '../../../reports/presentation/controllers/reports_provider.dart';
+import '../../domain/daily_movement_series.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 final _keyDashQuickActions = GlobalKey();
 final _keyDashExpiring = GlobalKey();
@@ -128,6 +130,17 @@ class DashboardPage extends ConsumerWidget {
               ),
             ),
             ),
+
+            if (allBatches.hasError && !allBatches.hasValue)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                child: LoadErrorNotice(
+                  message: 'Não foi possível carregar os lotes agora. '
+                      'Os contadores de validade e estoque não estão atualizados.',
+                  onRetry: () => ref.invalidate(allAvailableBatchesProvider),
+                ),
+              ),
 
             const SizedBox(height: AppSpacing.xl),
 
@@ -340,12 +353,13 @@ class _DashboardHeader extends ConsumerWidget {
           loading: () => 0,
           error: (_, __) => 0,
         );
-    final lotesCount = allBatches.maybeWhen(
-        data: (l) => '${l.length}', orElse: () => '…');
-    final critCount = expiringCritical.maybeWhen(
-        data: (l) => '${l.length}', orElse: () => '…');
-    final warnCount = expiringWarning.maybeWhen(
-        data: (l) => '${l.length}', orElse: () => '…');
+    // "…" = carregando; "—" = a consulta falhou (aviso com "Tentar de novo" abaixo).
+    final lotesCount = allBatches.when(
+        data: (l) => '${l.length}', loading: () => '…', error: (_, __) => '—');
+    final critCount = expiringCritical.when(
+        data: (l) => '${l.length}', loading: () => '…', error: (_, __) => '—');
+    final warnCount = expiringWarning.when(
+        data: (l) => '${l.length}', loading: () => '…', error: (_, __) => '—');
     final hasCritical =
         expiringCritical.maybeWhen(data: (l) => l.isNotEmpty, orElse: () => false);
 
@@ -1457,31 +1471,26 @@ class _MovementsLineChartState extends ConsumerState<_MovementsLineChart> {
     return movAsync.when(
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      error: (_, __) => const Center(
-          child: Icon(Icons.show_chart_rounded, size: 40)),
+      error: (e, __) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: LoadErrorNotice(
+              message: friendlyLoadError(e, context: 'as movimentações'),
+              onRetry: () => ref.invalidate(movementsReportProvider(range)),
+            ),
+          )),
       data: (movements) {
-        final entriesPerDay = <int, int>{};
-        final exitsPerDay = <int, int>{};
-        for (final m in movements) {
-          final dayKey = m.performedAt.difference(range.start).inDays;
-          if (dayKey < 0 || dayKey > 29) continue;
-          if (m.type.name == 'entrada') {
-            entriesPerDay[dayKey] = (entriesPerDay[dayKey] ?? 0) + m.quantity;
-          } else if (m.type.name == 'saida' || m.type.name == 'descarte') {
-            exitsPerDay[dayKey] = (exitsPerDay[dayKey] ?? 0) + m.quantity;
-          }
-        }
-
-        List<FlSpot> entrySpots = [];
-        List<FlSpot> exitSpots = [];
-        for (int d = 0; d <= 29; d += 5) {
-          entrySpots.add(FlSpot(d.toDouble(),
-              (entriesPerDay[d] ?? 0).toDouble()));
-          exitSpots.add(
-              FlSpot(d.toDouble(), (exitsPerDay[d] ?? 0).toDouble()));
-        }
-        entrySpots.add(FlSpot(29, (entriesPerDay[29] ?? 0).toDouble()));
-        exitSpots.add(FlSpot(29, (exitsPerDay[29] ?? 0).toDouble()));
+        // Todos os 30 dias, somados por dia civil (antes só os dias 0, 5, 10… — A09).
+        final series = DailyMovementSeries.fromMovements(
+            movements, start: range.start, days: 30);
+        final entrySpots = [
+          for (var d = 0; d < series.days; d++)
+            FlSpot(d.toDouble(), series.entries[d].toDouble()),
+        ];
+        final exitSpots = [
+          for (var d = 0; d < series.days; d++)
+            FlSpot(d.toDouble(), series.exits[d].toDouble()),
+        ];
 
         final allVals = [
           ...entrySpots.map((s) => s.y),
@@ -1498,9 +1507,12 @@ class _MovementsLineChartState extends ConsumerState<_MovementsLineChart> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _LegendDot(
-                      color: AppColors.success600, label: 'Entradas'),
+                      color: AppColors.success600,
+                      label: 'Entradas (${series.totalEntries})'),
                   const SizedBox(width: 16),
-                  _LegendDot(color: AppColors.danger600, label: 'Saídas'),
+                  _LegendDot(
+                      color: AppColors.danger600,
+                      label: 'Saídas (${series.totalExits})'),
                 ],
               ),
               const SizedBox(height: 8),

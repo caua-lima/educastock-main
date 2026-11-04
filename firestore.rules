@@ -12,8 +12,10 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    // Papel só conta para conta ATIVA: um administrador desativado não exerce poderes
+    // administrativos nem consegue reativar o próprio perfil (auditoria A04).
     function hasRole(role) {
-      return isSignedIn() && userDoc().role == role;
+      return isSignedIn() && userDoc().role == role && userDoc().isActive == true;
     }
 
     function isAdmin() {
@@ -261,6 +263,11 @@ service cloud.firestore {
 
       allow create: if isDonor()
                     && request.auth.token.email_verified == true
+                    // Só os campos do formulário: protocolo, reservas, marcadores de
+                    // processamento e recebimento são da equipe/funções (auditoria A06).
+                    && request.resource.data.keys().hasOnly([
+                         'donorId', 'donorSnapshot', 'status', 'items', 'pointId',
+                         'window', 'termsAcceptedAt', 'createdAt', 'updatedAt'])
                     && request.resource.data.donorId == request.auth.uid
                     && request.resource.data.status == 'pendente'
                     && request.resource.data.items is list
@@ -270,7 +277,11 @@ service cloud.firestore {
 
       // Doador: apenas cancelar a própria doação (pendente ou aprovada).
       // Equipe: decide e recebe (qualquer campo; transições validadas na função).
-      allow update: if isOps()
+      allow update: if (isOps()
+                        && !('donorId' in request.resource.data.diff(resource.data).affectedKeys())
+                        && (!('protocol' in resource.data)
+                            || resource.data.protocol == ''
+                            || !('protocol' in request.resource.data.diff(resource.data).affectedKeys())))
                     || (isDonor()
                         && resource.data.donorId == request.auth.uid
                         && resource.data.status in ['pendente', 'aprovada']

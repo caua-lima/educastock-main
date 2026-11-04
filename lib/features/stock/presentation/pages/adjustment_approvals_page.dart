@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../controllers/stock_provider.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 final _keyApprovalCard = GlobalKey();
 final _keyApproveBtn = GlobalKey();
@@ -214,7 +215,7 @@ class AdjustmentApprovalsPage extends ConsumerWidget {
           error: (e, _) => CasaEmptyState(
             icon: Icons.error_outline_rounded,
             title: 'Erro ao carregar',
-            description: e.toString(),
+            description: friendlyLoadError(e),
           ),
         ),
       ),

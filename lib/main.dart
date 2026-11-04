@@ -7,6 +7,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/router/app_router.dart';
 import 'core/firebase/firebase_bootstrap.dart';
+import 'core/notifications/app_messenger.dart';
 import 'core/notifications/push_notification_service.dart';
 import 'core/offline/offline_banner.dart';
 import 'core/offline/offline_queue.dart';
@@ -23,21 +24,81 @@ void main() async {
   if (kIsWeb) {
     usePathUrlStrategy();
   }
-  // Inicialização em paralelo (antes era uma etapa após a outra): formatos de data, Firebase e a
-  // fila offline (Hive) não dependem entre si, então o app abre mais rápido.
-  final results = await Future.wait<Object?>([
-    initializeDateFormatting('pt_BR'),
-    FirebaseBootstrap.initialize(),
-    HiveQueueStore.open(),
-  ]);
-  // Fila de gravações feitas sem internet (guardada no aparelho).
-  final queueStore = results[2]! as HiveQueueStore;
-  runApp(
-    ProviderScope(
-      overrides: [offlineQueueProvider.overrideWithValue(OfflineQueue(queueStore))],
-      child: const EducaStockApp(),
-    ),
-  );
+  await _start();
+}
+
+/// Inicializa e abre o app. Se algo falhar (sem internet na primeira abertura, bloqueio
+/// do navegador ao armazenamento local…), mostra uma tela com "Tentar de novo" em vez
+/// de deixar a página em branco.
+Future<void> _start() async {
+  try {
+    // Inicialização em paralelo: formatos de data, Firebase e a fila offline (Hive) não
+    // dependem entre si, então o app abre mais rápido.
+    final results = await Future.wait<Object?>([
+      initializeDateFormatting('pt_BR'),
+      FirebaseBootstrap.initialize(),
+      HiveQueueStore.open(),
+    ]);
+    // Fila de gravações feitas sem internet (guardada no aparelho).
+    final queueStore = results[2]! as HiveQueueStore;
+    runApp(
+      ProviderScope(
+        overrides: [offlineQueueProvider.overrideWithValue(OfflineQueue(queueStore))],
+        child: const EducaStockApp(),
+      ),
+    );
+  } catch (error, stack) {
+    debugPrint('[EducaStock] falha na inicialização: $error\n$stack');
+    runApp(StartupErrorApp(onRetry: _start));
+  }
+}
+
+/// Tela mostrada quando o app não consegue iniciar.
+class StartupErrorApp extends StatelessWidget {
+  final Future<void> Function() onRetry;
+  const StartupErrorApp({super.key, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.cloud_off_rounded, size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Não foi possível abrir o EducaStock agora.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Verifique a conexão com a internet e tente de novo.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Tentar de novo'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class EducaStockApp extends ConsumerWidget {
@@ -52,6 +113,7 @@ class EducaStockApp extends ConsumerWidget {
     ref.watch(offlineSyncProvider); // mantém a sincronização ativa
     return MaterialApp.router(
       title: 'EducaStock',
+      scaffoldMessengerKey: appMessengerKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
@@ -69,11 +131,11 @@ class EducaStockApp extends ConsumerWidget {
       ],
       scrollBehavior: const _CasaScrollBehavior(),
       routerConfig: router,
-      // Respeita a fonte maior do sistema (acessibilidade), mas dentro de um limite em que
-      // cartões e tabelas continuam legíveis sem estourar.
+      // Respeita a fonte maior do sistema até 200% (acessibilidade; validado pelo teste de
+      // layout com fonte em 200%). Só evita letras menores que 85%.
       builder: (context, child) => MediaQuery.withClampedTextScaling(
         minScaleFactor: 0.85,
-        maxScaleFactor: 1.3,
+        maxScaleFactor: 2.0,
         child: Column(
           children: [
             const OfflineBanner(),

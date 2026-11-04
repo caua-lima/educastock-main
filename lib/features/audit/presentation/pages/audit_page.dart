@@ -7,6 +7,7 @@ import '../../../../core/export/report_table.dart';
 import '../../../ml/domain/entities/risk_prediction.dart';
 import '../../../ml/presentation/controllers/risk_classifier_provider.dart';
 import '../../../stock/presentation/controllers/stock_provider.dart';
+import '../../../../core/utils/friendly_error.dart';
 
 final auditLogsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
   return ref.watch(stockDatasourceProvider).watchAuditLogs(limit: 100);
@@ -443,7 +444,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
           error: (e, _) => CasaEmptyState(
             icon: Icons.error_outline_rounded,
             title: 'Erro ao carregar',
-            description: e.toString(),
+            description: friendlyLoadError(e),
           ),
         ),
       ),

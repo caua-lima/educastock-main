@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/export/export_launcher.dart';
+import '../../../../core/utils/friendly_error.dart';
 import '../../../../core/export/report_table.dart';
 import '../../domain/report_tables.dart';
 import '../../../../core/design_system/design_system.dart';
@@ -251,10 +252,10 @@ class _ReportsAppBar extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // ── Header row ─────────────────────────────────────────────
-              SizedBox(
-                height: 64,
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 64),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 6),
                   child: Row(
                     children: [
                       // ── Ícone com glow estilo dashboard ──
@@ -764,10 +765,17 @@ class _ChartsTab extends ConsumerWidget {
           child: CasaCardSkeleton(),
         ),
       ),
-      error: (e, _) => CasaEmptyState(
-        icon: Icons.error_outline_rounded,
-        title: 'Erro ao carregar dados',
-        description: e.toString(),
+      error: (e, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: LoadErrorNotice(
+              message: friendlyLoadError(e, context: 'os lotes do estoque'),
+              onRetry: () => ref.invalidate(allAvailableBatchesProvider),
+            ),
+          ),
+        ),
       ),
       data: (batches) {
         final totalItems = batches.fold<int>(0, (s, b) => s + b.quantity);
@@ -1904,12 +1912,14 @@ class _MovementsPeriodHeader extends StatelessWidget {
               Icon(Icons.date_range_rounded,
                   color: cs.primary, size: 18),
               const SizedBox(width: AppSpacing.xs),
-              Text(
-                'Período: $rangeLabel',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface.withValues(alpha: 0.75),
+              Flexible(
+                child: Text(
+                  'Período: $rangeLabel',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.75),
+                  ),
                 ),
               ),
             ],
@@ -2120,7 +2130,7 @@ class _MovementsSummaryGrid extends StatelessWidget {
             crossAxisCount: box.maxWidth >= 900 ? 5 : 3,
             crossAxisSpacing: AppSpacing.sm,
             mainAxisSpacing: AppSpacing.sm,
-            mainAxisExtent: 96,
+            mainAxisExtent: MediaQuery.textScalerOf(context).scale(96).clamp(96.0, 200.0),
           ),
           children: [
             _MovKpiCard(
@@ -4857,7 +4867,7 @@ class _ForecastKpiGrid extends StatelessWidget {
         crossAxisCount: box.maxWidth >= 700 ? 4 : 2,
         mainAxisSpacing: AppSpacing.sm,
         crossAxisSpacing: AppSpacing.sm,
-        mainAxisExtent: 76,
+        mainAxisExtent: MediaQuery.textScalerOf(context).scale(76).clamp(76.0, 160.0),
       ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),

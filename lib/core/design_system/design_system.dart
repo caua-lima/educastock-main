@@ -25,4 +25,5 @@ export 'components/tip_card.dart';
 export 'components/responsive_body.dart';
 export 'components/adaptive_side_rail.dart';
 export 'components/accent_stripe.dart';
+export 'components/load_error_notice.dart';
 export 'layout/breakpoints.dart';

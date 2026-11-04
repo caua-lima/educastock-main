@@ -33,6 +33,9 @@ class FirebaseBootstrap {
 
     await _activateAppCheck();
 
+    // Crashlytics não tem implementação web: na web os erros continuam no console do
+    // navegador (com a causa original), em vez de sumirem num logger que não funciona.
+    if (kIsWeb) return;
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);

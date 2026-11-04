@@ -66,12 +66,36 @@ class BatchesRemoteDatasource {
     return Batch.fromMap(doc.data() as Map<String, dynamic>, doc.id);
   }
 
-  Future<String> saveBatch(Batch batch, {File? imageFile}) async {
+  /// Salva o lote. Para um lote NOVO com [entryMovement], o lote, a movimentação de
+  /// entrada (histórico) e a auditoria são gravados num único commit atômico: ou tudo
+  /// fica registrado, ou nada (antes o histórico era gravado depois e o erro era
+  /// ignorado — auditoria A10). [entryMovement] não precisa de `batchId`.
+  Future<String> saveBatch(
+    Batch batch, {
+    File? imageFile,
+    Map<String, dynamic>? entryMovement,
+  }) async {
     String? imagePath = batch.imageUrl;
 
     if (batch.id.isEmpty) {
-      // Novo lote: cria primeiro, depois salva imagem com ID real
-      final ref = await _col.add(batch.toMap());
+      // Novo lote: cria (com entrada e auditoria), depois salva imagem com ID real
+      final ref = _col.doc();
+      final write = _db.batch()..set(ref, batch.toMap());
+      if (entryMovement != null) {
+        final movementRef = _db.collection('stock_movements').doc();
+        write.set(movementRef, {...entryMovement, 'batchId': ref.id});
+        write.set(_db.collection('audit_logs').doc('${movementRef.id}_audit'), {
+          'collection': 'batches',
+          'documentId': ref.id,
+          'action': 'entrada',
+          'before': null,
+          'after': {'quantity': entryMovement['quantity']},
+          'performedBy': entryMovement['performedBy'],
+          'performedByName': entryMovement['performedByName'],
+          'performedAt': entryMovement['performedAt'],
+        });
+      }
+      await write.commit();
       if (imageFile != null && !kIsWeb) {
         imagePath = await _saveImageLocally(imageFile, ref.id);
         await ref.update({'imageUrl': imagePath});

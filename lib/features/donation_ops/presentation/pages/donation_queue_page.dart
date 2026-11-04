@@ -293,7 +293,7 @@ class _Meta extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Text(text, style: AppTypography.bodySmall.copyWith(color: color)),
+        Flexible(child: Text(text, style: AppTypography.bodySmall.copyWith(color: color))),
       ],
     );
   }

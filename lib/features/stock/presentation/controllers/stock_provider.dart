@@ -86,6 +86,8 @@ class StockNotifier extends AsyncNotifier<void> {
         delta: newQuantity - previousQuantity,
         nextStatus: nextStatusOverride,
         createdAt: DateTime.now(),
+        ownerId: user.id,
+        projectId: ref.read(firebaseProjectIdProvider),
       );
       await ref.read(offlineSyncProvider.notifier).enqueue(op);
       return false;

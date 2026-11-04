@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import '../../../../core/offline/offline_queue.dart';
 import '../../domain/entities/stock_movement.dart';
 
@@ -351,6 +352,33 @@ class StockRemoteDatasource {
     });
   }
 
+  /// Ordem FEFO: lotes com validade mais próxima primeiro; sem validade por último.
+  static int compareFefo(Map<String, dynamic> a, Map<String, dynamic> b) {
+    final an = a['noExpiry'] as bool? ?? false;
+    final bn = b['noExpiry'] as bool? ?? false;
+    if (an && bn) return 0;
+    if (an) return 1;
+    if (bn) return -1;
+    final ad = DateTime.tryParse((a['expiryDate'] as String?) ?? '') ?? DateTime(9999);
+    final bd = DateTime.tryParse((b['expiryDate'] as String?) ?? '') ?? DateTime(9999);
+    return ad.compareTo(bd);
+  }
+
+  /// Só para testes: roda entre a escolha dos lotes candidatos e a transação, para
+  /// simular outra pessoa mexendo no mesmo lote nesse intervalo.
+  @visibleForTesting
+  Future<void> Function()? debugAfterPlanning;
+
+  /// Saída de vários produtos pela regra FEFO, **segura contra concorrência**.
+  ///
+  /// 1. Uma consulta escolhe os lotes candidatos de cada produto (consultas não rodam
+  ///    dentro de transações no cliente).
+  /// 2. Uma transação **relê cada lote**, recalcula o FEFO com os saldos atuais e grava
+  ///    lote, movimentação, auditoria e o registro da saída de uma vez. Se outra pessoa
+  ///    alterar um desses lotes ao mesmo tempo, o Firestore repete a transação com os
+  ///    valores novos — nenhuma baixa se perde e o saldo nunca fica negativo.
+  /// 3. [operationId] identifica a operação: reenviar a mesma saída (duplo toque, rede
+  ///    instável) devolve o registro existente em vez de descontar de novo.
   Future<Map<String, dynamic>> registerBulkOutputFefo({
     required List<ProductOutputRequest> items,
     required String performedBy,
@@ -358,157 +386,199 @@ class StockRemoteDatasource {
     required String reasonCode,
     String? reason,
     String? activity,
+    String? operationId,
   }) async {
-    if (items.isEmpty) {
+    final wanted = items.where((i) => i.quantity > 0).toList();
+    if (wanted.isEmpty) {
       throw Exception('Nenhum item selecionado para saída.');
     }
 
-    final planned = <Map<String, dynamic>>[];
-
-    for (final item in items) {
-      if (item.quantity <= 0) continue;
-
-      final batchesSnap = await _db
+    // 1) Lotes candidatos por produto (fora da transação).
+    final candidates = <String, List<DocumentReference<Map<String, dynamic>>>>{};
+    for (final item in wanted) {
+      final snap = await _db
           .collection('batches')
           .where('productId', isEqualTo: item.productId)
           .where('status', isEqualTo: 'disponivel')
           .get();
+      candidates[item.productId] = snap.docs.map((d) => d.reference).toList();
+    }
+    await debugAfterPlanning?.call();
 
-      final docs = batchesSnap.docs.toList();
-      docs.sort((a, b) {
-        final ad = DateTime.tryParse((a.data()['expiryDate'] as String?) ?? '9999-12-31') ?? DateTime(9999);
-        final bd = DateTime.tryParse((b.data()['expiryDate'] as String?) ?? '9999-12-31') ?? DateTime(9999);
-        final an = a.data()['noExpiry'] as bool? ?? false;
-        final bn = b.data()['noExpiry'] as bool? ?? false;
-        if (an && bn) return 0;
-        if (an) return 1;
-        if (bn) return -1;
-        return ad.compareTo(bd);
-      });
+    final outputRef = operationId == null
+        ? _db.collection('outputs').doc()
+        : _db.collection('outputs').doc(operationId);
 
-      final available = docs.fold<int>(0, (acc, d) => acc + ((d.data()['quantity'] as num?)?.toInt() ?? 0));
-      if (available < item.quantity) {
-        throw Exception(
-          'Estoque insuficiente para ${item.productName}. Disponível: $available, necessário: ${item.quantity}.',
-        );
+    // 2) Transação: relê, recalcula e grava tudo junto.
+    return _db.runTransaction<Map<String, dynamic>>((tx) async {
+      // Reenvio da mesma operação: devolve o que já foi gravado.
+      final existing = await tx.get(outputRef);
+      if (existing.exists) {
+        return {'outputId': outputRef.id, ...?existing.data(), 'alreadyApplied': true};
       }
 
-      var remaining = item.quantity;
-      for (final doc in docs) {
-        if (remaining <= 0) break;
-        final before = (doc.data()['quantity'] as num?)?.toInt() ?? 0;
-        if (before <= 0) continue;
-        final consume = before >= remaining ? remaining : before;
-        final after = before - consume;
-        remaining -= consume;
-
-        planned.add({
-          'doc': doc,
-          'productId': item.productId,
-          'productName': item.productName,
-          'consumed': consume,
-          'before': before,
-          'after': after,
-          'oldStatus': doc.data()['status'] as String? ?? 'disponivel',
-        });
+      // Todas as leituras antes de qualquer escrita (exigência das transações).
+      final fresh = <String, List<DocumentSnapshot<Map<String, dynamic>>>>{};
+      for (final item in wanted) {
+        final refs = candidates[item.productId] ?? const [];
+        final snaps = <DocumentSnapshot<Map<String, dynamic>>>[];
+        for (final r in refs) {
+          snaps.add(await tx.get(r));
+        }
+        fresh[item.productId] = snaps;
       }
-    }
 
-    if (planned.isEmpty) {
-      throw Exception('Nenhum consumo calculado para saída.');
-    }
+      final now = DateTime.now().toIso8601String();
+      final movementsSummary = <Map<String, dynamic>>[];
+      final writes = <void Function()>[];
+      var seq = 0;
 
-    final batch = _db.batch();
-    final now = DateTime.now().toIso8601String();
+      for (final item in wanted) {
+        final docs = fresh[item.productId]!
+            .where((d) =>
+                d.exists &&
+                (d.data()!['status'] as String? ?? '') == 'disponivel' &&
+                ((d.data()!['quantity'] as num?)?.toInt() ?? 0) > 0)
+            .toList()
+          ..sort((a, b) => compareFefo(a.data()!, b.data()!));
 
-    final List<Map<String, dynamic>> movementsSummary = [];
+        final available =
+            docs.fold<int>(0, (acc, d) => acc + ((d.data()!['quantity'] as num).toInt()));
+        if (available < item.quantity) {
+          throw Exception(
+            'Estoque insuficiente para ${item.productName}. '
+            'Disponível agora: $available, necessário: ${item.quantity}.',
+          );
+        }
 
-    for (final p in planned) {
-      final doc = p['doc'] as QueryDocumentSnapshot<Map<String, dynamic>>;
-      final productId = p['productId'] as String;
-      final productName = p['productName'] as String;
-      final consumed = p['consumed'] as int;
-      final before = p['before'] as int;
-      final after = p['after'] as int;
-      final oldStatus = p['oldStatus'] as String;
+        var remaining = item.quantity;
+        for (final doc in docs) {
+          if (remaining <= 0) break;
+          final data = doc.data()!;
+          final before = (data['quantity'] as num).toInt();
+          final consume = before >= remaining ? remaining : before;
+          final after = before - consume;
+          remaining -= consume;
+          final oldStatus = data['status'] as String? ?? 'disponivel';
+          final newStatus = after <= 0 ? 'distribuido' : oldStatus;
+          final movementRef = _movements.doc('${outputRef.id}_${seq++}');
+          final auditRef = _auditLogs.doc('${movementRef.id}_audit');
 
-      batch.update(doc.reference, {
-        'quantity': after,
-        if (after <= 0) 'status': 'distribuido',
-      });
+          writes.add(() {
+            tx.update(doc.reference, {
+              'quantity': after,
+              if (after <= 0) 'status': 'distribuido',
+            });
+            tx.set(movementRef, {
+              'productId': item.productId,
+              'productName': item.productName,
+              'batchId': doc.id,
+              'type': MovementType.saida.name,
+              'quantity': consume,
+              'reasonCode': reasonCode,
+              'reason': reason,
+              'activity': activity,
+              'performedBy': performedBy,
+              'performedByName': performedByName,
+              'performedAt': now,
+              'isPendingSync': false,
+              'outputId': outputRef.id,
+              'auditBefore': {'quantity': before, 'status': oldStatus},
+              'auditAfter': {'quantity': after, 'status': newStatus, 'reasonCode': reasonCode},
+            });
+            tx.set(auditRef, {
+              'collection': 'batches',
+              'documentId': doc.id,
+              'action': 'saida',
+              'before': {'quantity': before, 'status': oldStatus},
+              'after': {'quantity': after, 'status': newStatus, 'reasonCode': reasonCode},
+              'performedBy': performedBy,
+              'performedByName': performedByName,
+              'performedAt': now,
+            });
+          });
 
-      final movementRef = _movements.doc();
-      batch.set(movementRef, {
-        'productId': productId,
-        'productName': productName,
-        'batchId': doc.id,
-        'type': MovementType.saida.name,
-        'quantity': consumed,
+          movementsSummary.add({
+            'movementId': movementRef.id,
+            'productId': item.productId,
+            'productName': item.productName,
+            'batchId': doc.id,
+            'consumed': consume,
+            'before': before,
+            'after': after,
+            'shelfLocation': data['shelfLocation'] as String?,
+            'expiryDate': data['expiryDate'] as String?,
+          });
+        }
+      }
+
+      if (movementsSummary.isEmpty) {
+        throw Exception('Nenhum consumo calculado para saída.');
+      }
+
+      final output = {
+        'createdAt': now,
+        'performedBy': performedBy,
+        'performedByName': performedByName,
         'reasonCode': reasonCode,
         'reason': reason,
-        'activity': activity,
+        'movements': movementsSummary,
+      };
+      for (final w in writes) {
+        w();
+      }
+      tx.set(outputRef, output);
+      return {'outputId': outputRef.id, ...output};
+    });
+  }
+
+  /// Acrescenta unidades a um lote existente, **em transação**: relê o saldo atual
+  /// (outra pessoa pode ter mexido no lote) e registra a entrada e a auditoria junto.
+  Future<int> addUnitsToBatch({
+    required String batchId,
+    required int amount,
+    required String performedBy,
+    required String performedByName,
+  }) async {
+    if (amount <= 0) throw Exception('Informe uma quantidade maior que zero.');
+    final batchRef = _db.collection('batches').doc(batchId);
+    return _db.runTransaction<int>((tx) async {
+      final snap = await tx.get(batchRef);
+      if (!snap.exists) throw Exception('Lote não encontrado.');
+      final data = snap.data()!;
+      final before = (data['quantity'] as num?)?.toInt() ?? 0;
+      final oldStatus = data['status'] as String? ?? 'disponivel';
+      final after = before + amount;
+      final now = DateTime.now().toIso8601String();
+      tx.update(batchRef, {'quantity': after, 'status': 'disponivel'});
+      final movementRef = _movements.doc();
+      tx.set(movementRef, {
+        'productId': data['productId'],
+        'productName': data['productName'],
+        'batchId': batchId,
+        'type': MovementType.entrada.name,
+        'quantity': amount,
+        'reasonCode': 'acrescimo_lote',
+        'reason': 'Unidades acrescentadas ao lote',
         'performedBy': performedBy,
         'performedByName': performedByName,
         'performedAt': now,
         'isPendingSync': false,
         'auditBefore': {'quantity': before, 'status': oldStatus},
-        'auditAfter': {
-          'quantity': after,
-          'status': after <= 0 ? 'distribuido' : oldStatus,
-          'reasonCode': reasonCode,
-        },
+        'auditAfter': {'quantity': after, 'status': 'disponivel'},
       });
-
-      movementsSummary.add({
-        'movementId': movementRef.id,
-        'productId': productId,
-        'productName': productName,
-        'batchId': doc.id,
-        'consumed': consumed,
-        'before': before,
-        'after': after,
-        'shelfLocation': doc.data()['shelfLocation'] as String?,
-        'expiryDate': doc.data()['expiryDate'] as String?,
-      });
-
-      final auditRef = _auditLogs.doc();
-      batch.set(auditRef, {
+      tx.set(_auditLogs.doc('${movementRef.id}_audit'), {
         'collection': 'batches',
-        'documentId': doc.id,
-        'action': 'saida',
+        'documentId': batchId,
+        'action': 'entrada',
         'before': {'quantity': before, 'status': oldStatus},
-        'after': {
-          'quantity': after,
-          'status': after <= 0 ? 'distribuido' : oldStatus,
-          'reasonCode': reasonCode,
-        },
+        'after': {'quantity': after, 'status': 'disponivel'},
         'performedBy': performedBy,
         'performedByName': performedByName,
         'performedAt': now,
       });
-    }
-
-    final outputRef = _db.collection('outputs').doc();
-    batch.set(outputRef, {
-      'createdAt': now,
-      'performedBy': performedBy,
-      'performedByName': performedByName,
-      'reasonCode': reasonCode,
-      'reason': reason,
-      'movements': movementsSummary,
+      return after;
     });
-
-    await batch.commit();
-
-    return {
-      'outputId': outputRef.id,
-      'createdAt': now,
-      'performedBy': performedBy,
-      'performedByName': performedByName,
-      'reasonCode': reasonCode,
-      'reason': reason,
-      'movements': movementsSummary,
-    };
   }
 
   Future<Map<String, dynamic>?> fetchOutputBySession(

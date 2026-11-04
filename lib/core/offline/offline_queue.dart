@@ -16,6 +16,19 @@ class PendingMovement {
   final String? nextStatus;
   final DateTime createdAt;
 
+  /// Conta que registrou a movimentação. Registros antigos (sem este campo) usam o
+  /// `performedBy` da própria movimentação.
+  final String? ownerId;
+
+  /// Projeto Firebase em que a movimentação deve ser aplicada. Registros antigos
+  /// (sem este campo) valem para o projeto atual.
+  final String? projectId;
+
+  /// Motivo de falha definitiva (estoque insuficiente, lote apagado, permissão).
+  /// Com motivo, o registro NÃO é reenviado sozinho: fica guardado como conflito até a
+  /// pessoa revisar e descartar (nada é apagado em silêncio).
+  final String? failure;
+
   const PendingMovement({
     required this.opId,
     required this.movement,
@@ -23,9 +36,31 @@ class PendingMovement {
     required this.delta,
     required this.nextStatus,
     required this.createdAt,
+    this.ownerId,
+    this.projectId,
+    this.failure,
   });
 
   String get productName => (movement['productName'] as String?) ?? 'produto';
+
+  /// Dono efetivo (campo novo ou, em registros antigos, quem fez a movimentação).
+  String? get owner => ownerId ?? movement['performedBy'] as String?;
+
+  /// Pertence à conta [uid] no projeto [project]?
+  bool belongsTo(String uid, String project) =>
+      owner == uid && (projectId == null || projectId == project);
+
+  PendingMovement withFailure(String reason) => PendingMovement(
+        opId: opId,
+        movement: movement,
+        batchId: batchId,
+        delta: delta,
+        nextStatus: nextStatus,
+        createdAt: createdAt,
+        ownerId: ownerId,
+        projectId: projectId,
+        failure: reason,
+      );
 
   Map<String, dynamic> toJson() => {
         'opId': opId,
@@ -34,6 +69,9 @@ class PendingMovement {
         'delta': delta,
         'nextStatus': nextStatus,
         'createdAt': createdAt.toIso8601String(),
+        if (ownerId != null) 'ownerId': ownerId,
+        if (projectId != null) 'projectId': projectId,
+        if (failure != null) 'failure': failure,
       };
 
   factory PendingMovement.fromJson(Map<String, dynamic> json) => PendingMovement(
@@ -43,6 +81,9 @@ class PendingMovement {
         delta: (json['delta'] as num).toInt(),
         nextStatus: json['nextStatus'] as String?,
         createdAt: DateTime.parse(json['createdAt'] as String),
+        ownerId: json['ownerId'] as String?,
+        projectId: json['projectId'] as String?,
+        failure: json['failure'] as String?,
       );
 }
 
@@ -112,4 +153,15 @@ class OfflineQueue {
   }
 
   int get length => pending().length;
+
+  /// Pendências da conta [uid] no projeto [project] ainda a enviar.
+  List<PendingMovement> pendingFor(String uid, String project) =>
+      pending().where((p) => p.failure == null && p.belongsTo(uid, project)).toList();
+
+  /// Registros da conta que falharam e aguardam revisão.
+  List<PendingMovement> conflictsFor(String uid, String project) =>
+      pending().where((p) => p.failure != null && p.belongsTo(uid, project)).toList();
+
+  /// Guarda o registro como conflito (não será reenviado sozinho).
+  Future<void> markFailed(PendingMovement op, String reason) => enqueue(op.withFailure(reason));
 }
