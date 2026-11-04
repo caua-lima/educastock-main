@@ -6,6 +6,7 @@ import '../../domain/entities/batch.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../stock/presentation/controllers/stock_provider.dart';
+import '../../../reports/presentation/controllers/reports_provider.dart';
 
 final batchesDatasourceProvider = Provider<BatchesRemoteDatasource>(
   (ref) => BatchesRemoteDatasource(db: ref.watch(firestoreProvider)),
@@ -96,7 +97,9 @@ class BatchFormNotifier extends Notifier<AsyncValue<String?>> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final ds = ref.read(batchesDatasourceProvider);
-      return ds.saveBatch(batch, imageFile: imageFile, entryMovement: entryMovement);
+      final id = await ds.saveBatch(batch, imageFile: imageFile, entryMovement: entryMovement);
+      invalidateReportCaches(ref);
+      return id;
     });
   }
 }
@@ -137,6 +140,7 @@ class AddBatchQuantityNotifier
             performedBy: user.id,
             performedByName: user.name,
           );
+      invalidateReportCaches(ref);
     });
   }
 }

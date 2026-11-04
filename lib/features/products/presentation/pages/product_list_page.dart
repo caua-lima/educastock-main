@@ -671,7 +671,9 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                   }
                   return GridView.builder(
                     padding: const EdgeInsets.fromLTRB(AppSpacing.md,
-                        AppSpacing.xs, AppSpacing.md, AppSpacing.xxxl),
+                        // Folga para os botões flutuantes (teclado + Escanear) não
+                        // cobrirem a última linha de produtos.
+                        AppSpacing.xs, AppSpacing.md, 140),
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 240,

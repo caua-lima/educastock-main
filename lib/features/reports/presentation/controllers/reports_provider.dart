@@ -13,7 +13,6 @@ class ReportSummary {
   final int totalBatches;
   final int expiringIn30Days;
   final int expiredBatches;
-  final int lowStockProducts;
   final int movementsThisMonth;
 
   const ReportSummary({
@@ -21,7 +20,6 @@ class ReportSummary {
     required this.totalBatches,
     required this.expiringIn30Days,
     required this.expiredBatches,
-    required this.lowStockProducts,
     required this.movementsThisMonth,
   });
 }
@@ -82,7 +80,6 @@ class ReportsRemoteDatasource {
       totalBatches: counts[1].count ?? 0,
       expiringIn30Days: counts[2].count ?? 0,
       expiredBatches: counts[3].count ?? 0,
-      lowStockProducts: 0, // calculado via business logic
       movementsThisMonth: counts[4].count ?? 0,
     );
   }
@@ -133,6 +130,16 @@ final reportsDatasourceProvider = Provider<ReportsRemoteDatasource>(
 /// Relatórios (resumo, categorias, períodos) não exigem tempo real absoluto: dentro
 /// desta janela, voltar à aba ou ao painel não custa nenhuma leitura no Firestore.
 const Duration kReportCacheTtl = Duration(minutes: 5);
+
+/// Descarta os relatórios em cache. Chamado depois de qualquer gravação no estoque
+/// (saída, entrada, lote novo) e pelo botão "Atualizar": a próxima tela que os observar
+/// lê de novo do servidor (auditoria A18 — fechar o keepAlive não atualizava uma tela
+/// aberta).
+void invalidateReportCaches(dynamic ref) {
+  ref.invalidate(reportSummaryProvider);
+  ref.invalidate(stockByCategoryProvider);
+  ref.invalidate(movementsReportProvider);
+}
 
 /// Mantém o resultado do provider vivo por [kReportCacheTtl] e depois o descarta.
 void keepReportCached(Ref ref) {

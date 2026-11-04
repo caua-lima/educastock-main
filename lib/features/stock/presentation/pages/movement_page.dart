@@ -18,6 +18,7 @@ import '../../../recipes/presentation/controllers/recipes_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../data/datasources/stock_remote_datasource.dart';
 import '../controllers/stock_provider.dart';
+import '../../../reports/presentation/controllers/reports_provider.dart';
 import '../../domain/entities/stock_movement.dart';
 import 'output_view_page.dart';
 import '../../../../core/utils/friendly_error.dart';
@@ -553,6 +554,9 @@ class _MovementPageState extends ConsumerState<MovementPage> {
       activity: null,
       operationId: const Uuid().v4(),
     );
+    // Relatórios em cache ficam desatualizados depois da saída.
+    final container = ProviderScope.containerOf(context, listen: false);
+    pendingFuture.then((_) => invalidateReportCaches(container), onError: (_) {});
 
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).push(

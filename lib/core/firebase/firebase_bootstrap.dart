@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -21,8 +23,22 @@ class FirebaseBootstrap {
     }
   }
 
+  /// `--dart-define=USE_EMULATORS=true`: liga o app aos emuladores locais (Auth,
+  /// Firestore, Storage). Ambiente isolado de verdade para testar gravações — os nomes
+  /// dev/hml/prod hoje apontam para o mesmo projeto Firebase (auditoria A11).
+  static const useEmulators = bool.fromEnvironment('USE_EMULATORS');
+
   static Future<void> initialize() async {
     await Firebase.initializeApp(options: _options);
+
+    if (useEmulators) {
+      const host = String.fromEnvironment('EMULATOR_HOST', defaultValue: 'localhost');
+      FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
+      await FirebaseAuth.instance.useAuthEmulator(host, 9099);
+      await FirebaseStorage.instance.useStorageEmulator(host, 9199);
+      debugPrint('[EducaStock] usando EMULADORES em $host (nenhum dado real é alterado)');
+      return; // sem App Check/Crashlytics no ambiente local
+    }
 
     // Cache local do Firestore: leituras continuam funcionando sem internet. No Android e
     // no iOS isso já é o padrão; na web precisa ser ligado.

@@ -16,6 +16,8 @@ import '../../../ml/presentation/widgets/forecast_widgets.dart';
 import '../../../reports/presentation/controllers/reports_provider.dart';
 import '../../domain/daily_movement_series.dart';
 import '../../../../core/utils/friendly_error.dart';
+import '../../../settings/presentation/controllers/system_settings_provider.dart';
+import '../../../../core/theme/theme_mode_controller.dart';
 
 final _keyDashQuickActions = GlobalKey();
 final _keyDashExpiring = GlobalKey();
@@ -40,7 +42,8 @@ class DashboardPage extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
         body: ListView(
-          padding: EdgeInsets.zero,
+          // Folga no fim para o botão Escanear não cobrir o último gráfico/legenda.
+          padding: const EdgeInsets.only(bottom: 96),
           children: [
             // ─── Header completo ─────────────────────────────────────────
             KeyedSubtree(
@@ -454,7 +457,23 @@ class _DashboardHeader extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // ── Botões de ação: dicas + sino + dark/light + avatar ─────────────
+                  // ── Ações: no celular, sino + menu do avatar (dicas, tema e
+                  // configurações agrupados) para a saudação e a data caberem.
+                  if (width < 480)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CasaAlertsBellButton(alertCount: alertCount, onDarkBg: true),
+                        const SizedBox(width: 6),
+                        _HeaderMenu(
+                          initial: initial,
+                          size: avatarSize,
+                          onHelp: onHelpTap,
+                          onSettings: onSettingsTap,
+                        ),
+                      ],
+                    )
+                  else
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
@@ -1342,6 +1361,9 @@ class _CategoryPieChart extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categoryAsync = ref.watch(stockByCategoryProvider);
+    // Nome em português da categoria (o valor gravado continua sendo a chave, ex.:
+    // "higienePessoal" → "Higiene pessoal").
+    final categoryLabels = ref.watch(categoryLabelMapProvider);
     return categoryAsync.when(
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2)),
@@ -1414,7 +1436,7 @@ class _CategoryPieChart extends ConsumerWidget {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                cat.category,
+                                categoryLabels[cat.category] ?? cat.category,
                                 style: TextStyle(
                                   fontSize: 11,
                                   color:
@@ -1746,6 +1768,81 @@ class _LegendDot extends StatelessWidget {
                 fontSize: 11,
                 color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
+    );
+  }
+}
+
+/// Avatar do cabeçalho com menu (celular): configurações, dicas e tema claro/escuro.
+class _HeaderMenu extends ConsumerWidget {
+  final String initial;
+  final double size;
+  final VoidCallback onHelp;
+  final VoidCallback onSettings;
+
+  const _HeaderMenu({
+    required this.initial,
+    required this.size,
+    required this.onHelp,
+    required this.onSettings,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return PopupMenuButton<String>(
+      tooltip: 'Menu da conta',
+      position: PopupMenuPosition.under,
+      onSelected: (v) {
+        switch (v) {
+          case 'settings':
+            onSettings();
+          case 'help':
+            onHelp();
+          case 'theme':
+            ref.read(themeModeProvider.notifier).toggleDark(!isDark);
+        }
+      },
+      itemBuilder: (_) => [
+        const PopupMenuItem(
+          value: 'settings',
+          child: ListTile(
+            leading: Icon(Icons.settings_rounded),
+            title: Text('Configurações'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'help',
+          child: ListTile(
+            leading: Icon(Icons.help_outline_rounded),
+            title: Text('Dicas de uso'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'theme',
+          child: ListTile(
+            leading: Icon(isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded),
+            title: Text(isDark ? 'Tema claro' : 'Tema escuro'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.14),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
+        ),
+        child: Center(
+          child: Text(
+            initial,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
+          ),
+        ),
+      ),
     );
   }
 }

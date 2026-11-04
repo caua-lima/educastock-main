@@ -5,6 +5,7 @@ import '../../../../core/offline/offline_queue.dart';
 import '../../../../core/offline/offline_sync_controller.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../../data/datasources/stock_remote_datasource.dart';
+import '../../../reports/presentation/controllers/reports_provider.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../batches/domain/entities/batch.dart';
 import '../../../../core/firebase/firebase_providers.dart';
@@ -103,6 +104,7 @@ class StockNotifier extends AsyncNotifier<void> {
         newQuantity: newQuantity,
         nextStatus: nextStatus,
       );
+      invalidateReportCaches(ref);
       return true;
     } on FirebaseException catch (e) {
       // Caiu a conexão no meio da gravação: guarda para enviar depois.

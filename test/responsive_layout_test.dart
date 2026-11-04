@@ -191,7 +191,6 @@ const _knownBigTextIssues = {
   'lib/features/locations/presentation/pages/locations_page.dart:336', // cabeçalho de cômodo
   'lib/features/products/presentation/pages/product_detail_page.dart:473', // cabeçalho expansível
   'lib/features/products/presentation/pages/product_detail_page.dart:1476', // selos do lote
-  'lib/features/reports/presentation/pages/reports_page.dart:3431', // resumo "Demais lotes"
   'lib/features/settings/presentation/pages/categories_settings_page.dart:113', // cabeçalho
   'lib/features/settings/presentation/pages/users_management_page.dart:204', // seletor de perfil
 };

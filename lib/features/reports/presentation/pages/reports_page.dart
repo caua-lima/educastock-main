@@ -204,6 +204,13 @@ class _TabActionsRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
+        Consumer(
+          builder: (context, ref, _) => IconButton(
+            tooltip: 'Atualizar dados',
+            onPressed: () => invalidateReportCaches(ref),
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ),
         OutlinedButton.icon(
           onPressed: onExport,
           icon: const Icon(Icons.ios_share_rounded, size: 18),
@@ -3428,7 +3435,11 @@ class _MlNonCriticalSummary extends StatelessWidget {
         border: Border.all(
             color: cs.outlineVariant.withValues(alpha: 0.35)),
       ),
-      child: Row(
+      // Wrap: os selos descem para a linha de baixo quando não cabem (tela estreita ou
+      // fonte ampliada), em vez de estourar.
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runSpacing: 6,
         children: [
           const Icon(Icons.summarize_outlined,
               size: 14, color: AppColors.secondaryBlue600),
