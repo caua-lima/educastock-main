@@ -93,10 +93,10 @@
     ZXing pure-JS: funciona em iOS Safari sem WASM.
     Expõe MultiFormatReader, HybridBinarizer, GlobalHistogramBinarizer, etc.
   -->
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
-
+  <!-- O Flutter começa a carregar na hora (script abaixo); o ZXing é baixado em paralelo e só é
+       necessário quando o scanner abre. Antes, o app inteiro esperava esse download. -->
   <script>
-  function _bootstrapApp() {
+  function _initBarcodeReaders() {
 
     // ─────────────────────────────────────────────────────────────────────────
     // 1. INICIALIZA ZXING com todos os formatos relevantes
@@ -861,14 +861,19 @@
     };
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 10. INICIA FLUTTER
-    // ─────────────────────────────────────────────────────────────────────────
-    var s = document.createElement('script');
-    s.src = 'flutter_bootstrap.js';
-    document.body.appendChild(s);
   }
 
-  _bootstrapApp();
+  // Inicia o Flutter imediatamente e carrega o ZXing em paralelo (sem bloquear o app).
+  var _flutterScript = document.createElement('script');
+  _flutterScript.src = 'flutter_bootstrap.js';
+  document.body.appendChild(_flutterScript);
+
+  var _zxingScript = document.createElement('script');
+  _zxingScript.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+  _zxingScript.async = true;
+  _zxingScript.onload = _initBarcodeReaders;
+  _zxingScript.onerror = function () { console.warn('[EducaStock] ZXing não carregou; o scanner usa só a detecção nativa.'); _initBarcodeReaders(); };
+  document.body.appendChild(_zxingScript);
   </script>
 </body>
 </html>

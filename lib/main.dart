@@ -23,10 +23,15 @@ void main() async {
   if (kIsWeb) {
     usePathUrlStrategy();
   }
-  await initializeDateFormatting('pt_BR');
-  await FirebaseBootstrap.initialize();
+  // Inicialização em paralelo (antes era uma etapa após a outra): formatos de data, Firebase e a
+  // fila offline (Hive) não dependem entre si, então o app abre mais rápido.
+  final results = await Future.wait<Object?>([
+    initializeDateFormatting('pt_BR'),
+    FirebaseBootstrap.initialize(),
+    HiveQueueStore.open(),
+  ]);
   // Fila de gravações feitas sem internet (guardada no aparelho).
-  final queueStore = await HiveQueueStore.open();
+  final queueStore = results[2]! as HiveQueueStore;
   runApp(
     ProviderScope(
       overrides: [offlineQueueProvider.overrideWithValue(OfflineQueue(queueStore))],
