@@ -59,6 +59,18 @@ O **EducaStock** digitaliza e automatiza o controle de doações e suprimentos d
 - **Design System** completo (`CasaButton`, `CasaTextField`, `CasaStatusChip`, etc.)
 - **Configurações de UI** (tema, preferências do app)
 
+## Dados de demonstração (fictícios)
+
+`scripts/seed_realistic.mjs` gera uma operação de 5 meses da Casa da Criança (Itapira/SP) e grava no Firestore: 55 produtos, ~650 lotes, ~4.300 movimentações, auditoria, alertas, receitas e cestas, localizações, 16 doadores, ~120 doações com linha do tempo e relatório de impacto, necessidades do portal, previsões de consumo e classificações de risco. Lotes, movimentações e doações saem da mesma simulação, então os números fecham entre si. Pessoas, empresas, telefones e quantidades são **fictícios**; só a instituição, a cidade e o endereço da sede vêm de reportagem pública (Itapira News, 2016), e devem ser conferidos antes de divulgar.
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS = "C:\caminho\da\chave.json"   # nunca versionar a chave
+node scripts/seed_realistic.mjs            # simulação: mostra o que faria, sem gravar
+node scripts/seed_realistic.mjs --apply    # apaga os dados de demonstração antigos e grava os novos
+```
+
+Preserva as contas de login, as configurações e o perfil de doador das contas reais. O `seed_database.mjs` antigo continua no repositório, mas grava dados mais simples: prefira o novo.
+
 ## Módulos entregues no PI (novembro/2026)
 
 ### Equipe: gestão das doações (telas S01 a S03)
