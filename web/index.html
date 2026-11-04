@@ -52,7 +52,9 @@
       bottom: 0;
       overscroll-behavior: none;
       -webkit-tap-highlight-color: transparent;
+      background: #EFF6FF;
     }
+    html.tema-escuro, html.tema-escuro body { background: #0B1220; color-scheme: dark; }
     flutter-view, flt-glass-pane, body > flt-scene-host {
       position: fixed !important;
       top: 0 !important;
@@ -61,6 +63,21 @@
       height: 100% !important;
     }
   </style>
+
+  <!-- Fundo da página já no tema escolhido (Claro/Escuro/Sistema) enquanto o app carrega:
+       evita o clarão branco antes do primeiro quadro no tema escuro. Mesmo valor que o app grava
+       (shared_preferences web: chave "flutter.theme_mode"). -->
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('flutter.theme_mode');
+        var modo = raw ? JSON.parse(raw) : 'light';
+        var escuro = modo === 'dark' ||
+          (modo === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (escuro) document.documentElement.classList.add('tema-escuro');
+      } catch (_) {}
+    })();
+  </script>
 
   <!--
     iOS PWA hack: quando aberto via Add-to-Home-Screen (display: standalone),

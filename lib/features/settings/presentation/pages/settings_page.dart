@@ -178,7 +178,6 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final themeMode = ref.watch(themeModeProvider);
-    final isDark = themeMode == ThemeMode.dark;
 
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
@@ -353,13 +352,9 @@ class SettingsPage extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             KeyedSubtree(
               key: _keySettingsTheme,
-              child: _SettingsSwitchTile(
-                icon: Icons.dark_mode_outlined,
-                label: 'Tema escuro',
-                value: isDark,
-                onChanged: (v) async {
-                  await ref.read(themeModeProvider.notifier).toggleDark(v);
-                },
+              child: _TemaTile(
+                escolhido: themeMode,
+                onEscolher: (modo) => ref.read(themeModeProvider.notifier).setThemeMode(modo),
               ),
             ),
             KeyedSubtree(
@@ -479,68 +474,6 @@ class _SettingsTile extends StatelessWidget {
                   color: cs.onSurfaceVariant, size: 18),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsSwitchTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _SettingsSwitchTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.35)),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 4),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: cs.onSurface.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(AppRadius.small),
-              ),
-              child: Icon(icon, color: cs.onSurface, size: 20),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Text(
-                label,
-                style: AppTypography.bodyLarge.copyWith(
-                  color: cs.onSurface,
-                ),
-              ),
-            ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-            ),
-          ],
         ),
       ),
     );
@@ -670,6 +603,76 @@ class _TwoFASwitchTileState extends ConsumerState<_TwoFASwitchTile> {
                     : cs.onSurfaceVariant,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tema: Claro, Escuro ou Sistema. O seletor mostra o modo ESCOLHIDO; o texto
+/// abaixo explica o modo EM USO (no "Sistema", segue o aparelho).
+class _TemaTile extends StatelessWidget {
+  final ThemeMode escolhido;
+  final ValueChanged<ThemeMode> onEscolher;
+  const _TemaTile({required this.escolhido, required this.onEscolher});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final escuroAgora = Theme.of(context).brightness == Brightness.dark;
+    const opcoes = [
+      (ThemeMode.light, 'Claro', Icons.light_mode_outlined),
+      (ThemeMode.dark, 'Escuro', Icons.dark_mode_outlined),
+      (ThemeMode.system, 'Sistema', Icons.brightness_auto_outlined),
+    ];
+    final explicacao = switch (escolhido) {
+      ThemeMode.system => 'Segue o aparelho — agora ${escuroAgora ? 'escuro' : 'claro'}.',
+      ThemeMode.dark => 'Sempre escuro.',
+      ThemeMode.light => 'Sempre claro.',
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.palette_outlined, color: cs.onSurface, size: 20),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text('Tema', style: AppTypography.bodyLarge.copyWith(color: cs.onSurface)),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Semantics(
+              label: 'Tema do aplicativo',
+              child: Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  for (final (modo, rotulo, icone) in opcoes)
+                    ChoiceChip(
+                      selected: escolhido == modo,
+                      onSelected: (_) => onEscolher(modo),
+                      avatar: Icon(icone, size: 18),
+                      label: Text(rotulo),
+                      showCheckmark: false,
+                      materialTapTargetSize: MaterialTapTargetSize.padded,
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(explicacao, style: AppTypography.bodyMedium.copyWith(color: cs.onSurfaceVariant)),
           ],
         ),
       ),

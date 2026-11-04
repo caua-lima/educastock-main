@@ -38,12 +38,18 @@ Future<void> _start() async {
       initializeDateFormatting('pt_BR'),
       FirebaseBootstrap.initialize(),
       HiveQueueStore.open(),
+      // Tema lido antes da primeira tela: sem clarão do tema errado na abertura.
+      ThemeModeController.lerPreferencia(),
     ]);
     // Fila de gravações feitas sem internet (guardada no aparelho).
     final queueStore = results[2]! as HiveQueueStore;
+    final temaInicial = results[3]! as ThemeMode;
     runApp(
       ProviderScope(
-        overrides: [offlineQueueProvider.overrideWithValue(OfflineQueue(queueStore))],
+        overrides: [
+          offlineQueueProvider.overrideWithValue(OfflineQueue(queueStore)),
+          themeModeProvider.overrideWith((ref) => ThemeModeController(inicial: temaInicial)),
+        ],
         child: const EducaStockApp(),
       ),
     );

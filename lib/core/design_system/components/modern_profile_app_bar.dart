@@ -296,11 +296,13 @@ class CasaThemeToggleButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final reduzir = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    // Alvo de 48 (o círculo visível continua discreto).
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
+      duration: reduzir ? Duration.zero : const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
-      width: 36,
-      height: 36,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.14),
         shape: BoxShape.circle,
@@ -320,11 +322,11 @@ class CasaThemeToggleButton extends ConsumerWidget {
           child: Icon(
             isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
             key: ValueKey(isDark),
-            size: 18,
+            size: 20,
             color: Colors.white,
           ),
         ),
-        tooltip: isDark ? 'Modo claro' : 'Modo escuro',
+        tooltip: isDark ? 'Mudar para o tema claro' : 'Mudar para o tema escuro',
         onPressed: () =>
             ref.read(themeModeProvider.notifier).toggleDark(!isDark),
         style: IconButton.styleFrom(
