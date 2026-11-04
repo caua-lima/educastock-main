@@ -13,6 +13,7 @@ import '../../../ml/data/repositories/rule_based_risk_classifier.dart';
 import '../../../ml/domain/entities/risk_prediction.dart';
 import '../../../ml/presentation/widgets/risk_widgets.dart';
 import '../../../scanner/data/scan_history_repository.dart';
+import '../../../scanner/domain/codigo_barras.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../domain/entities/product.dart';
 import '../controllers/products_provider.dart';
@@ -107,6 +108,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
 
   void _showManualBarcodeInput() {
     final ctrl = TextEditingController();
+    final erro = ValueNotifier<String?>(null);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -116,16 +118,20 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
 
         Future<void> submit(String value) async {
-          final barcode = value.trim();
-          if (barcode.isEmpty) return;
-          // Salva no banco (Firestore) como digitado — persiste entre reloads.
-          await ref
-              .read(scanHistoryRepositoryProvider)
-              .record(barcode, source: 'typed');
+          // Mesmas regras da câmera: texto preservado (zeros, letras e
+          // símbolos), EAN/UPC com dígito conferido e rota codificada.
+          final barcode = normalizarCodigo(value);
+          final problema = validarCodigo(barcode);
+          if (problema != null) {
+            erro.value = problema;
+            return;
+          }
+          // Histórico em segundo plano: não segura a navegação (nem sem rede).
+          ref.read(scanHistoryRepositoryProvider).record(barcode, source: 'typed');
           if (!ctx.mounted) return;
           Navigator.of(ctx).pop();
           if (!mounted) return;
-          context.push('${AppRoutes.productReview}?barcode=$barcode');
+          context.push(rotaRevisao(barcode));
         }
 
         return Padding(
@@ -227,9 +233,12 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       child: TextField(
                         controller: ctrl,
                         autofocus: true,
-                        keyboardType: TextInputType.number,
+                        keyboardType: TextInputType.text,
+                        autocorrect: false,
+                        enableSuggestions: false,
                         textInputAction: TextInputAction.search,
                         onSubmitted: submit,
+                        onChanged: (_) => erro.value = null,
                         style: AppTypography.productName(
                           size: 18,
                           weight: FontWeight.w800,
@@ -254,6 +263,19 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                               vertical: 16, horizontal: 4),
                         ),
                       ),
+                    ),
+                    ValueListenableBuilder<String?>(
+                      valueListenable: erro,
+                      builder: (_, msg, __) => msg == null
+                          ? const SizedBox.shrink()
+                          : Padding(
+                              padding: const EdgeInsets.only(top: AppSpacing.xs),
+                              child: Semantics(
+                                liveRegion: true,
+                                child: Text(msg,
+                                    style: AppTypography.bodyMedium.copyWith(color: cs.error)),
+                              ),
+                            ),
                     ),
 
                     // ─── Histórico de códigos (do banco, em tempo real) ──
@@ -396,7 +418,14 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
           ),
         );
       },
-    );
+    ).whenComplete(() {
+      // O controlador e o aviso pertencem à folha: descartados depois da
+      // animação de saída (o campo ainda aparece enquanto a folha desce).
+      Future<void>.delayed(const Duration(seconds: 1), () {
+        ctrl.dispose();
+        erro.dispose();
+      });
+    });
   }
 
   List<Product> _applyFilters(

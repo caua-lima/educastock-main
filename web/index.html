@@ -93,8 +93,8 @@
     ZXing pure-JS: funciona em iOS Safari sem WASM.
     Expõe MultiFormatReader, HybridBinarizer, GlobalHistogramBinarizer, etc.
   -->
-  <!-- O Flutter começa a carregar na hora (script abaixo); o ZXing é baixado em paralelo e só é
-       necessário quando o scanner abre. Antes, o app inteiro esperava esse download. -->
+  <!-- O Flutter começa a carregar na hora (script abaixo). O ZXing só é baixado quando o scanner
+       abre (_ensureBarcodeReaders), numa versão única e fixa que o mobile_scanner também usa. -->
   <script>
   function _initBarcodeReaders() {
 
@@ -645,12 +645,27 @@
     // BarcodeDetector: mais rápido, suporta qualquer rotação, sem canvas ops.
     // ZXing: complemento quando ML não encontra (baixo contraste, formatos raros).
     // ─────────────────────────────────────────────────────────────────────────
-    window._zxingScanFrameCb = function(cb) {
+    window._zxingScanFrameCb = function(cb, zoom) {
       if (!window._zxingReader && !window._barcodeDetector) { cb(null); return; }
       var video = document.querySelector('video');
       if (!video || video.readyState < 2) { cb(null); return; }
       var vw = video.videoWidth, vh = video.videoHeight;
       if (!vw || !vh) { cb(null); return; }
+      // Zoom da web é visual (Transform.scale no Flutter): só a fração central
+      // 1/zoom do quadro aparece na tela. O leitor considera só essa parte, para
+      // a área decodificada ser a mesma que a pessoa vê.
+      var z = (typeof zoom === 'number' && zoom > 1) ? zoom : 1;
+      var frac = 1 / z;
+      function recorteVisivel(c) {
+        return z > 1 ? window._cropCenter(c, frac, frac) : c;
+      }
+      function dentroDoVisivel(hit) {
+        if (z <= 1 || !hit || !hit.boundingBox) return true;
+        var b = hit.boundingBox;
+        var cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+        var x0 = vw * (1 - frac) / 2, y0 = vh * (1 - frac) / 2;
+        return cx >= x0 && cx <= vw - x0 && cy >= y0 && cy <= vh - y0;
+      }
 
       // ZXing via canvas do elemento de vídeo (fallback final)
       function zxingFromVideoEl() {
@@ -659,7 +674,7 @@
           var c = document.createElement('canvas');
           c.width = vw; c.height = vh;
           c.getContext('2d').drawImage(video, 0, 0, vw, vh);
-          cb(window._zxingDecodeLive(c));
+          cb(window._zxingDecodeLive(recorteVisivel(c)));
         } catch(e) { cb(null); }
       }
 
@@ -676,7 +691,7 @@
             fc.height = frame.height || vh;
             fc.getContext('2d').drawImage(frame, 0, 0);
             if (frame.close) frame.close();
-            cb(window._zxingDecodeLive(fc));
+            cb(window._zxingDecodeLive(recorteVisivel(fc)));
           } catch(e) {
             if (frame && frame.close) frame.close();
             zxingFromVideoEl();
@@ -687,8 +702,9 @@
       // 1ª tentativa: BarcodeDetector ML — nativo, suporta rotação automática
       if (window._barcodeDetector) {
         window._barcodeDetector.detect(video).then(function(barcodes) {
-          if (barcodes && barcodes.length) {
-            var hit = window._preferProduct(barcodes);
+          var visiveis = (barcodes || []).filter(dentroDoVisivel);
+          if (visiveis.length) {
+            var hit = window._preferProduct(visiveis);
             if (hit && hit.rawValue) { cb(hit.rawValue); return; }
           }
           // ML não encontrou → complementa com ZXing (frame de alta qualidade)
@@ -749,7 +765,7 @@
     // Fluxo: takePhoto → ML → ZXing full → grabFrame → ML → ZXing full
     // BarcodeDetector ML é tentado em CADA fonte de imagem antes do ZXing.
     // ─────────────────────────────────────────────────────────────────────────
-    window._captureAndScanCb = function(cb) {
+    window._captureAndScanCb = function(cb, _zoom) {
       if (!window._zxingReader && !window._barcodeDetector) { cb('ERR:no_detector'); return; }
 
       var ic = window._getImageCapture();
@@ -868,12 +884,47 @@
   _flutterScript.src = 'flutter_bootstrap.js';
   document.body.appendChild(_flutterScript);
 
-  var _zxingScript = document.createElement('script');
-  _zxingScript.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
-  _zxingScript.async = true;
-  _zxingScript.onload = _initBarcodeReaders;
-  _zxingScript.onerror = function () { console.warn('[EducaStock] ZXing não carregou; o scanner usa só a detecção nativa.'); _initBarcodeReaders(); };
-  document.body.appendChild(_zxingScript);
+  // ZXing sob demanda: só quando o scanner abre (antes era baixado em toda abertura do app).
+  // Versão fixa. O script usa o MESMO id do leitor do mobile_scanner: ele vê que já existe e
+  // não baixa a sua própria versão (0.19.1) — uma cópia só, sem duas versões disputando
+  // window.ZXing. O Dart espera esta promessa (com tempo limite) antes de ligar a câmera.
+  var ZXING_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+  var ZXING_ID = 'mobile-scanner-barcode-reader';
+  window._leitoresPromessa = null;
+  window._ensureBarcodeReaders = function (cb) {
+    if (!window._leitoresPromessa) {
+      window._leitoresPromessa = new Promise(function (resolve) {
+        var concluido = false;
+        function fim(estado) {
+          if (concluido) return;
+          concluido = true;
+          // Sem ZXing ainda assim prepara o BarcodeDetector nativo (Chrome/Android).
+          try { _initBarcodeReaders(); } catch (e) { console.error('[EducaStock] leitores:', e); }
+          if (estado !== 'ok') window._leitoresPromessa = null; // permite tentar de novo
+          resolve(estado);
+        }
+        if (window.ZXing) { fim('ok'); return; }
+        var s = document.querySelector('script#' + ZXING_ID);
+        if (!s) {
+          s = document.createElement('script');
+          s.id = ZXING_ID;
+          s.src = ZXING_URL;
+          s.async = true;
+          s.crossOrigin = 'anonymous';
+          document.head.appendChild(s);
+        }
+        s.addEventListener('load', function () { fim('ok'); });
+        s.addEventListener('error', function () {
+          console.warn('[EducaStock] ZXing não carregou; o scanner usa só a detecção nativa.');
+          try { s.parentNode.removeChild(s); } catch (_) {}
+          fim('erro');
+        });
+        setTimeout(function () { fim(window.ZXing ? 'ok' : 'timeout'); }, 15000);
+      });
+    }
+    window._leitoresPromessa.then(function (estado) { if (cb) cb(estado); });
+    return window._leitoresPromessa;
+  };
   </script>
 </body>
 </html>
