@@ -55,7 +55,7 @@ jobs:
         run: npm run build
 
       - name: Testes do middleware HTTP
-        run: node --test test/http_auth.test.js
+        run: node --test test/http_auth.test.js test/alerts.test.js
 
   # Regras do Firestore/Storage e gatilhos de doação no EMULADOR (projeto demo-, que não
   # existe na nuvem: os testes não alcançam dados reais).

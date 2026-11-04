@@ -27,9 +27,25 @@ export function classifyExpiry(
   return null;
 }
 
-/** Dias inteiros entre `now` e a data de validade (negativo = já vencido). */
-export function daysUntil(expiry: Date, now: Date): number {
-  return Math.floor((expiry.getTime() - now.getTime()) / 86_400_000);
+/** Data de calendário (AAAA-MM-DD) de um instante no fuso da ONG. */
+export function civilDate(d: Date, timeZone = 'America/Sao_Paulo'): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+    .format(d);
+}
+
+/**
+ * Dias de CALENDÁRIO entre hoje (no fuso da ONG) e a validade: 0 = vence hoje,
+ * negativo = vencido. Mesma regra do app (auditoria A19). A validade gravada pelo app é
+ * texto local ("2026-11-10T00:00:00.000"): só a data conta, sem conversão de fuso.
+ */
+export function daysUntil(expiry: string | Date, now: Date, timeZone = 'America/Sao_Paulo'): number {
+  const expiryDay = typeof expiry === 'string' ? expiry.slice(0, 10) : civilDate(expiry, timeZone);
+  const today = civilDate(now, timeZone);
+  const toUtc = (ymd: string) => {
+    const [y, m, d] = ymd.split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((toUtc(expiryDay) - toUtc(today)) / 86_400_000);
 }
 
 export function alertMessage(productName: string, days: number, level: AlertLevel): string {
@@ -122,7 +138,7 @@ export const dailyExpiryCheck = onSchedule(
     for (const doc of batchesSnap.docs) {
       const b = doc.data();
       if (!b.expiryDate) continue;
-      const days = daysUntil(new Date(b.expiryDate), now);
+      const days = daysUntil(String(b.expiryDate), now);
       const level = classifyExpiry(days, criticalDays, warningDays);
       if (!level) continue;
       currentLevel.set(doc.id, level);
