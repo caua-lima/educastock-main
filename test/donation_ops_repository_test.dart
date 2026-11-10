@@ -81,6 +81,15 @@ void main() {
     return Donation.fromMap(snap.data()!, snap.id);
   }
 
+  test('findIdByProtocol acha a doação pelo protocolo do QR (RF22)', () async {
+    await db.collection('donations').doc('d1').set(_donationDoc());
+    await repo.decide(donationId: 'd1', approve: true, actor: _staff());
+    final protocolo = (await load('d1')).protocol;
+
+    expect(await repo.findIdByProtocol(protocolo), 'd1');
+    expect(await repo.findIdByProtocol('DOA-1999-999999'), isNull);
+  });
+
   group('decide (S02)', () {
     test('aprovar gera protocolo, reserva a quantidade e avisa o doador', () async {
       await db.collection('donations').doc('d1').set(_donationDoc());

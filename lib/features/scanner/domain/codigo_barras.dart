@@ -56,6 +56,15 @@ String? validarCodigo(String codigo) {
   return null;
 }
 
+final _protocoloDoacao = RegExp(r'^DOA-\d{4}-\d{6}$', caseSensitive: false);
+
+/// O código é o protocolo de uma doação (QR Code que o doador mostra na entrega)?
+/// Devolve o protocolo em maiúsculas, ou null.
+String? protocoloDeDoacao(String codigo) {
+  final c = normalizarCodigo(codigo);
+  return _protocoloDoacao.hasMatch(c) ? c.toUpperCase() : null;
+}
+
 /// O código lido parece um endereço da internet (QR de site)? Ele nunca é
 /// aberto automaticamente; a tela só avisa.
 bool pareceEndereco(String codigo) {

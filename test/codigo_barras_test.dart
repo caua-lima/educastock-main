@@ -30,6 +30,14 @@ void main() {
     expect(validarCodigo('https://exemplo.org/?a=1&b=2#x'), isNull);
   });
 
+  test('QR do protocolo de doação é reconhecido (abre a doação, não um produto)', () {
+    expect(protocoloDeDoacao('DOA-2026-000123'), 'DOA-2026-000123');
+    expect(protocoloDeDoacao('  doa-2026-000123\n'), 'DOA-2026-000123');
+    expect(protocoloDeDoacao('DOA-2026-123'), isNull);
+    expect(protocoloDeDoacao('7891000100103'), isNull);
+    expect(protocoloDeDoacao('xDOA-2026-000123'), isNull);
+  });
+
   test('endereço de QR é reconhecido (para avisar, nunca abrir)', () {
     expect(pareceEndereco('https://exemplo.org'), isTrue);
     expect(pareceEndereco('www.exemplo.org'), isTrue);

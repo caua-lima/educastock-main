@@ -1,9 +1,15 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/export/entregar_arquivos.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../auth/presentation/utils/auth_error_mapper.dart';
+import '../../domain/donor_data_export.dart';
 import '../../domain/entities/donor_profile.dart';
+import '../controllers/donations_provider.dart';
 import '../controllers/donor_profile_provider.dart';
 import '../widgets/donor_header.dart';
 
@@ -219,6 +225,29 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
     }
   }
 
+  /// RF17 / LGPD: entrega um arquivo JSON com o perfil e todas as doações.
+  Future<void> _exportarDados() async {
+    final email = ref.read(currentUserProvider)?.email ?? '';
+    try {
+      final doacoes = await ref.read(myDonationsProvider.future);
+      final json = buildDonorDataExport(email: email, profile: widget.profile, donations: doacoes);
+      final hoje = DateTime.now();
+      final nome = 'educastock_meus_dados_${hoje.year}${hoje.month.toString().padLeft(2, '0')}'
+          '${hoje.day.toString().padLeft(2, '0')}.json';
+      await entregarArquivos(
+        [(bytes: utf8.encode(json), nome: nome, mime: 'application/json')],
+        assunto: 'Meus dados no EducaStock',
+      );
+      if (kIsWeb && mounted) {
+        showCasaSnackbar(context, message: 'Arquivo baixado: $nome', isSuccess: true);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      showCasaSnackbar(context,
+          message: 'Não foi possível gerar o arquivo agora. Tente de novo.', isError: true);
+    }
+  }
+
   Future<void> _requestDeletion() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -374,6 +403,13 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
                   style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant),
                 ),
                 const SizedBox(height: AppSpacing.md),
+                CasaButton(
+                  label: 'Baixar meus dados (JSON)',
+                  icon: Icons.download_rounded,
+                  variant: CasaButtonVariant.secondary,
+                  onPressed: _exportarDados,
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 if (!widget.profile.deletionRequested)
                   CasaButton(
                     label: 'Solicitar exclusão dos meus dados',

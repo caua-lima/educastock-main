@@ -778,6 +778,36 @@
     };
 
     // ─────────────────────────────────────────────────────────────────────────
+    // 8b. IMAGEM ESCOLHIDA PELA PESSOA (arquivo ou galeria) — funciona sem câmera.
+    // Tenta o detector nativo do navegador e depois o ZXing (com reforço de
+    // contraste, nitidez e inversão de _zxingDecodeFull). Devolve '' se não achar.
+    // ─────────────────────────────────────────────────────────────────────────
+    window._scanImageBytesCb = function(cb, bytes) {
+      var respondeu = false;
+      function fim(r) { if (!respondeu) { respondeu = true; cb(r || ''); } }
+      try {
+        var blob = new Blob([bytes]);
+        var viaZxing = function() {
+          if (!window._zxingReader) { fim(''); return; }
+          window._detectInBlob(blob, function(r) { fim(r); });
+        };
+        if (window._barcodeDetector && window.createImageBitmap) {
+          createImageBitmap(blob).then(function(bmp) {
+            return window._barcodeDetector.detect(bmp).then(function(lista) {
+              var hit = window._preferProduct(lista);
+              if (hit && hit.rawValue) fim(hit.rawValue); else viaZxing();
+            });
+          }).catch(viaZxing);
+        } else {
+          viaZxing();
+        }
+      } catch (e) {
+        console.warn('[EducaStock] leitura de imagem falhou:', e);
+        fim('');
+      }
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
     // 9. CAPTURA FOTO E DETECTA (botão câmera na UI)
     // Fluxo: takePhoto → ML → ZXing full → grabFrame → ML → ZXing full
     // BarcodeDetector ML é tentado em CADA fonte de imagem antes do ZXing.

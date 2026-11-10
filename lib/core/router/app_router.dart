@@ -141,6 +141,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final pendingOtp = ref.read(pendingOtpProvider);
       final homeForRole = isDonor ? AppRoutes.donorHome : AppRoutes.dashboard;
 
+      // "/" e "/index.html" (endereço salvo, botão "Home" da página de erro) não são
+      // telas: levam ao login ou ao início do papel.
+      final path = state.uri.path;
+      if (path == '/' || path == '/index.html') {
+        return isLoggedIn ? (pendingOtp ? AppRoutes.otpVerification : homeForRole) : AppRoutes.login;
+      }
+
       final isPublicRoute = {
         AppRoutes.login,
         AppRoutes.register,

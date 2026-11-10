@@ -6,6 +6,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/theme_mode_controller.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../auth/presentation/utils/auth_error_mapper.dart';
+import '../../../auth/data/datasources/auth_remote_datasource.dart';
 
 final _keySettingsTheme = GlobalKey();
 final _keySettingsPassword = GlobalKey();
@@ -536,7 +537,9 @@ class _TwoFASwitchTileState extends ConsumerState<_TwoFASwitchTile> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final cs = Theme.of(context).colorScheme;
-    final enabled = user?.twoFactorEnabled ?? false;
+    // Sem envio real do código (e-mail pelo servidor) o 2FA não pode ser exigido.
+    const disponivel = AuthRemoteDatasource.otpDeliveryAvailable;
+    final enabled = disponivel && (user?.twoFactorEnabled ?? false);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -588,15 +591,19 @@ class _TwoFASwitchTileState extends ConsumerState<_TwoFASwitchTile> {
                 else
                   Switch(
                     value: enabled,
-                    onChanged: _loading ? null : _toggle,
+                    onChanged: (_loading || !disponivel) ? null : _toggle,
                   ),
               ],
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              enabled
-                  ? 'Ativo — um código será exigido no próximo login.'
-                  : 'Inativo — ative para exigir um código OTP a cada login.',
+              !disponivel
+                  ? 'Indisponível por enquanto: o envio do código por e-mail depende do '
+                      'servidor (Cloud Functions). O acesso segue protegido pela senha e '
+                      'pelas regras de cada perfil.'
+                  : enabled
+                      ? 'Ativo — um código será exigido no próximo login.'
+                      : 'Inativo — ative para exigir um código a cada login.',
               style: AppTypography.bodySmall.copyWith(
                 color: enabled
                     ? AppColors.success600

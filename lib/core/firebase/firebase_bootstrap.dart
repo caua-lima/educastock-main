@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import '../config/app_env.dart';
+import 'auth_emulator_check.dart' if (dart.library.html) 'auth_emulator_check_web.dart';
 import '../../firebase_options_dev.dart';
 import '../../firebase_options_hml.dart';
 import '../../firebase_options_prod.dart';
@@ -35,6 +36,16 @@ class FirebaseBootstrap {
       const host = String.fromEnvironment('EMULATOR_HOST', defaultValue: 'localhost');
       FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
       await FirebaseAuth.instance.useAuthEmulator(host, 9099);
+      // Web (build release): uma sessão salva faz o Auth falar com o servidor real antes
+      // da linha acima, e aí ele não aceita mais o emulador — e o FlutterFire ignora o
+      // erro. Nunca seguir para o login real: limpa a sessão local e para (recarregar a
+      // página resolve). E, nos emuladores, o login na web não fica salvo entre recargas.
+      if (authNoEmulador() == false) {
+        await FirebaseAuth.instance.signOut();
+        throw StateError('O login não conseguiu usar o emulador por causa de uma sessão '
+            'salva. A sessão local foi limpa: recarregue a página.');
+      }
+      if (kIsWeb) await FirebaseAuth.instance.setPersistence(Persistence.NONE);
       await FirebaseStorage.instance.useStorageEmulator(host, 9199);
       debugPrint('[EducaStock] usando EMULADORES em $host (nenhum dado real é alterado)');
       return; // sem App Check/Crashlytics no ambiente local

@@ -783,7 +783,7 @@ class _NewProductBadge extends StatelessWidget {
                     style: AppTypography.labelMedium.copyWith(
                         color: AppColors.warning600,
                         fontWeight: FontWeight.w700)),
-                Text('Pesquisando dados na internet...',
+                Text('Veja abaixo a pesquisa na internet ou cadastre manualmente.',
                     style: AppTypography.bodySmall
                         .copyWith(color: cs.onSurfaceVariant)),
               ],

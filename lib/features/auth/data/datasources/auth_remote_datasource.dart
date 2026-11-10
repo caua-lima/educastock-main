@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/firebase/firebase_bootstrap.dart';
 import '../../../donations/domain/entities/donor_profile.dart';
 import '../../domain/entities/app_user.dart';
 
@@ -30,7 +31,8 @@ class AuthRemoteDatasource {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   Future<void> _configurePersistence(bool rememberLogin) async {
-    if (!kIsWeb) return;
+    // Nos emuladores a sessão fica só na memória (ver FirebaseBootstrap).
+    if (!kIsWeb || FirebaseBootstrap.useEmulators) return;
     await _auth.setPersistence(
       rememberLogin ? Persistence.LOCAL : Persistence.SESSION,
     );
@@ -317,6 +319,12 @@ class AuthRemoteDatasource {
 
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email);
+
+  /// O código da verificação em duas etapas só pode ser exigido quando há um canal
+  /// que o ENTREGUE à pessoa (e-mail enviado pelo servidor). Sem isso, quem ativasse o
+  /// 2FA ficaria trancado para fora: o código seria gravado e nunca enviado.
+  /// Ligar com `--dart-define=OTP_POR_EMAIL=true` quando a função de envio estiver no ar.
+  static const otpDeliveryAvailable = bool.fromEnvironment('OTP_POR_EMAIL');
 
   Future<void> sendOtp(String userId) async {
     final code = (Random.secure().nextInt(900000) + 100000).toString();

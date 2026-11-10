@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
+import 'dart:typed_data';
 
 /// Chama uma função JS que responde por callback, com tempo limite e conclusão
 /// única: se o JavaScript nunca chamar o callback (detector travado, aba em
@@ -71,6 +72,15 @@ String callWebGetDiagnostics() {
   } catch (_) {
     return '{}';
   }
+}
+
+/// Lê o código de uma imagem escolhida pela pessoa (arquivo ou galeria).
+/// Garante o leitor antes. Devolve o código ou null se não achar.
+Future<String?> callWebScanImageBytes(Uint8List bytes, {Duration limite = const Duration(seconds: 20)}) async {
+  await callWebEnsureReaders();
+  final r = await _comCallback('_scanImageBytesCb', [bytes.toJS],
+      limite: limite, seTempoEsgotar: null, seErro: null);
+  return (r == null || r.isEmpty) ? null : r;
 }
 
 /// Stub mantido para compatibilidade.

@@ -9,6 +9,7 @@ import '../../../../core/theme/theme_mode_controller.dart';
 import '../controllers/auth_provider.dart';
 import '../utils/auth_error_mapper.dart';
 import '../widgets/google_sign_in_button.dart';
+import '../../data/datasources/auth_remote_datasource.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -71,7 +72,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       data: (user) async {
         if (user != null) {
           ref.read(analyticsServiceProvider).logAuthLogin(method: 'password');
-          if (user.twoFactorEnabled) {
+          if (user.twoFactorEnabled && AuthRemoteDatasource.otpDeliveryAvailable) {
             try {
               await ref.read(authDatasourceProvider).sendOtp(user.id);
             } catch (_) {
@@ -111,7 +112,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       data: (user) async {
         if (user != null) {
           ref.read(analyticsServiceProvider).logAuthLogin(method: 'google');
-          if (user.twoFactorEnabled) {
+          if (user.twoFactorEnabled && AuthRemoteDatasource.otpDeliveryAvailable) {
             try {
               await ref.read(authDatasourceProvider).sendOtp(user.id);
             } catch (_) {

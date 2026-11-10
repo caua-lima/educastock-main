@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
+import 'entregar_arquivos.dart';
 import 'report_table.dart';
 
 /// Nome da instituição que assina os documentos exportados.
@@ -228,10 +228,9 @@ class ReportExporter {
 
   static Future<void> shareCsv(ReportTable table) async {
     final name = '${table.fileBaseName()}.csv';
-    await Share.shareXFiles(
-      [XFile.fromData(buildCsv(table), mimeType: 'text/csv', name: name)],
-      fileNameOverrides: [name],
-      subject: table.title,
+    await entregarArquivos(
+      [(bytes: buildCsv(table), nome: name, mime: 'text/csv')],
+      assunto: table.title,
     );
   }
 
@@ -239,10 +238,9 @@ class ReportExporter {
 
   static Future<void> shareXlsx(ReportTable table) async {
     final name = '${table.fileBaseName()}.xlsx';
-    await Share.shareXFiles(
-      [XFile.fromData(buildXlsx(table), mimeType: _xlsxMime, name: name)],
-      fileNameOverrides: [name],
-      subject: table.title,
+    await entregarArquivos(
+      [(bytes: buildXlsx(table), nome: name, mime: _xlsxMime)],
+      assunto: table.title,
     );
   }
 
@@ -254,14 +252,13 @@ class ReportExporter {
       Future.sync(() => buildXlsx(table)),
       Future.sync(() => buildCsv(table)),
     ]);
-    await Share.shareXFiles(
+    await entregarArquivos(
       [
-        XFile.fromData(results[0], mimeType: 'application/pdf', name: '$base.pdf'),
-        XFile.fromData(results[1], mimeType: _xlsxMime, name: '$base.xlsx'),
-        XFile.fromData(results[2], mimeType: 'text/csv', name: '$base.csv'),
+        (bytes: results[0], nome: '$base.pdf', mime: 'application/pdf'),
+        (bytes: results[1], nome: '$base.xlsx', mime: _xlsxMime),
+        (bytes: results[2], nome: '$base.csv', mime: 'text/csv'),
       ],
-      fileNameOverrides: ['$base.pdf', '$base.xlsx', '$base.csv'],
-      subject: table.title,
+      assunto: table.title,
     );
   }
 }

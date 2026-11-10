@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Câmera: leitura de código de barras e da validade. Internet: Firebase e Open Food Facts.
+         (Os plugins já declaram; ficam explícitas aqui para não depender da mesclagem.) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application
-        android:label="educastock"
+        android:label="EducaStock"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

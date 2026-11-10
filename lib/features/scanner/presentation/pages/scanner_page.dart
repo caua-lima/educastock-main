@@ -11,6 +11,9 @@ import '../../data/scan_history_repository.dart';
 import '../../domain/codigo_barras.dart';
 import '../../domain/falha_camera.dart';
 import '../controllers/scanner_provider.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../auth/presentation/controllers/auth_provider.dart';
+import '../../../donation_ops/presentation/controllers/donation_ops_provider.dart';
 // Interop de scan direto para web (polyfill BarcodeDetector via JS bridge)
 import 'web_scan_interop_stub.dart'
     if (dart.library.html) 'web_scan_interop.dart';
@@ -162,7 +165,28 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
 
   /// Câmera deve estar lendo agora?
   bool get _capturaAtiva =>
-      mounted && !_navigating && !_pausadoPorModal && !_emSegundoPlano;
+      mounted && !_navigating && !_pausadoPorModal && !_emSegundoPlano && _rotaNoTopo && !_saindo;
+
+  /// O scanner é a tela de cima? Com outra tela (ou folha) por cima, ou saindo, a
+  /// câmera não lê: um código lido "por trás" abriria a confirmação sobre outra tela.
+  bool _rotaNoTopo = true;
+  bool _saindo = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final noTopo = ModalRoute.isCurrentOf(context) ?? true;
+    if (noTopo == _rotaNoTopo) return;
+    _rotaNoTopo = noTopo;
+    if (!noTopo) {
+      _log('Outra tela cobriu o scanner — câmera pausada');
+      _pararCamera();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _retomarCaptura();
+      });
+    }
+  }
 
   // Animação da linha de scan ──────────────────────────────────────────────
   late final AnimationController _lineCtrl;
@@ -370,7 +394,42 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
     await _abrirRevisao(codigo, origem);
   }
 
+  /// QR Code do protocolo de doação: abre a doação (receber/conferir) em vez de
+  /// procurar um produto com esse código.
+  Future<bool> _abrirDoacaoPeloProtocolo(String protocolo) async {
+    if (!canOperateDonations(ref.read(currentUserProvider))) {
+      _avisar('Este é o QR Code de uma doação ($protocolo). Só administrador e estoquista '
+          'abrem doações.');
+      return false;
+    }
+    String? id;
+    try {
+      id = await ref.read(donationOpsRepositoryProvider).findIdByProtocol(protocolo);
+    } catch (e) {
+      _log('Erro ao buscar a doação $protocolo: $e', isError: true);
+      _avisar('Não foi possível buscar a doação agora. Verifique a internet e tente de novo.');
+      return false;
+    }
+    if (!mounted) return false;
+    if (id == null) {
+      _avisar('Nenhuma doação com o protocolo $protocolo.');
+      return false;
+    }
+    _log('Protocolo $protocolo: doação $id');
+    await context.push(AppRoutes.opsDonationPath(id));
+    return true;
+  }
+
   Future<void> _abrirRevisao(String codigo, OrigemCodigo origem) async {
+    final protocolo = protocoloDeDoacao(codigo);
+    if (protocolo != null) {
+      final abriu = await _abrirDoacaoPeloProtocolo(protocolo);
+      if (!mounted) return;
+      if (abriu) ref.read(scannerProvider.notifier).reset();
+      _navigating = false;
+      _retomarCaptura();
+      return;
+    }
     // Histórico: uma vez por código aceito. A consulta externa começa na
     // própria revisão (depois do cadastro local) — aqui só navegamos.
     unawaited(ref.read(scanHistoryRepositoryProvider).record(codigo, source: origem.fonteHistorico));
@@ -479,6 +538,48 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
       return;
     }
     _avisar('Código não detectado na foto. Aproxime mais ou digite o código.');
+    _retomarCaptura();
+  }
+
+  // ── Ler o código de uma imagem já existente (galeria / arquivo) ─────────
+  /// Funciona também sem câmera (ex.: computador sem webcam): a pessoa escolhe
+  /// uma foto do código e o app lê. Na web usa ZXing/detector do navegador; no
+  /// celular, o ML Kit.
+  Future<void> _lerImagemEscolhida() async {
+    if (_navigating || _scanningFromPhoto) return;
+    _pausadoPorModal = true;
+    _pararCamera();
+    XFile? arquivo;
+    try {
+      arquivo = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 95);
+    } catch (e) {
+      _log('Erro ao escolher imagem: $e', isError: true);
+    }
+    if (!mounted) return;
+    if (arquivo == null) {
+      _pausadoPorModal = false;
+      _retomarCaptura();
+      return;
+    }
+    setState(() => _scanningFromPhoto = true);
+    String? achado;
+    try {
+      achado = kIsWeb
+          ? await callWebScanImageBytes(await arquivo.readAsBytes())
+          : await analyzeBarcodeImage(arquivo.path);
+    } catch (e) {
+      _log('Erro ao ler a imagem: $e', isError: true);
+    }
+    if (!mounted) return;
+    setState(() => _scanningFromPhoto = false);
+    _pausadoPorModal = false;
+    if (achado != null && achado.isNotEmpty) {
+      _log('Código lido da imagem: $achado');
+      _aceitarCodigo(achado, origem: OrigemCodigo.foto);
+      return;
+    }
+    _avisar('Nenhum código encontrado nessa imagem. Use uma foto nítida, com o código inteiro '
+        'e reto — ou digite o código.');
     _retomarCaptura();
   }
 
@@ -744,7 +845,14 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
     final topPad   = mq.padding.top;
     final botPad   = mq.padding.bottom;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    return PopScope(
+      // Saindo do scanner (voltar): desliga a câmera já, sem esperar a animação.
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop || _saindo) return;
+        _saindo = true;
+        _pararCamera();
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
       ),
@@ -961,14 +1069,19 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (_diagnosticoLiberado)
+                  if (_diagnosticoLiberado) ...[
                     _FabBtn(
                       icon: Icons.bug_report_rounded,
                       tooltip: _showDebugLog ? 'Ocultar diagnóstico' : 'Mostrar diagnóstico técnico',
                       onTap: () => setState(() => _showDebugLog = !_showDebugLog),
-                    )
-                  else
-                    const SizedBox(width: 48),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  _FabBtn(
+                    icon: Icons.photo_library_rounded,
+                    tooltip: 'Ler o código de uma imagem',
+                    onTap: _lerImagemEscolhida,
+                  ),
                   const SizedBox(width: 20),
                   _BotaoFoto(
                     ocupado: _scanningFromPhoto,
@@ -999,6 +1112,7 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
                     _retomarCaptura();
                   },
                   onDigitar: _showManualInput,
+                  onImagem: _lerImagemEscolhida,
                 ),
               ),
 
@@ -1016,6 +1130,7 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
 
           ],
         ),
+      ),
       ),
     );
   }
@@ -1145,7 +1260,13 @@ class _AvisoCamera extends StatelessWidget {
   final FalhaCamera falha;
   final VoidCallback onTentarNovamente;
   final VoidCallback onDigitar;
-  const _AvisoCamera({required this.falha, required this.onTentarNovamente, required this.onDigitar});
+  final VoidCallback onImagem;
+  const _AvisoCamera({
+    required this.falha,
+    required this.onTentarNovamente,
+    required this.onDigitar,
+    required this.onImagem,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1189,6 +1310,15 @@ class _AvisoCamera extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: AppColors.brandPrimary800,
+                    minimumSize: const Size(48, 48),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: onImagem,
+                  icon: const Icon(Icons.photo_library_rounded, size: 18, color: Colors.white),
+                  label: const Text('Ler de uma imagem', style: TextStyle(color: Colors.white)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white70),
                     minimumSize: const Size(48, 48),
                   ),
                 ),

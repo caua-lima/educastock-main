@@ -46,7 +46,12 @@ class PushNotificationService {
   }) async {
     if (!_permissionRequested) {
       _permissionRequested = true;
-      await _messaging.requestPermission();
+      try {
+        await _messaging.requestPermission();
+      } catch (e) {
+        // Navegador sem suporte a notificações (ex.: Safari do iPhone fora do modo app).
+        debugPrint('[PNS] requestPermission indisponível: $e');
+      }
     }
 
     _router = router;
@@ -58,9 +63,11 @@ class PushNotificationService {
         _router?.go(AppRoutes.alerts);
       });
 
-      final initialMessage = await _messaging.getInitialMessage();
-      if (initialMessage != null) {
-        _router?.go(AppRoutes.alerts);
+      try {
+        final initialMessage = await _messaging.getInitialMessage();
+        if (initialMessage != null) _router?.go(AppRoutes.alerts);
+      } catch (e) {
+        debugPrint('[PNS] getInitialMessage indisponível: $e');
       }
 
       // Suppress foreground notifications during silent hours
@@ -103,10 +110,16 @@ class PushNotificationService {
     });
   }
 
+  /// Notificação recusada/bloqueada ou navegador sem suporte: segue sem push (o app
+  /// continua funcionando; os alertas aparecem dentro dele). Antes a exceção escapava.
   Future<void> _registerCurrentToken(String userId) async {
-    final token = await _messaging.getToken();
-    if (token == null || token.trim().isEmpty) return;
-    await _saveToken(userId: userId, token: token);
+    try {
+      final token = await _messaging.getToken();
+      if (token == null || token.trim().isEmpty) return;
+      await _saveToken(userId: userId, token: token);
+    } catch (e) {
+      debugPrint('[PNS] sem token de push (permissão recusada ou sem suporte): $e');
+    }
   }
 
   Future<void> _saveToken({
@@ -164,9 +177,8 @@ final pushNotificationsBootstrapProvider = Provider<void>((ref) {
     service.updateAlertsConfig(alertsConfig);
   }
   unawaited(
-    service.configure(
-      router: router,
-      user: user,
-    ),
+    service.configure(router: router, user: user).catchError((Object e) {
+      debugPrint('[PNS] configuração de push falhou: $e');
+    }),
   );
 });
