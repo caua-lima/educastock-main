@@ -111,7 +111,8 @@ class ReportExporter {
     for (var c = 0; c < table.headers.length; c++) {
       sheet.setColumnWidth(c, 22);
     }
-    final bytes = book.save();
+    // encode(): só gera os bytes. save() também baixa "FlutterExcel.xlsx" sozinho na web.
+    final bytes = book.encode();
     if (bytes == null) throw StateError('Não foi possível gerar o arquivo Excel.');
     return Uint8List.fromList(bytes);
   }

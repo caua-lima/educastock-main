@@ -1312,11 +1312,23 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
       );
     }
 
+    // Vários locais com o mesmo nível (ex.: Despensa Seca e Câmara Fria, ambos no
+    // "Nível 1" da seção A): só o número não diz qual é qual, então mostra o local.
+    final vistos = <String>{};
+    final niveisRepetidos = <String>{};
+    for (final l in _locsInGroup) {
+      final n = l.level ?? '—';
+      if (!vistos.add(n)) niveisRepetidos.add(n);
+    }
+
     return Wrap(
       spacing: AppSpacing.sm,
       runSpacing: AppSpacing.sm,
       children: _locsInGroup.map((loc) {
         final lv = loc.level ?? '—';
+        final nomeNivel = niveisRepetidos.contains(lv)
+            ? '${loc.room ?? loc.locationName ?? 'Local'} · Prat. ${loc.shelf} · Nível $lv'
+            : 'Nível $lv';
         final isSelected = widget.selectedLabel == loc.label;
         final limit = loc.productsPerLevel;
         final count = limit != null
@@ -1371,7 +1383,7 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Nível $lv',
+                      nomeNivel,
                       style: AppTypography.labelMedium.copyWith(
                         color: isSelected
                             ? Colors.white

@@ -38,13 +38,14 @@ exports.buildProtocol = buildProtocol;
 exports.isTransitionAllowed = isTransitionAllowed;
 exports.sumPledgesByNeed = sumPledgesByNeed;
 const admin = __importStar(require("firebase-admin"));
-const firestore_1 = require("firebase-functions/v2/firestore");
+// Import modular: em admin.firestore.* o FieldValue pode vir indefinido (quebrava as funções).
+const firestore_1 = require("firebase-admin/firestore");
+const firestore_2 = require("firebase-functions/v2/firestore");
 const logger = __importStar(require("firebase-functions/logger"));
 if (admin.apps.length === 0) {
     admin.initializeApp();
 }
 const db = admin.firestore();
-const { FieldValue, Timestamp } = admin.firestore;
 const OPEN_STATUSES = ['pendente', 'aprovada'];
 const TERMINAL_STATUSES = [
     'recebida',
@@ -129,7 +130,7 @@ async function applyPledges(tx, pledges, direction) {
         tx.update(snap.ref, {
             pledgedQty: pledged,
             remainingQty: Math.max(0, suggested - pledged),
-            updatedAt: FieldValue.serverTimestamp(),
+            updatedAt: firestore_1.FieldValue.serverTimestamp(),
         });
     });
 }
@@ -139,7 +140,7 @@ async function applyPledges(tx, pledges, direction) {
  * `DOA-AAAA-NNNNNN`, reserva `pledgedQty` (RN-D05), cria o evento inicial e o
  * alerta da equipe. Idempotente: se já tem protocolo, não faz nada.
  */
-exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donationId}', async (event) => {
+exports.onDonationCreated = (0, firestore_2.onDocumentCreated)('donations/{donationId}', async (event) => {
     var _a, _b, _c, _d, _e;
     const snap = event.data;
     if (!snap)
@@ -179,7 +180,7 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
                 status: 'cancelada',
                 cancelReason: violation,
                 reservationReleased: true, // nada foi reservado
-                updatedAt: FieldValue.serverTimestamp(),
+                updatedAt: firestore_1.FieldValue.serverTimestamp(),
             });
             return true;
         });
@@ -193,7 +194,7 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
             by: 'system',
             byRole: 'system',
             note: violation,
-            at: FieldValue.serverTimestamp(),
+            at: firestore_1.FieldValue.serverTimestamp(),
         });
         logger.warn(`Doação ${donationId} rejeitada: ${violation}`);
         return;
@@ -221,7 +222,7 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
             protocol: generated,
             reservationApplied: true,
             reservationReleased: false,
-            updatedAt: FieldValue.serverTimestamp(),
+            updatedAt: firestore_1.FieldValue.serverTimestamp(),
         });
         return generated;
     });
@@ -234,7 +235,7 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
         by: donorId,
         byRole: 'doador',
         note: protocol,
-        at: FieldValue.serverTimestamp(),
+        at: firestore_1.FieldValue.serverTimestamp(),
     });
     // Alerta para a equipe (formato lido por StockAlert.fromMap).
     const donorName = (_e = (_d = donation.donorSnapshot) === null || _d === void 0 ? void 0 : _d.displayName) !== null && _e !== void 0 ? _e : 'Doador';
@@ -245,7 +246,7 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
         donationId,
         level: 'info',
         message: `Nova intenção de doação ${protocol} de ${donorName} (${items.length} item(ns)).`,
-        createdAt: Timestamp.now(),
+        createdAt: firestore_1.Timestamp.now(),
         resolved: false,
     });
     logger.info(`Doação ${donationId} registrada com protocolo ${protocol}`);
@@ -256,7 +257,7 @@ exports.onDonationCreated = (0, firestore_1.onDocumentCreated)('donations/{donat
  * tempo e em `audit_logs`, libera a reserva ao fechar a doação e notifica o
  * doador (caixa de entrada + push best-effort). Transição inválida é revertida.
  */
-exports.onDonationStatusChanged = (0, firestore_1.onDocumentUpdated)('donations/{donationId}', async (event) => {
+exports.onDonationStatusChanged = (0, firestore_2.onDocumentUpdated)('donations/{donationId}', async (event) => {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     const before = (_a = event.data) === null || _a === void 0 ? void 0 : _a.before.data();
     const after = (_b = event.data) === null || _b === void 0 ? void 0 : _b.after.data();
@@ -265,7 +266,7 @@ exports.onDonationStatusChanged = (0, firestore_1.onDocumentUpdated)('donations/
         return;
     // Marcador deixado pela própria função ao reverter: só limpa e sai.
     if (after.transitionRejected === true) {
-        await ref.update({ transitionRejected: FieldValue.delete() });
+        await ref.update({ transitionRejected: firestore_1.FieldValue.delete() });
         return;
     }
     const fromStatus = before.status;
@@ -290,7 +291,7 @@ exports.onDonationStatusChanged = (0, firestore_1.onDocumentUpdated)('donations/
             tx.update(ref, {
                 status: fromStatus,
                 transitionRejected: true,
-                updatedAt: FieldValue.serverTimestamp(),
+                updatedAt: firestore_1.FieldValue.serverTimestamp(),
             });
             return true;
         });
@@ -303,7 +304,7 @@ exports.onDonationStatusChanged = (0, firestore_1.onDocumentUpdated)('donations/
             by: 'system',
             byRole: 'system',
             note: 'Transição não permitida; status revertido.',
-            at: FieldValue.serverTimestamp(),
+            at: firestore_1.FieldValue.serverTimestamp(),
         });
         logger.warn(`Doação ${donationId}: transição inválida ${fromStatus} -> ${toStatus}`);
         return;
@@ -318,7 +319,7 @@ exports.onDonationStatusChanged = (0, firestore_1.onDocumentUpdated)('donations/
         by: actor,
         byRole: (_e = after.updatedByRole) !== null && _e !== void 0 ? _e : (actor === after.donorId ? 'doador' : 'unknown'),
         note: (_g = (_f = after.refusalReason) !== null && _f !== void 0 ? _f : after.cancelReason) !== null && _g !== void 0 ? _g : null,
-        at: FieldValue.serverTimestamp(),
+        at: firestore_1.FieldValue.serverTimestamp(),
     });
     await db.collection('audit_logs').doc(`donation_${eventKey}`).set({
         collection: 'donations',
@@ -366,7 +367,7 @@ async function notifyDonor(donorId, donationId, protocol, status, notificationId
         donationId,
         status,
         readAt: null,
-        createdAt: FieldValue.serverTimestamp(),
+        createdAt: firestore_1.FieldValue.serverTimestamp(),
     });
     // Push best-effort: o status no app é a fonte da verdade (RF24).
     try {

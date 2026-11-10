@@ -46,15 +46,32 @@ Observação: o login com **Google** no Android só funciona depois de cadastrar
 
 ## 3. No iPhone
 
-Precisa de um **Mac com Xcode** (não dá para gerar o app de iPhone no Windows).
+### 3a. Pelo Safari (sem instalar nada — o caminho para a apresentação)
 
-1. No Mac: `flutter pub get`, depois `cd ios && pod install`, depois `flutter run` com o iPhone conectado.
-2. Na primeira vez, o iOS mostra o pedido de câmera com o texto do app: toque em **Permitir**.
-3. Teste igual ao Android.
+1. iPhone com iOS 15 ou mais novo. Abra o **Safari** em https://educastock-69936.web.app
+2. (Opcional) Toque em **Compartilhar › Adicionar à Tela de Início**: o EducaStock abre como um app.
+3. Entre com uma conta de **administrador** ou **estoquista** e toque em **Escanear**.
+4. O Safari pergunta se o site pode usar a câmera: toque em **Permitir**.
+5. Aponte para o código a uns 15–20 cm, com luz. Em "Código detectado", toque em **Continuar com este código**.
+6. Sem câmera: botão de **galeria** (escolha uma foto do código na Fototeca) ou de **teclado** (digite os números).
 
-Se negou a permissão: Ajustes › EducaStock › Câmera.
+Se negou a câmera: toque em **aA** na barra de endereço › **Ajustes do Site** › **Câmera** › **Permitir** e recarregue a página. Também dá em Ajustes do iPhone › Apps › Safari › Câmera.
 
-O projeto iOS já está pronto para isso: textos de permissão de câmera e de fotos, iOS mínimo 15.5 (exigido pelo leitor ML Kit) e retorno do login com Google configurado.
+Se aparecer a versão antiga do site: feche a aba e abra de novo.
+
+### 3b. App nativo (precisa de um Mac)
+
+1. No Mac: instale o **Xcode** (App Store), o **Flutter** e o **CocoaPods**.
+2. `git clone https://github.com/caua-lima/educastock-main.git`, entre na pasta e rode `flutter pub get`.
+3. `cd ios && pod install && cd ..`
+4. Abra `ios/Runner.xcworkspace` no Xcode › alvo **Runner** › **Signing & Capabilities** › em **Team**, escolha seu Apple ID.
+5. No iPhone: conecte no cabo, toque em **Confiar** e ative **Ajustes › Privacidade e Segurança › Modo de Desenvolvedor** (o iPhone reinicia).
+6. `flutter run --release` com o iPhone selecionado (ou o botão ▶ do Xcode).
+7. Na primeira abertura: **Ajustes › Geral › VPN e Gerenciamento de Dispositivo** › confie no seu Apple ID.
+
+Com Apple ID gratuito, o app instalado vale por 7 dias. Se o Xcode reclamar do identificador (bundle ID), troque por um único (ex.: `br.org.casadacrianca.educastock.seunome`); o login por e-mail continua funcionando, e o login com Google passa a exigir esse novo ID cadastrado no Firebase.
+
+O projeto iOS já está pronto: textos de permissão de câmera e fotos, iOS mínimo 15.5 (exigido pelo leitor ML Kit), ID do cliente do Google no Info.plist e retorno do login com Google.
 
 ## 4. QR Code da doação (entrega)
 

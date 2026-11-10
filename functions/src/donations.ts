@@ -1,4 +1,6 @@
 import * as admin from 'firebase-admin';
+// Import modular: em admin.firestore.* o FieldValue pode vir indefinido (quebrava as funções).
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import * as logger from 'firebase-functions/logger';
 
@@ -6,7 +8,6 @@ if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 const db = admin.firestore();
-const { FieldValue, Timestamp } = admin.firestore;
 
 // ─── Constantes de domínio (Sprint 2: RN-D05, RN-D06, seção 4.4) ───────────
 

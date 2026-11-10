@@ -40,6 +40,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.dailyExpiryCheck = exports.onAlertCreated = exports.onDonationStatusChanged = exports.onDonationCreated = void 0;
 const express_1 = __importDefault(require("express"));
 const admin = __importStar(require("firebase-admin"));
+// Import modular: em admin.firestore.* o FieldValue pode vir indefinido (quebrava as funções).
+const firestore_1 = require("firebase-admin/firestore");
 const http_auth_1 = require("./http_auth");
 if (admin.apps.length === 0) {
     admin.initializeApp();
@@ -77,7 +79,7 @@ app.post('/alertLowStock', requireStaff, async (req, res) => {
             productName,
             quantity,
             createdBy: res.locals.uid,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: firestore_1.FieldValue.serverTimestamp(),
         });
         res.json({ success: true, message: `Alerta criado para ${productName}` });
     }
@@ -102,7 +104,7 @@ app.post('/alertExpiryWarning', requireStaff, async (req, res) => {
             expiryDate,
             batchId,
             createdBy: res.locals.uid,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: firestore_1.FieldValue.serverTimestamp(),
         });
         res.json({ success: true, message: `Alerta de validade criado para ${productName}` });
     }
@@ -127,7 +129,7 @@ app.post('/notifyStockMovement', requireStaff, async (req, res) => {
             movementType,
             quantity,
             createdBy: res.locals.uid,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: firestore_1.FieldValue.serverTimestamp(),
         });
         res.json({ success: true });
     }
@@ -148,7 +150,7 @@ app.post('/generateReport', requireStaff, async (req, res) => {
             status: 'pending',
             requestedBy: res.locals.uid,
             type,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: firestore_1.FieldValue.serverTimestamp(),
         });
         res.json({ success: true, reportId: reportRef.id });
     }

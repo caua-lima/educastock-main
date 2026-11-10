@@ -503,6 +503,8 @@ class StockRemoteDatasource {
             'productId': item.productId,
             'productName': item.productName,
             'batchId': doc.id,
+            // Número impresso na embalagem: é o que a equipe procura na prateleira.
+            'batchNumber': data['batchNumber'] as String?,
             'consumed': consume,
             'before': before,
             'after': after,
