@@ -1123,7 +1123,9 @@ class _ItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final m = movement;
     final productName = m['productName'] as String? ?? '-';
-    final batchId     = m['batchId']     as String? ?? '-';
+    // Número do lote da embalagem; saídas antigas só guardaram o identificador interno.
+    final numeroLote  = (m['batchNumber'] as String?)?.trim() ?? '';
+    final batchId     = numeroLote.isNotEmpty ? numeroLote : (m['batchId'] as String? ?? '-');
     final consumed    = (m['consumed']   as num?)?.toInt() ?? 0;
     final imageUrl    = m['imageUrl']    as String?;
     final unit        = m['unit']        as String? ?? 'un';

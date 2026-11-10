@@ -40,7 +40,9 @@ exports.daysUntil = daysUntil;
 exports.alertMessage = alertMessage;
 exports.topicConditionFor = topicConditionFor;
 const admin = __importStar(require("firebase-admin"));
-const firestore_1 = require("firebase-functions/v2/firestore");
+// Import modular: em admin.firestore.* os tipos podem vir indefinidos.
+const firestore_1 = require("firebase-admin/firestore");
+const firestore_2 = require("firebase-functions/v2/firestore");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const logger = __importStar(require("firebase-functions/logger"));
 if (admin.apps.length === 0) {
@@ -101,7 +103,7 @@ function topicConditionFor(level) {
  * Envia a notificação push (FCM) a cada alerta de validade novo, não importa quem o
  * criou: o aplicativo (verificação automática) ou a verificação diária abaixo.
  */
-exports.onAlertCreated = (0, firestore_1.onDocumentCreated)('alerts/{alertId}', async (event) => {
+exports.onAlertCreated = (0, firestore_2.onDocumentCreated)('alerts/{alertId}', async (event) => {
     var _a, _b;
     const data = (_a = event.data) === null || _a === void 0 ? void 0 : _a.data();
     if (!data || data.resolved === true)
@@ -176,7 +178,7 @@ exports.dailyExpiryCheck = (0, scheduler_1.onSchedule)({ schedule: 'every day 07
             batchId: doc.id,
             level,
             message: alertMessage(String(b.productName), days, level),
-            createdAt: admin.firestore.Timestamp.now(),
+            createdAt: firestore_1.Timestamp.now(),
             resolved: false,
         });
         created++;

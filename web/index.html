@@ -64,6 +64,26 @@
     }
   </style>
 
+  <!-- iPhone (Safari): o vídeo da câmera precisa de playsinline para tocar dentro da página;
+       sem isso o iOS pode abrir a câmera em tela cheia e o leitor não vê a imagem. O leitor
+       (mobile_scanner) cria o <video> sem esse atributo, então ele é posto antes de tocar. -->
+  <script>
+    (function () {
+      var tocar = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function () {
+        try {
+          if (this.tagName === 'VIDEO') {
+            this.setAttribute('playsinline', '');
+            this.setAttribute('webkit-playsinline', '');
+            this.playsInline = true;
+            this.muted = true;
+          }
+        } catch (_) {}
+        return tocar.apply(this, arguments);
+      };
+    })();
+  </script>
+
   <!-- Fundo da página já no tema escolhido (Claro/Escuro/Sistema) enquanto o app carrega:
        evita o clarão branco antes do primeiro quadro no tema escuro. Mesmo valor que o app grava
        (shared_preferences web: chave "flutter.theme_mode"). -->

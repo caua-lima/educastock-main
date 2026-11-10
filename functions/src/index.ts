@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
 import * as admin from 'firebase-admin';
+// Import modular: em admin.firestore.* o FieldValue pode vir indefinido (quebrava as funções).
+import { FieldValue } from 'firebase-admin/firestore';
 import { cleanInt, cleanText, requireActiveStaff } from './http_auth';
 
 if (admin.apps.length === 0) {
@@ -42,7 +44,7 @@ app.post('/alertLowStock', requireStaff, async (req: Request, res: Response) => 
       productName,
       quantity,
       createdBy: res.locals.uid,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     });
     res.json({ success: true, message: `Alerta criado para ${productName}` });
   } catch (err) {
@@ -66,7 +68,7 @@ app.post('/alertExpiryWarning', requireStaff, async (req: Request, res: Response
       expiryDate,
       batchId,
       createdBy: res.locals.uid,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     });
     res.json({ success: true, message: `Alerta de validade criado para ${productName}` });
   } catch (err) {
@@ -90,7 +92,7 @@ app.post('/notifyStockMovement', requireStaff, async (req: Request, res: Respons
       movementType,
       quantity,
       createdBy: res.locals.uid,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     });
     res.json({ success: true });
   } catch (err) {
@@ -110,7 +112,7 @@ app.post('/generateReport', requireStaff, async (req: Request, res: Response) =>
       status: 'pending',
       requestedBy: res.locals.uid,
       type,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     });
     res.json({ success: true, reportId: reportRef.id });
   } catch (err) {

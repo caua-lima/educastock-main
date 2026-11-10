@@ -1,4 +1,6 @@
 import * as admin from 'firebase-admin';
+// Import modular: em admin.firestore.* os tipos podem vir indefinidos.
+import { Timestamp } from 'firebase-admin/firestore';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import * as logger from 'firebase-functions/logger';
@@ -150,7 +152,7 @@ export const dailyExpiryCheck = onSchedule(
         batchId: doc.id,
         level,
         message: alertMessage(String(b.productName), days, level),
-        createdAt: admin.firestore.Timestamp.now(),
+        createdAt: Timestamp.now(),
         resolved: false,
       });
       created++;

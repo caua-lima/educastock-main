@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/gemini_chat_service.dart';
 import '../../domain/assistant_prompt.dart';
 import '../../domain/chat_message.dart';
+import '../../domain/respostas_locais.dart';
+import '../../../donations/presentation/controllers/donation_needs_provider.dart';
 
 final geminiChatServiceProvider = Provider<GeminiChatService>((_) => GeminiChatService());
 
@@ -31,8 +33,19 @@ class ChatController extends Notifier<ChatState> {
       sending: true,
     );
 
+    final service = ref.read(geminiChatServiceProvider);
+    if (!service.isConfigured) {
+      // Sem a chave do Gemini (ex.: site publicado): responde as dúvidas comuns com as
+      // regras do assistente e as necessidades abertas do app, sem IA.
+      final reply = respostaLocal(text, maisPrecisados: await _maisPrecisados());
+      state = ChatState(
+        messages: [...state.messages, ChatMessage(role: ChatRole.model, text: reply)],
+      );
+      return;
+    }
+
     try {
-      final reply = await ref.read(geminiChatServiceProvider).send(history, text);
+      final reply = await service.send(history, text);
       state = ChatState(
         messages: [...state.messages, ChatMessage(role: ChatRole.model, text: reply)],
       );
@@ -59,6 +72,20 @@ class ChatController extends Notifier<ChatState> {
   }
 
   void reset() => state = const ChatState(messages: [_greeting]);
+
+  /// As necessidades abertas mais urgentes, em texto. Vazio se não carregar a tempo.
+  Future<List<String>> _maisPrecisados() async {
+    try {
+      await ref.read(donationNeedsProvider.future).timeout(const Duration(seconds: 5));
+      final abertas = ref.read(openNeedsProvider).valueOrNull ?? const [];
+      return [
+        for (final n in abertas.take(5))
+          '${n.title}: faltam ${n.remainingQty} ${n.unit} (prioridade ${n.priority.label})',
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
 }
 
 final chatControllerProvider =
