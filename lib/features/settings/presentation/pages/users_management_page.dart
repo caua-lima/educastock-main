@@ -42,8 +42,8 @@ class UsersManagementPage extends ConsumerWidget {
                     icon: Icons.badge_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      '🟢 Chip verde "Ativa" = pode fazer login',
-                      '🔴 Chip vermelho "Inativa" = bloqueada de acessar',
+                      'Chip verde "Ativa" = pode fazer login',
+                      'Chip vermelho "Inativa" = bloqueada de acessar',
                       'O avatar usa a inicial do nome com cor de fundo',
                       'Toda mudança fica registrada no log de auditoria',
                     ],
@@ -55,10 +55,10 @@ class UsersManagementPage extends ConsumerWidget {
                     icon: Icons.verified_user_rounded,
                     align: ContentAlign.top,
                     hints: const [
-                      '👑 Administrador: acesso total, gerencia tudo',
-                      '📦 Estoquista: cadastra, edita e dá saída',
-                      '🤝 Voluntário: apenas operações básicas',
-                      '👀 Consulta: somente leitura, não altera nada',
+                      'Administrador: acesso total, gerencia tudo',
+                      'Estoquista: cadastra, edita e dá saída',
+                      'Voluntário: apenas operações básicas',
+                      'Consulta: somente leitura, não altera nada',
                     ],
                   ),
                   TutorialStep(
@@ -111,8 +111,8 @@ class UsersManagementPage extends ConsumerWidget {
                   icon: Icons.badge_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🟢 Ativo: usuário com acesso habilitado',
-                    '⚫ Inativo: acesso desabilitado temporariamente',
+                    'Ativo: usuário com acesso habilitado',
+                    'Inativo: acesso desabilitado temporariamente',
                     'Toque no cartão para editar permissões ou desativar',
                     'Admins têm acesso completo — cuidado ao promover',
                   ],
@@ -203,6 +203,10 @@ class UsersManagementPage extends ConsumerWidget {
                       key: i == 0 ? _keyUserRole : null,
                       child: DropdownButtonFormField<UserRole>(
                         initialValue: user.role,
+                        // Ocupa a largura do campo e deixa o item crescer com a
+                        // fonte (antes o perfil estourava à direita em 200%).
+                        isExpanded: true,
+                        itemHeight: null,
                         decoration: const InputDecoration(
                           labelText: 'Perfil de acesso',
                           prefixIcon: Icon(Icons.verified_user_outlined, size: 20),
@@ -230,7 +234,7 @@ class UsersManagementPage extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              'Permitir login desta usuaria',
+                              'Permitir login desta usuária',
                               style: AppTypography.bodyMedium,
                             ),
                           ),

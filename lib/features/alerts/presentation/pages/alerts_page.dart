@@ -75,7 +75,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                     icon: Icons.notification_important_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      'Vá em Configurações → Alertas para ativar',
+                      'Vá em Configurações › Alertas para ativar',
                       'Defina quantos dias antes do vencimento você quer ser avisado',
                       'Alertas aparecem também na tela inicial do app',
                     ],
@@ -88,7 +88,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
         const Expanded(child: CasaEmptyState(
             icon: Icons.notifications_off_outlined,
             title: 'Alertas desativados',
-            description: 'Ative em Configurações → Alertas para monitorar prazos.',
+            description: 'Ative em Configurações › Alertas para monitorar prazos.',
           )),
         ]),
       );
@@ -195,7 +195,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                         ),
                         // ─── Filtros por Risco ML ───────────────────────────
                         _HeaderFilterChip(
-                          label: '🤖 Risco Crítico',
+                          label: 'Risco crítico (IA)',
                           selected: _riskFilter == RiskLevel.vermelho,
                           color: AppColors.danger600,
                           onTap: () => setState(() => _riskFilter =
@@ -205,7 +205,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                         ),
                         const SizedBox(width: 6),
                         _HeaderFilterChip(
-                          label: '🤖 Atenção',
+                          label: 'Risco atenção (IA)',
                           selected: _riskFilter == RiskLevel.amarelo,
                           color: AppColors.warning600,
                           onTap: () => setState(() => _riskFilter =
@@ -236,10 +236,10 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   icon: Icons.notification_important_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🔴 Vermelho (crítico): vence em até 7 dias',
-                    '🟡 Amarelo (atenção): vence em até 30 dias',
-                    '🔵 Azul (info): alertas manuais customizados',
-                    '👆 Toque longo para ver ações (distribuir, ver produto)',
+                    'Vermelho (crítico): vence em até 7 dias',
+                    'Amarelo (atenção): vence em até 30 dias',
+                    'Azul (info): alertas manuais customizados',
+                    'Toque longo para ver ações (distribuir, ver produto)',
                   ],
                 ),
                 TutorialStep(
@@ -250,9 +250,9 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   icon: Icons.filter_alt_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '👆 1 toque: ativa o filtro',
-                    '👆 2 toques: limpa o filtro',
-                    '🔢 Número no chip = quantos alertas naquela categoria',
+                    '1 toque: ativa o filtro',
+                    '2 toques: limpa o filtro',
+                    'Número no chip = quantos alertas naquela categoria',
                   ],
                 ),
                 TutorialStep(
@@ -263,9 +263,9 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   icon: Icons.list_alt_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '👈 Arrastar para esquerda = excluir',
-                    '👇 Toque longo = mais ações (distribuir, abrir produto)',
-                    '📊 Lista atualiza automaticamente quando estoque muda',
+                    'Arrastar para esquerda = excluir',
+                    'Toque longo = mais ações (distribuir, abrir produto)',
+                    'Lista atualiza automaticamente quando estoque muda',
                   ],
                 ),
               ],
@@ -319,8 +319,10 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   )
                 else
                   SliverPadding(
+                    // Fundo reserva a altura do botão "Alerta manual" (56 + margem):
+                    // o último alerta e o "Ver produto" não ficam embaixo dele.
                     padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xxxl),
+                        AppSpacing.lg, 0, AppSpacing.lg, 104),
                     sliver: SliverList.separated(
                       itemCount: filtered.length,
                       separatorBuilder: (_, __) =>
@@ -503,11 +505,13 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                   children: AlertLevel.values.map((lvl) {
                     final color = _colorForLevel(lvl);
                     final label = switch (lvl) {
-                      AlertLevel.critical => '🔴 Crítico',
-                      AlertLevel.warning => '🟡 Atenção',
-                      AlertLevel.info => '🔵 Info',
+                      AlertLevel.critical => 'Crítico',
+                      AlertLevel.warning => 'Atenção',
+                      AlertLevel.info => 'Info',
                     };
                     return ChoiceChip(
+                      // Ícone com a cor do nível (antes era emoji colorido).
+                      avatar: Icon(Icons.circle, size: 12, color: color),
                       label: Text(label),
                       selected: selectedLevel == lvl,
                       selectedColor: color.withValues(alpha: 0.18),
@@ -962,9 +966,9 @@ class _ModernAlertCard extends ConsumerWidget {
                                     style: AppTypography.labelMedium.copyWith(
                                       color: cs.onSurface,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 14,
+                                      fontSize: 15,
                                     ),
-                                    maxLines: 1,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -982,46 +986,43 @@ class _ModernAlertCard extends ConsumerWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: AppSpacing.sm),
-                            Row(
+                            // Hora + "Ver produto": quebram linha com fonte
+                            // grande em vez de estourar.
+                            Wrap(
+                              spacing: AppSpacing.md,
+                              runSpacing: 2,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                Icon(Icons.access_time_rounded,
-                                    size: 12,
-                                    color: cs.onSurfaceVariant
-                                        .withValues(alpha: 0.7)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _relativeTime(alert.createdAt),
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: cs.onSurfaceVariant,
-                                    fontSize: 11,
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.access_time_rounded,
+                                        size: 14, color: cs.onSurfaceVariant),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _relativeTime(alert.createdAt),
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: cs.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                if (!alert.isManual) ...[
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Container(
-                                    width: 3,
-                                    height: 3,
-                                    decoration: BoxDecoration(
-                                      color: cs.onSurfaceVariant
-                                          .withValues(alpha: 0.5),
-                                      shape: BoxShape.circle,
-                                    ),
+                                if (!alert.isManual)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.touch_app_outlined,
+                                          size: 14, color: cs.onSurfaceVariant),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Ver produto',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: cs.onSurfaceVariant,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Icon(Icons.touch_app_outlined,
-                                      size: 12,
-                                      color: cs.onSurfaceVariant
-                                          .withValues(alpha: 0.7)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Ver produto',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: cs.onSurfaceVariant,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
                               ],
                             ),
                           ],

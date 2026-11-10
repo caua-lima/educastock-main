@@ -47,6 +47,24 @@ import '../../features/donation_ops/presentation/pages/donation_receive_page.dar
 import '../../features/chatbot/presentation/pages/chat_screen.dart' deferred as chat;
 import 'deferred_page.dart';
 
+/// Carrega de uma vez todas as telas sob demanda (usado pelos testes de layout, que
+/// precisam medir as telas de verdade; o app continua carregando cada uma na 1ª visita).
+@visibleForTesting
+Future<void> precarregarTelasSobDemanda() async {
+  final cargas = <String, Future<void> Function()>{
+    'scanner': scanner.loadLibrary,
+    'review': review.loadLibrary,
+    'reports': reports.loadLibrary,
+    'insights': insights.loadLibrary,
+    'forecast': forecast.loadLibrary,
+    'chat': chat.loadLibrary,
+  };
+  for (final e in cargas.entries) {
+    await e.value();
+    DeferredPage.marcarCarregada(e.key);
+  }
+}
+
 abstract class AppRoutes {
   static const login = '/login';
   static const register = '/doador/cadastro';
@@ -122,6 +140,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final location = state.matchedLocation;
       final pendingOtp = ref.read(pendingOtpProvider);
       final homeForRole = isDonor ? AppRoutes.donorHome : AppRoutes.dashboard;
+
+      // "/" e "/index.html" (endereço salvo, botão "Home" da página de erro) não são
+      // telas: levam ao login ou ao início do papel.
+      final path = state.uri.path;
+      if (path == '/' || path == '/index.html') {
+        return isLoggedIn ? (pendingOtp ? AppRoutes.otpVerification : homeForRole) : AppRoutes.login;
+      }
 
       final isPublicRoute = {
         AppRoutes.login,

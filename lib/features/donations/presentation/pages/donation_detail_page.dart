@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/utils/auth_error_mapper.dart';
@@ -158,6 +159,10 @@ class _DetailBody extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         DonationTimeline(status: donation.status),
+        if (donation.protocol.isNotEmpty && donation.status.isOpen) ...[
+          const SizedBox(height: AppSpacing.lg),
+          _ProtocolQr(protocol: donation.protocol),
+        ],
         if ((donation.refusalReason ?? '').isNotEmpty ||
             (donation.cancelReason ?? '').isNotEmpty) ...[
           const SizedBox(height: AppSpacing.sm),
@@ -303,6 +308,58 @@ class _DetailBody extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// QR Code do protocolo (RF22): o doador mostra na entrega e a equipe lê no Escanear,
+/// que abre esta doação direto para conferir e receber.
+class _ProtocolQr extends StatelessWidget {
+  final String protocol;
+
+  const _ProtocolQr({required this.protocol});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        children: [
+          Text('Mostre este QR Code na entrega',
+              textAlign: TextAlign.center,
+              style: AppTypography.labelLarge.copyWith(color: cs.onSurface)),
+          const SizedBox(height: AppSpacing.md),
+          // Fundo branco sempre: leitores de QR falham com módulos claros em fundo escuro.
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            color: Colors.white,
+            child: Semantics(
+              label: 'QR Code do protocolo $protocol',
+              child: QrImageView(
+                data: protocol,
+                size: 180,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+                dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square, color: Colors.black),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SelectableText(protocol,
+              style: AppTypography.headingSmall.copyWith(
+                  color: cs.onSurface, letterSpacing: 1.2)),
+          Text('A equipe lê o código no Escanear ou digita o protocolo.',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant)),
+        ],
+      ),
     );
   }
 }

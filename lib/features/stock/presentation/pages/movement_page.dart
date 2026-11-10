@@ -20,6 +20,7 @@ import '../../data/datasources/stock_remote_datasource.dart';
 import '../controllers/stock_provider.dart';
 import '../../../reports/presentation/controllers/reports_provider.dart';
 import '../../domain/entities/stock_movement.dart';
+import '../../domain/fefo_vencidos.dart';
 import 'output_view_page.dart';
 import '../../../../core/utils/friendly_error.dart';
 
@@ -477,7 +478,13 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                 createdAt: DateTime.now(),
                 createdBy: '',
               ));
-      return _SummaryItem(product: p, qty: e.value);
+      // Prévia da ordem FEFO: quantas unidades virão de lote vencido.
+      final lotes = ref.read(allAvailableBatchesProvider).valueOrNull ?? const [];
+      return _SummaryItem(
+        product: p,
+        qty: e.value,
+        vencidas: unidadesVencidasNaSaida(lotes: lotes, productId: p.id, quantidade: e.value),
+      );
     }).toList();
 
     final confirmed = await showModalBottomSheet<bool>(
@@ -487,6 +494,8 @@ class _MovementPageState extends ConsumerState<MovementPage> {
       builder: (_) => _SummarySheet(
         items: items,
         reasonLabel: _reasonLabels[_reasonCode] ?? 'Uso/Distribuição',
+        // Motivo "validade" já é a baixa de vencidos (descarte): o aviso é para a distribuição.
+        avisarVencidos: _reasonCode != MovementReasonCode.validade.name,
       ),
     );
     if (confirmed == true) {
@@ -728,9 +737,9 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                   icon: Icons.swap_horiz_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '📦 Avulso: você escolhe item por item',
-                    '📋 Receita: kit pronto (ex: Kit Lanche)',
-                    '🚀 Receitas são mais rápidas para distribuições padrão',
+                    'Avulso: você escolhe item por item',
+                    'Receita: kit pronto (ex: Kit Lanche)',
+                    'Receitas são mais rápidas para distribuições padrão',
                     'Pode alternar entre modos sem perder seleções',
                   ],
                 ),
@@ -741,10 +750,10 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                   icon: Icons.search_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '⌨️ Busca em tempo real, sem precisar enter',
-                    '🏷️ Mostra apenas produtos COM estoque',
-                    '🎨 Use chips de categoria para refinar',
-                    '🔴/🟡 As cores indicam validade próxima',
+                    'Busca em tempo real, sem precisar enter',
+                    'Mostra apenas produtos COM estoque',
+                    'Use chips de categoria para refinar',
+                    'As cores indicam validade próxima',
                   ],
                 ),
                 if (_mode == _OutputMode.products)
@@ -755,11 +764,11 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                     icon: Icons.inventory_2_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      '🔴 Vermelho: lote vencido — confira antes de distribuir',
-                      '🟡 Amarelo: vence em 30 dias — prioridade alta',
-                      '🟢 Verde: validade segura — distribuição normal',
-                      '➕➖ Use +/- para ajustar quantidade',
-                      '🔢 Badge no canto = quantidade selecionada',
+                      'Vermelho: lote vencido — confira antes de distribuir',
+                      'Amarelo: vence em 30 dias — prioridade alta',
+                      'Verde: validade segura — distribuição normal',
+                      'Use +/- para ajustar quantidade',
+                      'Badge no canto = quantidade selecionada',
                     ],
                   )
                 else
@@ -770,10 +779,10 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                     icon: Icons.menu_book_rounded,
                     align: ContentAlign.bottom,
                     hints: const [
-                      '📋 Cada receita = vários produtos de uma vez',
-                      '✅ Sistema verifica estoque antes de executar',
-                      '👆 Toque uma vez para selecionar',
-                      '🔙 Pode voltar para Avulso a qualquer momento',
+                      'Cada receita = vários produtos de uma vez',
+                      'Sistema verifica estoque antes de executar',
+                      'Toque uma vez para selecionar',
+                      'Pode voltar para Avulso a qualquer momento',
                     ],
                   ),
                 if (_mode == _OutputMode.products ||
@@ -786,10 +795,10 @@ class _MovementPageState extends ConsumerState<MovementPage> {
                     icon: Icons.send_rounded,
                     align: ContentAlign.top,
                     hints: const [
-                      '👀 Tela de revisão antes de confirmar definitivo',
-                      '📉 Estoque é deduzido AUTOMATICAMENTE',
-                      '📜 Aparece no Histórico imediatamente',
-                      '⚠️ Saída confirmada NÃO pode ser desfeita',
+                      'Tela de revisão antes de confirmar definitivo',
+                      'Estoque é deduzido AUTOMATICAMENTE',
+                      'Aparece no Histórico imediatamente',
+                      'Saída confirmada NÃO pode ser desfeita',
                     ],
                   ),
               ];
@@ -1489,7 +1498,9 @@ class _ModernFilterChip extends StatelessWidget {
 class _SummaryItem {
   final Product product;
   final int qty;
-  const _SummaryItem({required this.product, required this.qty});
+  /// Unidades que, pela ordem FEFO, sairão de lote(s) vencido(s).
+  final int vencidas;
+  const _SummaryItem({required this.product, required this.qty, this.vencidas = 0});
 }
 
 // ─── Tela de resumo (bottom sheet) ────────────────────────────────────────
@@ -1497,7 +1508,8 @@ class _SummaryItem {
 class _SummarySheet extends StatelessWidget {
   final List<_SummaryItem> items;
   final String reasonLabel;
-  const _SummarySheet({required this.items, required this.reasonLabel});
+  final bool avisarVencidos;
+  const _SummarySheet({required this.items, required this.reasonLabel, this.avisarVencidos = true});
 
   @override
   Widget build(BuildContext context) {
@@ -1507,6 +1519,7 @@ class _SummarySheet extends StatelessWidget {
     final onBg = isDark ? const Color(0xFFE5E7EB) : const Color(0xFF0F172A);
     final sub = isDark ? const Color(0xFF9CA3AF) : const Color(0xFF64748B);
     final totalItems = items.fold<int>(0, (s, e) => s + e.qty);
+    final totalVencidas = avisarVencidos ? items.fold<int>(0, (s, e) => s + e.vencidas) : 0;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -1612,6 +1625,43 @@ class _SummarySheet extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
+            // ── Aviso: a ordem FEFO vai usar lote vencido ────────────
+            if (totalVencidas > 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.warning_amber_rounded,
+                            color: Theme.of(context).colorScheme.onErrorContainer),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '$totalVencidas ${totalVencidas == 1 ? 'unidade sairá' : 'unidades sairão'} de lote VENCIDO '
+                            '(ordem FEFO: o que vence primeiro sai primeiro). Se não podem ser entregues, '
+                            'volte e registre como descarte (motivo Validade).',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onErrorContainer,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
             // ── Lista de itens ────────────────────────────────────
             Expanded(
               child: ListView.separated(
@@ -1683,6 +1733,27 @@ class _SummarySheet extends StatelessWidget {
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w500),
                               ),
+                              if (avisarVencidos && item.vencidas > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.cancel_rounded, size: 14,
+                                          color: Theme.of(context).colorScheme.error),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          '${item.vencidas} de lote vencido',
+                                          style: TextStyle(
+                                            color: Theme.of(context).colorScheme.error,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -1813,12 +1884,12 @@ class _SummarySheet extends StatelessWidget {
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.outbound_rounded,
+                              children: [
+                                const Icon(Icons.outbound_rounded,
                                     color: Colors.white, size: 16),
-                                SizedBox(width: 6),
+                                const SizedBox(width: 6),
                                 Text(
-                                  'Confirmar Saída',
+                                  totalVencidas > 0 ? 'Distribuir mesmo assim' : 'Confirmar Saída',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,

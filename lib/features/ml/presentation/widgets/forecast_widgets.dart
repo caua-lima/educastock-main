@@ -279,12 +279,15 @@ class _ForecastBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Text(
-          '$pct% de $target',
-          style: AppTypography.labelSmall.copyWith(
-            color: color,
-            fontWeight: FontWeight.w800,
-            fontSize: 10.5,
+        Flexible(
+          child: Text(
+            '$pct% de $target',
+            textAlign: TextAlign.end,
+            style: AppTypography.labelSmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
           ),
         ),
       ],
@@ -468,12 +471,13 @@ class _MetricCell extends StatelessWidget {
               label,
               style: AppTypography.bodySmall.copyWith(
                 color: cs.onSurfaceVariant,
-                fontSize: 10,
+                fontSize: 12,
               ),
             ),
             const SizedBox(height: 2),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            // Valor e unidade: a unidade desce de linha quando não cabe.
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.end,
               children: [
                 Text(
                   value,
@@ -489,8 +493,8 @@ class _MetricCell extends StatelessWidget {
                   child: Text(
                     unit,
                     style: AppTypography.bodySmall.copyWith(
-                      color: color.withValues(alpha: 0.7),
-                      fontSize: 10,
+                      color: cs.onSurfaceVariant,
+                      fontSize: 12,
                     ),
                   ),
                 ),

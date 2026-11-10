@@ -47,9 +47,13 @@ class AlertCheckerService {
       final String level;
       final String message;
 
-      if (days <= 0) {
+      // Dias de calendário: 0 = vence hoje (ainda pode ser usado hoje); negativo = vencido.
+      if (days < 0) {
         level = 'critical';
         message = 'Lote VENCIDO — descarte imediato: ${batch.productName}';
+      } else if (days == 0) {
+        level = 'critical';
+        message = 'Crítico: "${batch.productName}" vence hoje — use ou distribua hoje';
       } else if (days <= criticalDays) {
         level = 'critical';
         message =

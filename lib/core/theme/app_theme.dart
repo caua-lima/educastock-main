@@ -263,8 +263,10 @@ class AppTheme {
         useMaterial3: true,
         colorScheme: const ColorScheme(
           brightness: Brightness.dark,
-          primary: AppColors.brandPrimary500,
-          onPrimary: AppColors.surface,
+          // Texto/ícones azuis sobre fundo escuro precisam do azul clareado (AA 4,5:1).
+          // Botões preenchidos continuam no azul da marca com texto branco (tema abaixo).
+          primary: AppColors.brandPrimary300,
+          onPrimary: AppColors.neutral900,
           primaryContainer: Color(0xFF173D63),
           onPrimaryContainer: AppColors.brandPrimary100,
           secondary: AppColors.secondarySky500,
@@ -273,8 +275,8 @@ class AppTheme {
           onSecondaryContainer: Color(0xFFBCE7FF),
           tertiary: AppColors.secondaryBlue600,
           onTertiary: AppColors.surface,
-          error: AppColors.danger600,
-          onError: AppColors.surface,
+          error: AppColors.danger400,
+          onError: AppColors.neutral900,
           surface: Color(0xFF0D1526),
           onSurface: Color(0xFFE5E7EB),
           surfaceContainerLow: Color(0xFF1A2540),
@@ -282,7 +284,7 @@ class AppTheme {
           surfaceContainerHigh: Color(0xFF243352),
           surfaceContainerHighest: Color(0xFF1F2937),
           onSurfaceVariant: Color(0xFFD1D5DB),
-          outline: Color(0xFF4B5563),
+          outline: AppColors.neutral500, // contorno de campo 3,8:1 (antes 2,4:1)
           outlineVariant: Color(0xFF374151),
           shadow: Colors.black,
           scrim: Colors.black87,
@@ -332,7 +334,7 @@ class AppTheme {
           ),
           labelStyle: AppTypography.labelLarge.copyWith(color: const Color(0xFF9CA3AF)),
           hintStyle: AppTypography.bodyMedium.copyWith(color: const Color(0xFF9CA3AF)),
-          errorStyle: AppTypography.labelSmall.copyWith(color: AppColors.danger600),
+          errorStyle: AppTypography.labelSmall.copyWith(color: AppColors.danger400),
         ),
         dividerTheme: const DividerThemeData(
           color: Color(0xFF374151),

@@ -127,7 +127,10 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
   Widget build(BuildContext context) {
     final idx = _selectedIndex(widget.location);
     // A aba de doações só existe para quem opera o portal (administrador e estoquista).
-    final showDonations = canOperateDonations(ref.watch(currentUserProvider));
+    final usuario = ref.watch(currentUserProvider);
+    final showDonations = canOperateDonations(usuario);
+    // Progresso dos tutoriais é guardado por conta.
+    TutorialProgresso.usuarioAtual = usuario?.id ?? 'anonimo';
     final routes = [..._tabRoutes, if (showDonations) AppRoutes.opsDonations];
     final width = MediaQuery.sizeOf(context).width;
 
@@ -135,13 +138,13 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
     if (width < AppBreakpoints.rail) {
       return Scaffold(
         body: widget.child,
-        bottomNavigationBar: _tutorialActive
-            ? null
-            : _AnimatedTabBar(
-                selectedIndex: idx,
-                showDonations: showDonations,
-                onTap: (i) => context.go(routes[i]),
-              ),
+        // A barra fica durante o tutorial: escondê-la mudava o layout e o
+        // destaque apontava para o lugar errado. O tutorial é modal (por cima).
+        bottomNavigationBar: _AnimatedTabBar(
+          selectedIndex: idx,
+          showDonations: showDonations,
+          onTap: (i) => context.go(routes[i]),
+        ),
       );
     }
 

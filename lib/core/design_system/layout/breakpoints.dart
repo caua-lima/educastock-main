@@ -41,7 +41,7 @@ int responsiveColumns(
 }
 
 /// Grade para [CasaProductCard]: colunas pela largura disponível (mínimo 2 no celular) e
-/// altura calculada — imagem 16:9 da largura da célula + corpo de altura fixa.
+/// altura calculada — cabeçalho de altura fixa (84) + corpo que cresce com a fonte.
 ///
 /// Antes as grades usavam 2 colunas fixas e proporção fixa: no celular pequeno o corpo do
 /// cartão estourava, e no computador cada cartão ficava com ~600 × 700 px.
@@ -55,13 +55,14 @@ SliverGridDelegate productCardGridDelegate(
 }) {
   final cols = responsiveColumns(width,
       minItemWidth: minItemWidth, spacing: spacing, min: 2, max: maxColumns);
-  final cellWidth = (width - spacing * (cols - 1)) / cols;
   return SliverGridDelegateWithFixedCrossAxisCount(
     crossAxisCount: cols,
     mainAxisSpacing: spacing,
     crossAxisSpacing: spacing,
-    // O corpo do cartão cresce com a fonte do sistema (acessibilidade).
-    mainAxisExtent: cellWidth * 9 / 16 + bodyHeight * textScale.clamp(1.0, 2.0),
+    // O corpo do cartão cresce com a fonte do sistema (acessibilidade). O cabeçalho
+    // (foto/ícone) tem altura fixa: antes era 16:9 da célula e, com cartões largos, a
+    // foto/placeholder ocupava mais espaço que o nome.
+    mainAxisExtent: 84 + bodyHeight * textScale.clamp(1.0, 2.0),
   );
 }
 

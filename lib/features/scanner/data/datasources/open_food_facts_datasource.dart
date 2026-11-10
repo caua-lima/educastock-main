@@ -20,6 +20,16 @@ class ProductApiResult {
   });
 }
 
+/// A base externa não respondeu (rede, tempo esgotado, erro do servidor ou
+/// resposta inválida). Diferente de `null`, que significa "não encontrado".
+class ProductLookupException implements Exception {
+  final String fonte;
+  final String motivo;
+  const ProductLookupException(this.fonte, this.motivo);
+  @override
+  String toString() => 'Falha ao consultar $fonte: $motivo';
+}
+
 class OpenFoodFactsDatasource {
   static const _barcodeLookupApiKey =
       String.fromEnvironment('BARCODE_LOOKUP_API_KEY');
@@ -28,7 +38,7 @@ class OpenFoodFactsDatasource {
   final Dio _upcDio;
   final Dio _barcodeLookupDio;
 
-  OpenFoodFactsDatasource({Dio? dio})
+  OpenFoodFactsDatasource({Dio? dio, Dio? upcDio, Dio? barcodeLookupDio})
       : _dio = dio ??
             Dio(BaseOptions(
               baseUrl: 'https://world.openfoodfacts.org',
@@ -39,22 +49,26 @@ class OpenFoodFactsDatasource {
                     'EducaStock/1.0 (ONG Casa da Crianca; contact@casadacrianca.org.br)',
               },
             )),
-        _upcDio = Dio(BaseOptions(
-          baseUrl: 'https://api.upcitemdb.com',
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
-        )),
-        _barcodeLookupDio = Dio(BaseOptions(
-          baseUrl: 'https://api.barcodelookup.com',
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
-        ));
+        _upcDio = upcDio ??
+            Dio(BaseOptions(
+              baseUrl: 'https://api.upcitemdb.com',
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+            )),
+        _barcodeLookupDio = barcodeLookupDio ??
+            Dio(BaseOptions(
+              baseUrl: 'https://api.barcodelookup.com',
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+            ));
 
   // ── Busca individual por fonte ─────────────────────────────────────────────
 
   Future<ProductApiResult?> lookupOpenFoodFacts(String barcode) async {
     try {
-      final response = await _dio.get('/api/v0/product/$barcode.json');
+      // O código vai codificado: QR/Code128 podem ter '/', '?', '#', '%'…
+      final response = await _dio
+          .get('/api/v0/product/${Uri.encodeComponent(barcode)}.json');
       final data = response.data as Map<String, dynamic>;
 
       if (data['status'] == 1) {
@@ -90,8 +104,11 @@ class OpenFoodFactsDatasource {
           );
         }
       }
-    } on DioException {
-      // Network error — fall through
+    } on DioException catch (e) {
+      _relancar('Open Food Facts', e);
+    } on TypeError {
+      throw const ProductLookupException(
+          'Open Food Facts', 'resposta inválida');
     }
     return null;
   }
@@ -109,10 +126,10 @@ class OpenFoodFactsDatasource {
         final title = item['title'] as String?;
         final brand = item['brand'] as String?;
         final category = _normalizeCategory(item['category'] as String?);
-        final imageUrl = item['images'] is List &&
-                (item['images'] as List).isNotEmpty
-            ? (item['images'] as List).first as String?
-            : null;
+        final imageUrl =
+            item['images'] is List && (item['images'] as List).isNotEmpty
+                ? (item['images'] as List).first as String?
+                : null;
         final desc = item['description'] as String?;
         return ProductApiResult(
           barcode: barcode,
@@ -121,11 +138,14 @@ class OpenFoodFactsDatasource {
           brand: brand,
           category: category,
           imageUrl: imageUrl,
-          description: (desc != null && desc.trim().isNotEmpty) ? desc.trim() : null,
+          description:
+              (desc != null && desc.trim().isNotEmpty) ? desc.trim() : null,
         );
       }
-    } on DioException {
-      // Network error — fall through
+    } on DioException catch (e) {
+      _relancar('UPC Item DB', e);
+    } on TypeError {
+      throw const ProductLookupException('UPC Item DB', 'resposta inválida');
     }
     return null;
   }
@@ -148,10 +168,10 @@ class OpenFoodFactsDatasource {
         final name = item['product_name'] as String?;
         final brand = item['brand'] as String?;
         final category = _normalizeCategory(item['category'] as String?);
-        final imageUrl = item['images'] is List &&
-                (item['images'] as List).isNotEmpty
-            ? (item['images'] as List).first as String?
-            : null;
+        final imageUrl =
+            item['images'] is List && (item['images'] as List).isNotEmpty
+                ? (item['images'] as List).first as String?
+                : null;
         final desc = item['description'] as String?;
         return ProductApiResult(
           barcode: barcode,
@@ -160,25 +180,38 @@ class OpenFoodFactsDatasource {
           brand: brand,
           category: category,
           imageUrl: imageUrl,
-          description: (desc != null && desc.trim().isNotEmpty) ? desc.trim() : null,
+          description:
+              (desc != null && desc.trim().isNotEmpty) ? desc.trim() : null,
         );
       }
-    } on DioException {
-      // Network error — fall through
+    } on DioException catch (e) {
+      _relancar('Barcode Lookup', e);
+    } on TypeError {
+      throw const ProductLookupException('Barcode Lookup', 'resposta inválida');
     }
     return null;
+  }
+
+  /// 404 (e 400 de código inválido) = "não encontrado"; o resto é falha.
+  void _relancar(String fonte, DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 404 || status == 400) return;
+    throw ProductLookupException(
+        fonte, status != null ? 'HTTP $status' : e.type.name);
   }
 
   // ── Busca completa com fallback (mantida para compatibilidade) ─────────────
 
   Future<ProductApiResult> lookupBarcode(String barcode) async {
-    final off = await lookupOpenFoodFacts(barcode);
+    Future<ProductApiResult?> semFalha(Future<ProductApiResult?> f) =>
+        f.catchError((Object _) => null);
+    final off = await semFalha(lookupOpenFoodFacts(barcode));
     if (off != null && off.found) return off;
 
-    final upc = await lookupUpcItemDb(barcode);
+    final upc = await semFalha(lookupUpcItemDb(barcode));
     if (upc != null && upc.found) return upc;
 
-    final bl = await lookupBarcodeLookupApi(barcode);
+    final bl = await semFalha(lookupBarcodeLookupApi(barcode));
     if (bl != null && bl.found) return bl;
 
     return ProductApiResult(barcode: barcode, found: false);

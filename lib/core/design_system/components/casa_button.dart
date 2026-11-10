@@ -46,7 +46,7 @@ class CasaButton extends StatelessWidget {
             child: CircularProgressIndicator(
               strokeWidth: 2,
               color: variant == CasaButtonVariant.primary
-                  ? Colors.white
+                  ? cs.onPrimary
                   : cs.primary,
             ),
           )

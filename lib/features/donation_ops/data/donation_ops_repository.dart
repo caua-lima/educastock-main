@@ -53,6 +53,12 @@ class DonationOpsRepository {
   /// Fila da equipe: tudo que ainda exige uma ação (decidir, receber ou destinar).
   /// Filtra só por status (sem `orderBy`) para não depender de índice composto; a
   /// ordenação por data é feita aqui.
+  /// Id da doação com o [protocol] (QR Code apresentado pelo doador na entrega), ou null.
+  Future<String?> findIdByProtocol(String protocol) async {
+    final snap = await _donations.where('protocol', isEqualTo: protocol).limit(1).get();
+    return snap.docs.isEmpty ? null : snap.docs.first.id;
+  }
+
   Stream<List<Donation>> watchQueue({int limit = 200}) {
     return _donations
         .where('status', whereIn: _queueStatuses)

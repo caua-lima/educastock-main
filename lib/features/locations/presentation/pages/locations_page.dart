@@ -74,7 +74,7 @@ class LocationsPage extends ConsumerWidget {
                   icon: Icons.location_on_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🗑️ Desativar não exclui — apenas oculta para novos lotes',
+                    'Desativar não exclui — apenas oculta para novos lotes',
                     'Lotes existentes na localização continuam ali',
                     'Você pode reativar a qualquer momento via banco de dados',
                     'A capacidade ajuda alertas de "prateleira cheia"',
@@ -265,7 +265,7 @@ class _DepositBanner extends StatelessWidget {
                 const Text(
                   'Depósito da ONG',
                   style: TextStyle(
-                    fontFamily: 'Poppins',
+                    fontFamily: AppTypography.fontFamily,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -344,20 +344,24 @@ class _GroupHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: isDark ? 0.2 : 0.1),
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-          ),
-          child: Text(
-            'Prateleira $groupKey',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: accent,
-              letterSpacing: 0.4,
+        // Os selos quebram linha com fonte grande (antes estouravam à direita).
+        Flexible(
+          flex: 3,
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: isDark ? 0.2 : 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Text(
+              'Prateleira $groupKey',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: accent,
+                letterSpacing: 0.4,
+              ),
             ),
           ),
         ),
@@ -373,18 +377,21 @@ class _GroupHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: isDark ? 0.18 : 0.08),
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-          ),
-          child: Text(
-            '$count nível${count != 1 ? 'eis' : ''}',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: accent,
+        Flexible(
+          flex: 2,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: isDark ? 0.18 : 0.08),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Text(
+              count == 1 ? '1 nível' : '$count níveis',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: accent,
+              ),
             ),
           ),
         ),
@@ -508,7 +515,7 @@ class _LocationCard extends ConsumerWidget {
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     color: Colors.white,
-                    fontFamily: 'Poppins',
+                    fontFamily: AppTypography.fontFamily,
                     height: 1,
                   ),
                 ),
@@ -530,7 +537,7 @@ class _LocationCard extends ConsumerWidget {
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: titleColor,
-                              fontFamily: 'Poppins',
+                              fontFamily: AppTypography.fontFamily,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

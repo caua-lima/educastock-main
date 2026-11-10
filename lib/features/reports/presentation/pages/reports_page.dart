@@ -72,8 +72,8 @@ List<TutorialStep> _chartsTutorialSteps() => [
         icon: Icons.bar_chart_rounded,
         align: ContentAlign.bottom,
         hints: const [
-          '🔴 Vermelho = vencidos — descarte imediato',
-          '🟢 Verde = prazo seguro (>30 dias)',
+          'Vermelho = vencidos — descarte imediato',
+          'Verde = prazo seguro (>30 dias)',
         ],
       ),
       TutorialStep(
@@ -96,8 +96,8 @@ List<TutorialStep> _riskTutorialSteps() => [
         icon: Icons.shield_rounded,
         align: ContentAlign.bottom,
         hints: const [
-          '🔴 Críticos = ação imediata necessária',
-          '🟡 Atenção = monitorar de perto nos próximos dias',
+          'Críticos = ação imediata necessária',
+          'Atenção = monitorar de perto nos próximos dias',
         ],
       ),
       TutorialStep(
@@ -162,8 +162,8 @@ List<TutorialStep> _forecastTutorialSteps() => [
         icon: Icons.dashboard_rounded,
         align: ContentAlign.bottom,
         hints: const [
-          '🔴 Críticos = estoque muito baixo para consumo previsto',
-          '📦 Reposição = toque em "Gerar Pedido" para exportar CSV',
+          'Críticos = estoque muito baixo para consumo previsto',
+          'Reposição = toque em "Gerar Pedido" para exportar CSV',
         ],
       ),
       TutorialStep(
@@ -201,8 +201,10 @@ class _TabActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: AppSpacing.xs,
       children: [
         Consumer(
           builder: (context, ref, _) => IconButton(
@@ -230,6 +232,10 @@ class _TabActionsRow extends StatelessWidget {
     );
   }
 }
+
+/// Como o índice de saúde é calculado (fórmula preservada; é uma nota, não uma proporção).
+const kExplicacaoIndiceSaude =
+    'Índice de saúde (0 a 100): começa em 100 e perde 10 pontos por lote vencido, 5 por lote que vence em até 7 dias e 2 por lote que vence entre 8 e 30 dias. Não é porcentagem do estoque.';
 
 // ─── Custom AppBar with TabBar ────────────────────────────────────────────
 
@@ -810,20 +816,8 @@ class _ChartsTab extends ConsumerWidget {
           'transferencia': 'Transferência',
         };
 
-        final Map<String, int> monthTrend = {};
-        final now = DateTime.now();
-        for (int i = 5; i >= 0; i--) {
-          final d = DateTime(now.year, now.month - i);
-          final key = '${d.month.toString().padLeft(2, '0')}/${d.year % 100}';
-          monthTrend[key] = 0;
-        }
-        for (final b in batches) {
-          final key =
-              '${b.entryDate.month.toString().padLeft(2, '0')}/${b.entryDate.year % 100}';
-          if (monthTrend.containsKey(key)) {
-            monthTrend[key] = monthTrend[key]! + b.quantity;
-          }
-        }
+        // Entradas por mês: das movimentações de entrada (não do saldo dos lotes).
+        final entradasAsync = ref.watch(entradasPorMesProvider);
 
         final healthScore = (100 -
                 (expired * 10) -
@@ -875,7 +869,7 @@ class _ChartsTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
-            // ─── Modern stats banner
+            // ─── Modern stats banner (índice explicado logo abaixo)
             _ModernStatsBanner(
               totalBatches: batches.length,
               totalItems: totalItems,
@@ -890,23 +884,35 @@ class _ChartsTab extends ConsumerWidget {
               warningBatches: exp30List,
               expiredBatches: batches.where((b) => b.isExpired).toList(),
             ),
+            const _ChartNote(text: kExplicacaoIndiceSaude),
             const SizedBox(height: AppSpacing.xl),
 
             // ─── Tendência mensal
             _SectionHeader(
               title: 'Entradas por mês',
-              subtitle: 'Evolução das entradas nos últimos 6 meses',
+              subtitle: 'Unidades recebidas em cada um dos últimos 6 meses',
               icon: Icons.trending_up_rounded,
               color: AppColors.brandPrimary600,
             ),
             const SizedBox(height: AppSpacing.sm),
             KeyedSubtree(
               key: _keyTrendChart,
-              child: _MonthlyTrendChart(
-                  monthTrend: monthTrend, isDark: isDark, cs: cs),
+              child: entradasAsync.when(
+                data: (porMes) => _MonthlyTrendChart(
+                    monthTrend: porMes, isDark: isDark, cs: cs),
+                loading: () => const SizedBox(
+                  height: 210,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                // Erro aparece com recuperação — nunca como zero.
+                error: (e, _) => LoadErrorNotice(
+                  message: 'Não foi possível carregar as entradas por mês. ${friendlyLoadError(e)}',
+                  onRetry: () => invalidateReportCaches(ref),
+                ),
+              ),
             ),
             const _ChartNote(
-              text: 'Soma total de itens cadastrados por mês. Toque nos pontos para ver o valor exato.',
+              text: 'Soma das movimentações de ENTRADA registradas em cada mês. Ajustes de inventário, saídas e descartes não contam; lotes antigos sem entrada registrada não aparecem. Toque nos pontos para ver o valor.',
             ),
             const SizedBox(height: AppSpacing.xl),
 
@@ -2116,7 +2122,7 @@ class _MovementsSummaryGrid extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '↑ $totalIn entr.  ↓ $totalOut saíd.',
+                      'Entr. $totalIn · Saíd. $totalOut',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 11,
@@ -2543,9 +2549,9 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 4),
         Text(label,
             style: TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: color)),
+                color: Theme.of(context).colorScheme.onSurface)),
       ],
     );
   }
@@ -3191,13 +3197,13 @@ class _TopProductsChart extends StatelessWidget {
             );
           }),
           Divider(height: 12, color: cs.outlineVariant.withValues(alpha: 0.3)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            alignment: WrapAlignment.end,
             children: [
               Text(
                 'Total em estoque: ',
                 style: AppTypography.bodySmall
-                    .copyWith(color: cs.onSurfaceVariant, fontSize: 10),
+                    .copyWith(color: cs.onSurfaceVariant, fontSize: 12),
               ),
               Text(
                 '$totalItems unidades',
@@ -3586,7 +3592,12 @@ class _ModernStatsBanner extends StatelessWidget {
           child: Row(
             children: [
               // ─── Health ring
-              SizedBox(
+              Tooltip(
+               message: kExplicacaoIndiceSaude,
+               child: Semantics(
+                label: 'Índice de saúde do estoque: $healthScore de 100, $healthLabel',
+                excludeSemantics: true,
+                child: SizedBox(
                 width: 88,
                 height: 88,
                 child: Stack(
@@ -3608,10 +3619,11 @@ class _ModernStatsBanner extends StatelessWidget {
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // Índice de 0 a 100 (não é porcentagem do estoque).
                         Text(
-                          '$healthScore%',
+                          '$healthScore/100',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w900,
                             color: healthColor,
                             height: 1,
@@ -3620,7 +3632,7 @@ class _ModernStatsBanner extends StatelessWidget {
                         Text(
                           healthLabel,
                           style: TextStyle(
-                            fontSize: 9,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: cs.onSurfaceVariant,
                           ),
@@ -3629,6 +3641,8 @@ class _ModernStatsBanner extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+               ),
               ),
               const SizedBox(width: AppSpacing.md),
               // ─── 3 key stats
@@ -4482,15 +4496,15 @@ class _MlConfidenceDistChart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xs,
             children: [
               _LegendDot(
                   color: AppColors.danger600, label: 'Crítico'),
-              const SizedBox(width: AppSpacing.md),
               _LegendDot(
                   color: AppColors.warning600, label: 'Atenção'),
-              const SizedBox(width: AppSpacing.md),
               _LegendDot(
                   color: AppColors.success600, label: 'Seguro'),
             ],
@@ -5238,13 +5252,14 @@ class _ForecastCoverageChart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xs,
             children: [
               _LegendDot(
                   color: AppColors.secondaryBlue600,
                   label: 'Estoque Atual'),
-              const SizedBox(width: AppSpacing.md),
               _LegendDot(
                   color: AppColors.success600.withValues(alpha: 0.6),
                   label: 'Previsão 30d'),
@@ -5575,16 +5590,16 @@ class _ForecastReplenishCard extends StatelessWidget {
                         : 'Previsão mensal: ${forecast.forecastMonthly.toStringAsFixed(0)} un. · Sem saídas registradas',
                     style: AppTypography.bodySmall.copyWith(
                       color: cs.onSurfaceVariant,
-                      fontSize: 10,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Row(
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
                     children: [
                       SourceBadge(forecast: forecast),
-                      const SizedBox(width: 4),
                       TrendChip(
                         trend: forecast.trend,
                         trendPercent: forecast.trendPercent,
@@ -5898,7 +5913,7 @@ class _MonthlyTrendChart extends StatelessWidget {
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
-            horizontalInterval: math.max(1, maxVal / 4),
+            horizontalInterval: math.max(1, (maxVal / 4).ceilToDouble()),
             getDrawingHorizontalLine: (v) => FlLine(
               color: cs.outlineVariant.withValues(alpha: 0.25),
               strokeWidth: 1,
@@ -5910,9 +5925,13 @@ class _MonthlyTrendChart extends StatelessWidget {
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 26,
+                reservedSize: 28,
+                // Um rótulo por mês: só posições inteiras (antes pontos
+                // fracionários repetiam o mesmo mês).
+                interval: 1,
                 getTitlesWidget: (v, _) {
-                  final idx = v.toInt();
+                  if (v != v.roundToDouble()) return const SizedBox.shrink();
+                  final idx = v.round();
                   if (idx < 0 || idx >= keys.length) {
                     return const SizedBox.shrink();
                   }
@@ -5921,7 +5940,7 @@ class _MonthlyTrendChart extends StatelessWidget {
                     child: Text(
                       keys[idx],
                       style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 11,
                           color: cs.onSurfaceVariant,
                           fontWeight: FontWeight.w600),
                     ),
@@ -5932,13 +5951,14 @@ class _MonthlyTrendChart extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 32,
+                reservedSize: 36,
+                interval: math.max(1, (maxVal / 4).ceilToDouble()),
                 getTitlesWidget: (v, _) {
-                  if (v == 0) return const SizedBox.shrink();
+                  if (v == 0 || v != v.roundToDouble()) return const SizedBox.shrink();
                   return Text(
-                    v.toInt().toString(),
+                    v.round().toString(),
                     style: TextStyle(
-                        fontSize: 9, color: cs.onSurfaceVariant),
+                        fontSize: 11, color: cs.onSurfaceVariant),
                   );
                 },
               ),
@@ -5965,8 +5985,9 @@ class _MonthlyTrendChart extends StatelessWidget {
           lineBarsData: [
             LineChartBarData(
               spots: spots,
-              isCurved: true,
-              curveSmoothness: 0.4,
+              // Linha reta: a curva suavizada passava abaixo de zero entre meses,
+              // sugerindo quantidade negativa.
+              isCurved: false,
               gradient: const LinearGradient(
                 colors: [
                   AppColors.brandPrimary600,
@@ -6464,31 +6485,30 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
                             color: color, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 6),
+                      // Nome e números: os números descem para a linha de baixo
+                      // quando não cabem (320 px / fonte grande).
                       Expanded(
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: cs.onSurface,
-                              fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 2,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              label,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: cs.onSurface,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              '${e.value.value} lotes · ${pct.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: cs.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        '${e.value.value} lotes',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: cs.onSurfaceVariant,
-                            fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${pct.toStringAsFixed(0)}%',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: color,
-                            fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),

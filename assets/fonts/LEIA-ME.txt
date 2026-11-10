@@ -1,0 +1,12 @@
+Roboto (Google), licença Apache 2.0 — texto completo em LICENSE-Roboto.txt.
+
+Origem: arquivos roboto-{regular,medium,bold,black}.ttf do SDK do Flutter
+(bin/cache/artifacts/material_fonts).
+
+Modificação: recorte de caracteres com fontTools (latim básico e Latin-1, aspas,
+travessões, reticências, símbolos usados no app), sem hinting. Cada arquivo caiu de
+~170 KB para ~21 KB. Os nomes da fonte não foram alterados.
+
+O teste test/fonte_cobertura_test.dart falha se algum texto do app usar um caractere
+que não está aqui (por exemplo emoji ou seta), para não depender de fonte baixada da
+internet.

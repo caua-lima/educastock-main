@@ -13,6 +13,7 @@ import '../../../ml/data/repositories/rule_based_risk_classifier.dart';
 import '../../../ml/domain/entities/risk_prediction.dart';
 import '../../../ml/presentation/widgets/risk_widgets.dart';
 import '../../../scanner/data/scan_history_repository.dart';
+import '../../../scanner/domain/codigo_barras.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../domain/entities/product.dart';
 import '../controllers/products_provider.dart';
@@ -107,6 +108,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
 
   void _showManualBarcodeInput() {
     final ctrl = TextEditingController();
+    final erro = ValueNotifier<String?>(null);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -116,16 +118,20 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
         final isDark = Theme.of(ctx).brightness == Brightness.dark;
 
         Future<void> submit(String value) async {
-          final barcode = value.trim();
-          if (barcode.isEmpty) return;
-          // Salva no banco (Firestore) como digitado — persiste entre reloads.
-          await ref
-              .read(scanHistoryRepositoryProvider)
-              .record(barcode, source: 'typed');
+          // Mesmas regras da câmera: texto preservado (zeros, letras e
+          // símbolos), EAN/UPC com dígito conferido e rota codificada.
+          final barcode = normalizarCodigo(value);
+          final problema = validarCodigo(barcode);
+          if (problema != null) {
+            erro.value = problema;
+            return;
+          }
+          // Histórico em segundo plano: não segura a navegação (nem sem rede).
+          ref.read(scanHistoryRepositoryProvider).record(barcode, source: 'typed');
           if (!ctx.mounted) return;
           Navigator.of(ctx).pop();
           if (!mounted) return;
-          context.push('${AppRoutes.productReview}?barcode=$barcode');
+          context.push(rotaRevisao(barcode));
         }
 
         return Padding(
@@ -227,9 +233,12 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       child: TextField(
                         controller: ctrl,
                         autofocus: true,
-                        keyboardType: TextInputType.number,
+                        keyboardType: TextInputType.text,
+                        autocorrect: false,
+                        enableSuggestions: false,
                         textInputAction: TextInputAction.search,
                         onSubmitted: submit,
+                        onChanged: (_) => erro.value = null,
                         style: AppTypography.productName(
                           size: 18,
                           weight: FontWeight.w800,
@@ -254,6 +263,19 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                               vertical: 16, horizontal: 4),
                         ),
                       ),
+                    ),
+                    ValueListenableBuilder<String?>(
+                      valueListenable: erro,
+                      builder: (_, msg, __) => msg == null
+                          ? const SizedBox.shrink()
+                          : Padding(
+                              padding: const EdgeInsets.only(top: AppSpacing.xs),
+                              child: Semantics(
+                                liveRegion: true,
+                                child: Text(msg,
+                                    style: AppTypography.bodyMedium.copyWith(color: cs.error)),
+                              ),
+                            ),
                     ),
 
                     // ─── Histórico de códigos (do banco, em tempo real) ──
@@ -396,7 +418,14 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
           ),
         );
       },
-    );
+    ).whenComplete(() {
+      // O controlador e o aviso pertencem à folha: descartados depois da
+      // animação de saída (o campo ainda aparece enquanto a folha desce).
+      Future<void>.delayed(const Duration(seconds: 1), () {
+        ctrl.dispose();
+        erro.dispose();
+      });
+    });
   }
 
   List<Product> _applyFilters(
@@ -594,23 +623,23 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       icon: Icons.search_rounded,
                       align: ContentAlign.bottom,
                       hints: const [
-                        '⌨️ Busca por nome parcial: "feij" → "Feijão Carioca"',
-                        '🏷️ Procura também na marca (ex: "Camil", "Tio João")',
-                        '🔤 Ignora maiúsculas, minúsculas e acentos',
-                        '❌ Toque no X para limpar a busca',
+                        'Busca por nome parcial: "feij" › "Feijão Carioca"',
+                        'Procura também na marca (ex: "Camil", "Tio João")',
+                        'Ignora maiúsculas, minúsculas e acentos',
+                        'Toque no X para limpar a busca',
                       ],
                     ),
                     TutorialStep(
                       key: _keyFilterBtn,
                       title: 'Filtros e Ordenação',
-                      description: 'Toque no ícone de filtro para abrir um painel onde você pode escolher categoria (Alimento, Higiene, etc.), filtrar por perecibilidade e definir a ordem (A→Z, por categoria, perecíveis primeiro). O badge azul mostra quantos filtros estão ativos.',
+                      description: 'Toque no ícone de filtro para abrir um painel onde você pode escolher categoria (Alimento, Higiene, etc.), filtrar por perecibilidade e definir a ordem (A›Z, por categoria, perecíveis primeiro). O badge azul mostra quantos filtros estão ativos.',
                       icon: Icons.tune_rounded,
                       align: ContentAlign.bottom,
                       hints: const [
-                        '🏷️ Filtre por categoria para focar em um tipo',
-                        '⏰ "Perecíveis" mostra só produtos com validade',
-                        '📦 "Não perecíveis": material escolar, roupas, etc',
-                        '🔢 Ordene por nome ou categoria para inventário físico',
+                        'Filtre por categoria para focar em um tipo',
+                        '"Perecíveis" mostra só produtos com validade',
+                        '"Não perecíveis": material escolar, roupas, etc',
+                        'Ordene por nome ou categoria para inventário físico',
                       ],
                     ),
                     TutorialStep(
@@ -620,10 +649,10 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       icon: Icons.inventory_2_rounded,
                       align: ContentAlign.bottom,
                       hints: const [
-                        '🟢 Verde = lote mais próximo está OK (>30 dias)',
-                        '🟡 Amarelo = atenção! Vence em até 30 dias',
-                        '🔴 Vermelho = crítico! Vence em 7 dias ou venceu',
-                        '👆 Toque para ver todos os lotes, valor e localizações',
+                        'Verde = lote mais próximo está OK (>30 dias)',
+                        'Amarelo = atenção! Vence em até 30 dias',
+                        'Vermelho = crítico! Vence em 7 dias ou venceu',
+                        'Toque para ver todos os lotes, valor e localizações',
                       ],
                     ),
                   ],
@@ -669,17 +698,19 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                           : null,
                     );
                   }
-                  return GridView.builder(
+                  return LayoutBuilder(
+                   builder: (context, box) => GridView.builder(
                     padding: const EdgeInsets.fromLTRB(AppSpacing.md,
                         // Folga para os botões flutuantes (teclado + Escanear) não
                         // cobrirem a última linha de produtos.
                         AppSpacing.xs, AppSpacing.md, 140),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 240,
-                      mainAxisSpacing: AppSpacing.md,
-                      crossAxisSpacing: AppSpacing.md,
-                      childAspectRatio: 0.92,
+                    // Colunas pela largura e altura pela fonte (antes proporção fixa:
+                    // em 320 px ou fonte grande o rodapé do cartão era cortado).
+                    gridDelegate: productCardGridDelegate(
+                      box.maxWidth - 2 * AppSpacing.md,
+                      bodyHeight: 92,
+                      spacing: AppSpacing.md,
+                      textScale: MediaQuery.textScalerOf(context).scale(1),
                     ),
                     itemCount: filtered.length,
                     itemBuilder: (_, i) {
@@ -702,19 +733,21 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                       }
                       return card;
                     },
+                   ),
                   );
                 },
-                loading: () => GridView.builder(
+                loading: () => LayoutBuilder(
+                  builder: (context, box) => GridView.builder(
                   padding: const EdgeInsets.all(AppSpacing.md),
-                  gridDelegate:
-                      const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 240,
-                    mainAxisSpacing: AppSpacing.md,
-                    crossAxisSpacing: AppSpacing.md,
-                    childAspectRatio: 0.92,
+                  gridDelegate: productCardGridDelegate(
+                    box.maxWidth - 2 * AppSpacing.md,
+                    bodyHeight: 92,
+                    spacing: AppSpacing.md,
+                    textScale: MediaQuery.textScalerOf(context).scale(1),
                   ),
                   itemCount: 6,
                   itemBuilder: (_, __) => const CasaCardSkeleton(),
+                  ),
                 ),
                 error: (e, _) => CasaEmptyState(
                   icon: Icons.error_outline_rounded,
@@ -814,7 +847,7 @@ class _CsvImportSheetState extends ConsumerState<_CsvImportSheet> {
         }
         if (!mounted) return;
         final extra = (red > 0 || yellow > 0)
-            ? ' · 🤖 IA: $red crítico${red == 1 ? '' : 's'}, $yellow em atenção'
+            ? ' · Previsão de risco: $red crítico${red == 1 ? '' : 's'}, $yellow em atenção'
             : '';
         showCasaSnackbar(
           context,
@@ -905,7 +938,7 @@ class _CsvImportSheetState extends ConsumerState<_CsvImportSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('📋 Formato esperado do CSV:',
+                  Text('Formato esperado do CSV:',
                       style: AppTypography.labelMedium
                           .copyWith(color: AppColors.secondaryBlue600)),
                   const SizedBox(height: AppSpacing.xs),
@@ -1304,7 +1337,7 @@ class _FilterModalState extends State<_FilterModal> {
                       children: [
                         _SortOptionItem(
                           icon: Icons.sort_by_alpha_rounded,
-                          label: 'Nome (A → Z)',
+                          label: 'Nome (A–Z)',
                           selected: _sortMode == _SortMode.name,
                           isFirst: true, isLast: false,
                           cs: cs,
@@ -1784,6 +1817,7 @@ class _ProductGridCard extends ConsumerWidget {
       expiryBadgeIcon = Icons.do_not_disturb_on_outlined;
     }
 
+    final corTexto = Theme.of(context).brightness == Brightness.dark ? palette[0] : palette[1];
     final isCritical = product.isPerishable && batchData != null &&
         (batchData.isExpired || batchData.daysToExpiry <= 7);
     final isWarning = product.isPerishable && batchData != null &&
@@ -1832,18 +1866,24 @@ class _ProductGridCard extends ConsumerWidget {
                 : null),
         footer: Row(
           children: [
-            Container(
+            Flexible(
+              flex: 3,
+              child: Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
                 color: palette[0].withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(7),
               ),
-              child: Row(
+              // A quantidade nunca é cortada: em espaço mínimo ela só diminui.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.inventory_2_rounded,
-                      size: 11, color: palette[0]),
+                      size: 13, color: corTexto),
                   const SizedBox(width: 4),
                   Text(
                     inactive
@@ -1852,23 +1892,26 @@ class _ProductGridCard extends ConsumerWidget {
                             ? '$totalQty ${product.unit}'
                             : '— ${product.unit}',
                     style: AppTypography.labelSmall.copyWith(
-                      color: palette[0],
+                      color: corTexto,
                       fontWeight: FontWeight.w800,
-                      fontSize: 10.5,
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
+              ),
+            ),
             ),
             const SizedBox(width: 6),
             Expanded(
+              flex: 2,
               child: Text(
                 catLabel,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.labelSmall.copyWith(
                   color: cs.onSurfaceVariant,
-                  fontSize: 10.5,
+                  fontSize: 12,
                 ),
               ),
             ),

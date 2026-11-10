@@ -48,7 +48,7 @@ class _ForecastPageState extends ConsumerState<ForecastPage> {
                   icon: Icons.psychology_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🤖 IA estatística rodando em Google Colab',
+                    'IA estatística rodando em Google Colab',
                     'Precisa de pelo menos 30 dias de histórico',
                     'Re-execute mensalmente ou após eventos atípicos',
                     'Mais histórico = previsões mais precisas',
@@ -83,13 +83,13 @@ class _ForecastPageState extends ConsumerState<ForecastPage> {
                 TutorialStep(
                   key: _keyForecastList,
                   title: 'Sugestões de Reposição',
-                  description: 'Lista ordenada por urgência. Cada card mostra: produto, dias restantes de estoque, consumo médio, tendência (↑↓), quantidade sugerida para comprar (já com margem de 20%). O sistema sugere quantidade ideal para 30 dias.',
+                  description: 'Lista ordenada por urgência. Cada card mostra: produto, dias restantes de estoque, consumo médio, tendência (sobe/desce), quantidade sugerida para comprar (já com margem de 20%). O sistema sugere quantidade ideal para 30 dias.',
                   icon: Icons.add_shopping_cart_rounded,
                   align: ContentAlign.top,
                   hints: const [
-                    '🔴 Crítico: menos de 7 dias — comprar HOJE',
-                    '🟡 Baixo: menos de 14 dias — compra programada',
-                    '↗️ Tendência crescente: aumente a quantidade',
+                    'Crítico: menos de 7 dias — comprar HOJE',
+                    'Baixo: menos de 14 dias — compra programada',
+                    'Tendência crescente: aumente a quantidade',
                     'Quantidade sugerida = consumo 30d × 1.2 - estoque atual',
                   ],
                 ),

@@ -696,7 +696,8 @@ class _RecipeCreatePageState extends ConsumerState<RecipeCreatePage>
                           color: canSave ? Colors.white : const Color(0xFF94A3B8),
                         ),
                       const SizedBox(width: 8),
-                      Text(
+                      Flexible(
+                       child: Text(
                         _saving
                             ? 'Salvando…'
                             : !hasName
@@ -711,6 +712,8 @@ class _RecipeCreatePageState extends ConsumerState<RecipeCreatePage>
                           fontSize: 15,
                           color: canSave || _saving ? Colors.white : const Color(0xFF94A3B8),
                         ),
+                        textAlign: TextAlign.center,
+                       ),
                       ),
                       if (canSave && !_saving) ...[
                         const SizedBox(width: 8),

@@ -310,24 +310,24 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                   icon: Icons.label_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '✏️ Inclua tipo + tamanho/peso quando relevante',
-                    '📏 Padronize com a equipe (evite "açucar" e "açúcar")',
-                    '🔤 Não use abreviações que confundam ("FC" → "Feijão Carioca")',
-                    '🔍 Bom nome = busca mais rápida no dia-a-dia',
+                    'Inclua tipo + tamanho/peso quando relevante',
+                    'Padronize com a equipe (evite "açucar" e "açúcar")',
+                    'Não use abreviações que confundam ("FC" › "Feijão Carioca")',
+                    'Bom nome = busca mais rápida no dia-a-dia',
                   ],
                 ),
                 TutorialStep(
                   key: _keyCategoryField,
                   title: 'Categoria do Produto',
-                  description: 'Selecione a categoria que melhor classifica o produto. As categorias organizam o estoque, alimentam os filtros, relatórios por grupo e gráficos do dashboard. Categorias inativas ficam ocultas (configure em Configurações → Categorias).',
+                  description: 'Selecione a categoria que melhor classifica o produto. As categorias organizam o estoque, alimentam os filtros, relatórios por grupo e gráficos do dashboard. Categorias inativas ficam ocultas (configure em Configurações › Categorias).',
                   icon: Icons.category_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '🍚 Alimento: arroz, feijão, frutas, laticínios',
-                    '🥤 Bebida: água, sucos, leite',
-                    '🧼 Higiene: sabonete, fralda, escova',
-                    '✏️ Escolar: caderno, lápis, livros',
-                    '🧹 Limpeza: detergente, vassoura, álcool',
+                    'Alimento: arroz, feijão, frutas, laticínios',
+                    'Bebida: água, sucos, leite',
+                    'Higiene: sabonete, fralda, escova',
+                    'Escolar: caderno, lápis, livros',
+                    'Limpeza: detergente, vassoura, álcool',
                   ],
                 ),
                 TutorialStep(
@@ -337,9 +337,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                   icon: Icons.timer_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    '✅ Perecíveis: alimentos, bebidas, medicamentos, fraldas',
-                    '❌ Não perecíveis: roupas, material escolar, brinquedos',
-                    '⚠️ Em dúvida: marque como perecível (mais seguro)',
+                    'Perecíveis: alimentos, bebidas, medicamentos, fraldas',
+                    'Não perecíveis: roupas, material escolar, brinquedos',
+                    'Em dúvida: marque como perecível (mais seguro)',
                     'Não perecíveis NÃO aparecem em alertas de validade',
                   ],
                 ),
@@ -350,10 +350,10 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                   icon: Icons.save_rounded,
                   align: ContentAlign.top,
                   hints: const [
-                    '✅ Campos obrigatórios: nome, categoria, unidade',
-                    '⚡ Produto fica disponível imediatamente',
-                    '✏️ Pode editar/atualizar a qualquer momento',
-                    '🔄 Edições preservam histórico de movimentações',
+                    'Campos obrigatórios: nome, categoria, unidade',
+                    'Produto fica disponível imediatamente',
+                    'Pode editar/atualizar a qualquer momento',
+                    'Edições preservam histórico de movimentações',
                   ],
                 ),
               ],
@@ -463,6 +463,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                     DropdownButtonFormField<ProductCategory>(
                       key: _keyCategoryField,
                       initialValue: _category,
+                      // Largura do campo e item que cresce com a fonte (320 px / 200%).
+                      isExpanded: true,
+                      itemHeight: null,
                       decoration: const InputDecoration(
                         labelText: 'Categoria *',
                         prefixIcon: Icon(Icons.category_outlined, size: 20),
@@ -481,6 +484,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                     const SizedBox(height: AppSpacing.md),
                     DropdownButtonFormField<String>(
                       initialValue: _unit,
+                      // Largura do campo e item que cresce com a fonte (320 px / 200%).
+                      isExpanded: true,
+                      itemHeight: null,
                       decoration: const InputDecoration(
                         labelText: 'Unidade de Medida *',
                         prefixIcon: Icon(Icons.straighten_outlined, size: 20),

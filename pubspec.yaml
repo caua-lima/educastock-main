@@ -71,13 +71,13 @@ dependencies:
   share_plus: ^10.1.2
   file_picker: ^8.1.2
   cached_network_image: ^3.4.1
-  google_fonts: ^6.2.1
   google_sign_in: ^6.2.1
 
   cupertino_icons: ^1.0.8
-  tutorial_coach_mark: ^1.3.3
   google_generative_ai: ^0.4.7
   excel: ^4.0.6
+  qr_flutter: ^4.1.0
+  web: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -116,6 +116,19 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
+  # Fonte do app (Apache 2.0, licença em assets/fonts/LICENSE-Roboto.txt).
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-regular.ttf
+          weight: 400
+        - asset: assets/fonts/Roboto-medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-bold.ttf
+          weight: 700
+        - asset: assets/fonts/Roboto-black.ttf
+          weight: 900
+
   # fonts:
   #   - family: Schyler
   #     fonts:

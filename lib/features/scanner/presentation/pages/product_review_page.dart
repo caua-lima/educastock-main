@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../data/datasources/open_food_facts_datasource.dart';
+import '../../domain/codigo_barras.dart';
 import '../controllers/scanner_provider.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../batches/domain/entities/batch.dart';
@@ -38,19 +39,36 @@ class _ProductReviewPageState extends ConsumerState<ProductReviewPage>
     )..forward();
     _heroFade = CurvedAnimation(parent: _heroCtrl, curve: Curves.easeOut);
 
+    _scanner = ref.read(scannerProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Invalida o cache do provider antes de assistir para garantir busca
-      // fresca toda vez que a página abre. autoDispose descarta quando sai
-      // da tela, mas há uma janela de tempo onde o disposal ainda não ocorreu
-      // e o resultado null (de uma scan anterior) seria retornado do cache.
+      if (!mounted) return;
+      // Consulta fresca do cadastro local toda vez que a página abre.
       ref.invalidate(productByBarcodeProvider(widget.barcode));
-      ref.read(scannerProvider.notifier).onBarcodeDetected(widget.barcode);
+      // Cadastro local primeiro: a internet só é consultada se o código NÃO
+      // estiver cadastrado (e nunca sobrescreve o produto existente).
+      ref.listenManual<AsyncValue<Product?>>(
+        productByBarcodeProvider(widget.barcode),
+        (_, local) {
+          if (_buscaExternaIniciada || !mounted) return;
+          if (local is AsyncData<Product?> && local.value == null) {
+            _buscaExternaIniciada = true;
+            _scanner.onBarcodeDetected(widget.barcode);
+          }
+        },
+        fireImmediately: true,
+      );
     });
   }
+
+  late final ScannerNotifier _scanner;
+  bool _buscaExternaIniciada = false;
 
   @override
   void dispose() {
     _heroCtrl.dispose();
+    // Saiu da revisão: respostas externas pendentes deste código são descartadas.
+    final scanner = _scanner;
+    Future.microtask(scanner.reset);
     super.dispose();
   }
 
@@ -98,9 +116,13 @@ class _ProductReviewPageState extends ConsumerState<ProductReviewPage>
                 ),
               ),
               actions: [
-                buildHelpButton(
-                  context: context,
-                  onPressed: () => _showHelp(context),
+                // Ajuda curta da revisão (sem tutorial nesta tela).
+                Builder(
+                  builder: (ctx) => IconButton(
+                    tooltip: 'Ajuda',
+                    icon: const Icon(Icons.help_outline_rounded, color: Colors.white),
+                    onPressed: () => abrirAjudaDaTela(ctx),
+                  ),
                 ),
                 CasaAlertsBellButton(
                   alertCount: alertCount,
@@ -202,17 +224,20 @@ class _ProductReviewPageState extends ConsumerState<ProductReviewPage>
 
                   // Seção 2: Pesquisa na web (só quando produto não está no banco)
                   localProductAsync.when(
-                    loading: () => _WebSearchSection(
-                      scanState: scanState,
-                      barcode: widget.barcode,
-                      cs: cs,
-                    ),
+                    loading: () => const SizedBox.shrink(),
                     error: (_, __) => const SizedBox.shrink(),
                     data: (product) => product == null
                         ? _WebSearchSection(
-                            scanState: scanState,
+                            // Só mostra o estado se ele é deste código.
+                            scanState: scanState.lastBarcode == widget.barcode
+                                ? scanState
+                                : const ScannerState(
+                                    apiResult: AsyncValue.loading(),
+                                    searchStep: WebSearchStep.openFoodFacts,
+                                  ),
                             barcode: widget.barcode,
                             cs: cs,
+                            onRetry: () => _scanner.tentarNovamente(),
                           )
                         : const SizedBox.shrink(),
                   ),
@@ -235,83 +260,6 @@ class _ProductReviewPageState extends ConsumerState<ProductReviewPage>
           ],
         ),
       ),
-    );
-  }
-
-  void _showHelp(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final cs = Theme.of(ctx).colorScheme;
-        return Container(
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xxxl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: cs.outlineVariant,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text('Como funciona?',
-                  style: AppTypography.headingSmall
-                      .copyWith(fontWeight: FontWeight.w800)),
-              const SizedBox(height: AppSpacing.lg),
-              _HelpItem(
-                icon: Icons.check_circle_rounded,
-                color: AppColors.success600,
-                title: 'Produto cadastrado',
-                desc:
-                    'Adicione unidades a um lote existente ou crie um novo lote.',
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _HelpItem(
-                icon: Icons.travel_explore_rounded,
-                color: AppColors.brandPrimary600,
-                title: 'Pesquisa na web',
-                desc:
-                    'Consultamos 3 bases de dados online em sequência. Cada etapa é exibida na barra de progresso.',
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _HelpItem(
-                icon: Icons.add_box_rounded,
-                color: AppColors.warning600,
-                title: 'Produto novo',
-                desc:
-                    'Cadastre manualmente ou use o OCR para ler o nome da embalagem com a câmera.',
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.brandPrimary600,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.button)),
-                  ),
-                  child: const Text('Entendido'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
@@ -531,7 +479,7 @@ class _DbStatusSection extends StatelessWidget {
       error: (e, _) => _DbErrorCard(
         cs: cs,
         onManual: () => context
-            .push('${AppRoutes.productForm}?barcode=$barcode'),
+            .push(rotaComParametros(AppRoutes.productForm, {'barcode': barcode})),
       ),
       data: (product) => product != null
           ? _ProductFoundCard(product: product, cs: cs, isDark: isDark)
@@ -782,7 +730,7 @@ class _ProductFoundCard extends StatelessWidget {
                 AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
             child: OutlinedButton.icon(
               onPressed: () =>
-                  context.push('${AppRoutes.productForm}?id=${product.id}'),
+                  context.push(rotaComParametros(AppRoutes.productForm, {'id': product.id})),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 40),
                 side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
@@ -835,7 +783,7 @@ class _NewProductBadge extends StatelessWidget {
                     style: AppTypography.labelMedium.copyWith(
                         color: AppColors.warning600,
                         fontWeight: FontWeight.w700)),
-                Text('Pesquisando dados na internet...',
+                Text('Veja abaixo a pesquisa na internet ou cadastre manualmente.',
                     style: AppTypography.bodySmall
                         .copyWith(color: cs.onSurfaceVariant)),
               ],
@@ -907,11 +855,13 @@ class _WebSearchSection extends StatelessWidget {
   final ScannerState scanState;
   final String barcode;
   final ColorScheme cs;
+  final VoidCallback onRetry;
 
   const _WebSearchSection({
     required this.scanState,
     required this.barcode,
     required this.cs,
+    required this.onRetry,
   });
 
   @override
@@ -959,13 +909,13 @@ class _WebSearchSection extends StatelessWidget {
                 loading: () =>
                     _SearchingBody(step: scanState.searchStep, cs: cs),
                 error: (_, __) =>
-                    _WebErrorBody(barcode: barcode, cs: cs),
+                    _WebErrorBody(barcode: barcode, cs: cs, onRetry: onRetry),
                 data: (result) {
                   if (result == null) {
                     return _SearchingBody(step: scanState.searchStep, cs: cs);
                   }
                   if (!result.found) {
-                    return _NotFoundBody(barcode: barcode, cs: cs);
+                    return _NotFoundBody(barcode: barcode, cs: cs, onRetry: onRetry);
                   }
                   return _FoundBody(result: result, barcode: barcode, cs: cs);
                 },
@@ -1302,15 +1252,17 @@ class _FoundBody extends StatelessWidget {
                     _extractUnitFromName(result.name ?? '');
                 final isPerishable = _inferIsPerishable(result.category);
                 context.push(
-                  '${AppRoutes.productForm}?barcode=$barcode'
-                  '&name=${Uri.encodeComponent(result.name ?? '')}'
-                  '&brand=${Uri.encodeComponent(result.brand ?? '')}'
-                  '&category=${result.category ?? ''}'
-                  '&imageUrl=${Uri.encodeComponent(result.imageUrl ?? '')}'
-                  '&isPerishable=$isPerishable'
-                  '&unit=$unit'
-                  '&unitSize=$unitSize'
-                  '&desc=${Uri.encodeComponent(result.description ?? '')}',
+                  rotaComParametros(AppRoutes.productForm, {
+                    'barcode': barcode,
+                    'name': result.name ?? '',
+                    'brand': result.brand ?? '',
+                    'category': result.category ?? '',
+                    'imageUrl': result.imageUrl ?? '',
+                    'isPerishable': '$isPerishable',
+                    'unit': unit,
+                    'unitSize': unitSize,
+                    'desc': result.description ?? '',
+                  }),
                 );
               },
               icon: const Icon(Icons.check_rounded, size: 18),
@@ -1328,7 +1280,7 @@ class _FoundBody extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => context
-                  .push('${AppRoutes.productForm}?barcode=$barcode'),
+                  .push(rotaComParametros(AppRoutes.productForm, {'barcode': barcode})),
               icon: const Icon(Icons.edit_outlined, size: 15),
               label: const Text('Ignorar e cadastrar manualmente'),
               style: OutlinedButton.styleFrom(
@@ -1349,7 +1301,8 @@ class _FoundBody extends StatelessWidget {
 class _NotFoundBody extends StatefulWidget {
   final String barcode;
   final ColorScheme cs;
-  const _NotFoundBody({required this.barcode, required this.cs});
+  final VoidCallback onRetry;
+  const _NotFoundBody({required this.barcode, required this.cs, required this.onRetry});
 
   @override
   State<_NotFoundBody> createState() => _NotFoundBodyState();
@@ -1428,16 +1381,20 @@ class _NotFoundBodyState extends State<_NotFoundBody> {
             child: Row(
               children: [
                 Icon(Icons.search_off_rounded,
-                    size: 15, color: widget.cs.onSurfaceVariant),
-                const SizedBox(width: 6),
+                    size: 18, color: widget.cs.onSurfaceVariant),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Não encontrado em nenhuma base de dados',
-                    style: TextStyle(
+                    'Não encontrado nas bases públicas consultadas',
+                    style: AppTypography.bodyMedium.copyWith(
                         color: widget.cs.onSurfaceVariant,
-                        fontSize: 12,
                         fontWeight: FontWeight.w500),
                   ),
+                ),
+                TextButton(
+                  onPressed: widget.onRetry,
+                  style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                  child: const Text('Pesquisar de novo'),
                 ),
               ],
             ),
@@ -1480,7 +1437,7 @@ class _NotFoundBodyState extends State<_NotFoundBody> {
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: () => context.push(
-                  '${AppRoutes.productForm}?barcode=${widget.barcode}'),
+                  rotaComParametros(AppRoutes.productForm, {'barcode': widget.barcode})),
               icon: const Icon(Icons.inventory_2_outlined, size: 16),
               label: const Text('Cadastrar produto manualmente'),
               style: FilledButton.styleFrom(
@@ -1502,7 +1459,8 @@ class _NotFoundBodyState extends State<_NotFoundBody> {
 class _WebErrorBody extends StatelessWidget {
   final String barcode;
   final ColorScheme cs;
-  const _WebErrorBody({required this.barcode, required this.cs});
+  final VoidCallback onRetry;
+  const _WebErrorBody({required this.barcode, required this.cs, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -1513,21 +1471,34 @@ class _WebErrorBody extends StatelessWidget {
           const Icon(Icons.wifi_off_rounded,
               color: AppColors.warning600, size: 36),
           const SizedBox(height: AppSpacing.sm),
-          Text('Sem conexão com a internet',
-              style: AppTypography.labelMedium.copyWith(
-                  color: cs.onSurface, fontWeight: FontWeight.w700),
-              textAlign: TextAlign.center),
+          Semantics(
+            liveRegion: true,
+            child: Text('Consulta na internet indisponível',
+                style: AppTypography.labelLarge.copyWith(
+                    color: cs.onSurface, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center),
+          ),
           const SizedBox(height: AppSpacing.sm),
-          Text('Cadastre o produto manualmente.',
-              style: AppTypography.bodySmall.copyWith(
+          Text('Sem conexão ou as bases públicas não responderam. Isso não quer dizer que o produto não exista: tente de novo ou cadastre manualmente.',
+              style: AppTypography.bodyMedium.copyWith(
                   color: cs.onSurfaceVariant),
               textAlign: TextAlign.center),
           const SizedBox(height: AppSpacing.lg),
           SizedBox(
             width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Tentar novamente'),
+              style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            width: double.infinity,
             child: FilledButton.icon(
               onPressed: () => context
-                  .push('${AppRoutes.productForm}?barcode=$barcode'),
+                  .push(rotaComParametros(AppRoutes.productForm, {'barcode': barcode})),
               icon: const Icon(Icons.edit_rounded, size: 16),
               label: const Text('Cadastrar manualmente'),
               style: FilledButton.styleFrom(
@@ -2071,52 +2042,6 @@ class _Tag extends StatelessWidget {
                   fontWeight: FontWeight.w600)),
         ],
       ),
-    );
-  }
-}
-
-class _HelpItem extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String desc;
-  const _HelpItem(
-      {required this.icon,
-      required this.color,
-      required this.title,
-      required this.desc});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppRadius.small),
-          ),
-          child: Icon(icon, color: color, size: 18),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                  style: AppTypography.labelMedium
-                      .copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 2),
-              Text(desc,
-                  style: AppTypography.bodySmall
-                      .copyWith(color: cs.onSurfaceVariant)),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

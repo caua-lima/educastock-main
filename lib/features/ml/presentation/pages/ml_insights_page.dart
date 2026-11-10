@@ -523,11 +523,12 @@ class _RiskCardGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Celular: 2 colunas (eram 3, com letras de 9 px). Altura pela fonte em uso.
         final cross = constraints.maxWidth >= 900
             ? 5
             : constraints.maxWidth >= 620
                 ? 4
-                : 3;
+                : 2;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: GridView.builder(
@@ -535,9 +536,9 @@ class _RiskCardGrid extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: cross,
-              mainAxisSpacing: AppSpacing.xs,
-              crossAxisSpacing: AppSpacing.xs,
-              childAspectRatio: 0.78,
+              mainAxisSpacing: AppSpacing.sm,
+              crossAxisSpacing: AppSpacing.sm,
+              mainAxisExtent: alturaCartaoRisco(context),
             ),
             itemCount: predictions.length,
             itemBuilder: (_, i) {
@@ -565,16 +566,23 @@ class _GridSkeleton extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: box.maxWidth >= 900 ? 5 : (box.maxWidth >= 620 ? 4 : 3),
-          mainAxisSpacing: AppSpacing.xs,
-          crossAxisSpacing: AppSpacing.xs,
-          childAspectRatio: 0.78,
+          crossAxisCount: box.maxWidth >= 900 ? 5 : (box.maxWidth >= 620 ? 4 : 2),
+          mainAxisSpacing: AppSpacing.sm,
+          crossAxisSpacing: AppSpacing.sm,
+          mainAxisExtent: alturaCartaoRisco(context),
         ),
         itemCount: 6,
         itemBuilder: (_, __) => const CasaCardSkeleton(),
       )),
     );
   }
+}
+
+/// Altura do cartão de risco pela fonte em uso: cabeçalho + nome (2 linhas) +
+/// linha de estoque/validade + botão de saída (alvo de 40).
+double alturaCartaoRisco(BuildContext context) {
+  final s = MediaQuery.textScalerOf(context);
+  return 42 + 12 + s.scale(13) * 1.2 * 2 + 6 + s.scale(12) * 1.4 + 8 + 40 + 10;
 }
 
 // ─── Card individual ────────────────────────────────────────────────────────
@@ -724,7 +732,7 @@ class _RiskGridCard extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
-                          fontSize: 8.5,
+                          fontSize: 11,
                         ),
                       ),
                     ),
@@ -735,7 +743,7 @@ class _RiskGridCard extends StatelessWidget {
               // ── Corpo compacto ──────────────────────────────────────
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
+                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -747,8 +755,8 @@ class _RiskGridCard extends StatelessWidget {
                         style: AppTypography.labelMedium.copyWith(
                           color: cs.onSurface,
                           fontWeight: FontWeight.w800,
-                          fontSize: 10.5,
-                          height: 1.1,
+                          fontSize: 13,
+                          height: 1.2,
                         ),
                       ),
                       Column(
@@ -757,27 +765,27 @@ class _RiskGridCard extends StatelessWidget {
                           Row(
                             children: [
                               Icon(Icons.inventory_2_rounded,
-                                  size: 9, color: cs.onSurfaceVariant),
-                              const SizedBox(width: 2),
+                                  size: 13, color: cs.onSurfaceVariant),
+                              const SizedBox(width: 3),
                               Text(
                                 '$qty',
                                 style: AppTypography.labelSmall.copyWith(
                                   color: cs.onSurfaceVariant,
-                                  fontSize: 9,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              const SizedBox(width: 4),
-                              Icon(Icons.event_rounded, size: 9, color: accent),
-                              const SizedBox(width: 2),
+                              const SizedBox(width: 6),
+                              Icon(Icons.event_rounded, size: 13, color: cs.onSurfaceVariant),
+                              const SizedBox(width: 3),
                               Flexible(
                                 child: Text(
                                   expLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTypography.labelSmall.copyWith(
-                                    color: accent,
-                                    fontSize: 9,
+                                    color: cs.onSurface,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -796,10 +804,13 @@ class _RiskGridCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 3),
-                              _MiniIconButton(
-                                icon: Icons.more_horiz_rounded,
-                                color: cs.onSurfaceVariant,
-                                onTap: () => _openActionsSheet(context),
+                              Tooltip(
+                                message: 'Mais ações do lote',
+                                child: _MiniIconButton(
+                                  icon: Icons.more_horiz_rounded,
+                                  color: cs.onSurfaceVariant,
+                                  onTap: () => _openActionsSheet(context),
+                                ),
                               ),
                             ],
                           ),
@@ -937,22 +948,29 @@ class _MiniActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.small),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 5),
-          child: Row(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: SizedBox(
+           height: 40,
+           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: Colors.white, size: 10),
-              const SizedBox(width: 3),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 9,
+              Icon(icon, color: Colors.white, size: 16),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
+           ),
           ),
         ),
       ),
@@ -979,9 +997,10 @@ class _MiniIconButton extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.small),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Icon(icon, color: color, size: 12),
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(icon, color: color, size: 20),
         ),
       ),
     );
