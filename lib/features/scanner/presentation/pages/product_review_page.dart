@@ -1629,6 +1629,7 @@ class _BatchesSection extends ConsumerWidget {
                         cs: cs,
                         isDark: isDark,
                         productName: product.name,
+                        unidade: product.unit,
                       ),
                     )),
                 const SizedBox(height: AppSpacing.sm),
@@ -1662,12 +1663,14 @@ class _BatchesSection extends ConsumerWidget {
 class _ExistingBatchCard extends ConsumerStatefulWidget {
   final Batch batch;
   final String productName;
+  final String unidade;
   final ColorScheme cs;
   final bool isDark;
 
   const _ExistingBatchCard({
     required this.batch,
     required this.productName,
+    this.unidade = 'un',
     required this.cs,
     required this.isDark,
   });
@@ -1740,8 +1743,8 @@ class _ExistingBatchCardState extends ConsumerState<_ExistingBatchCard> {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   widget.batch.batchNumber != null
-                      ? 'Lote ${widget.batch.batchNumber} · ${widget.batch.quantity} unidades'
-                      : '${widget.batch.quantity} unidades em estoque',
+                      ? 'Lote ${widget.batch.batchNumber} · ${widget.batch.quantity} ${widget.unidade}'
+                      : '${widget.batch.quantity} ${widget.unidade} em estoque',
                   style: AppTypography.bodySmall
                       .copyWith(color: cs.onSurfaceVariant),
                 ),
@@ -1923,7 +1926,7 @@ class _ExistingBatchCardState extends ConsumerState<_ExistingBatchCard> {
                     const Icon(Icons.widgets_outlined,
                         size: 13, color: AppColors.brandPrimary600),
                     const SizedBox(width: 4),
-                    Text('${b.quantity} unidades',
+                    Text('${b.quantity} ${widget.unidade}',
                         style: AppTypography.labelMedium.copyWith(
                             color: widget.cs.onSurface,
                             fontWeight: FontWeight.w700)),

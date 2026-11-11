@@ -23,9 +23,9 @@ class GoogleSignInButton extends StatelessWidget {
     final borderColor =
         isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB);
 
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
+    // Altura mínima (não fixa): com fonte grande o texto pode ocupar duas linhas.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: double.infinity, minHeight: 52),
       child: Material(
         color: bg,
         elevation: 0,
@@ -48,6 +48,8 @@ class GoogleSignInButton extends StatelessWidget {
                       ),
                     ],
             ),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -67,13 +69,16 @@ class GoogleSignInButton extends StatelessWidget {
                     child: CustomPaint(painter: _GoogleGPainter()),
                   ),
                 const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                    letterSpacing: 0.1,
+                Flexible(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                      letterSpacing: 0.1,
+                    ),
                   ),
                 ),
               ],

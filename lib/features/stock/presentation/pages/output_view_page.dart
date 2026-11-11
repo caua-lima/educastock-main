@@ -325,7 +325,7 @@ class _OutputViewPageState extends State<OutputViewPage>
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        '${movements.length} item${movements.length != 1 ? 'ns' : ''} '
+                        '${movements.length} ${movements.length == 1 ? 'item' : 'itens'} '
                         '${isInbound ? 'nesta entrada' : isDiscard ? 'neste descarte' : 'nesta saída'}',
                         style: AppTypography.labelLarge.copyWith(
                           color: context.onCard,
@@ -1096,7 +1096,7 @@ class _FefoNotice extends StatelessWidget {
 
 // ─── Item card ───────────────────────────────────────────────────────────────
 
-class _ItemCard extends StatelessWidget {
+class _ItemCard extends ConsumerWidget {
   final Map<String, dynamic> movement;
   final int index;
   final bool isDark;
@@ -1120,12 +1120,17 @@ class _ItemCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final m = movement;
     final productName = m['productName'] as String? ?? '-';
-    // Número do lote da embalagem; saídas antigas só guardaram o identificador interno.
-    final numeroLote  = (m['batchNumber'] as String?)?.trim() ?? '';
-    final batchId     = numeroLote.isNotEmpty ? numeroLote : (m['batchId'] as String? ?? '-');
+    // Número do lote da embalagem. Movimentos antigos só guardaram o id do lote:
+    // busca o número no próprio lote e, sem ele, mostra o id.
+    final idLote      = m['batchId'] as String? ?? '';
+    var numeroLote    = (m['batchNumber'] as String?)?.trim() ?? '';
+    if (numeroLote.isEmpty && idLote.isNotEmpty) {
+      numeroLote = ref.watch(batchByIdProvider(idLote)).valueOrNull?.batchNumber?.trim() ?? '';
+    }
+    final batchId     = numeroLote.isNotEmpty ? numeroLote : (idLote.isEmpty ? '-' : idLote);
     final consumed    = (m['consumed']   as num?)?.toInt() ?? 0;
     final imageUrl    = m['imageUrl']    as String?;
     final unit        = m['unit']        as String? ?? 'un';

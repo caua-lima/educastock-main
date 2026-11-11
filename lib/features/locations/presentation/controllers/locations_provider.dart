@@ -4,7 +4,7 @@ import '../../domain/entities/storage_location.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 
 final locationsDatasourceProvider = Provider<LocationsRemoteDatasource>(
-  (ref) => LocationsRemoteDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => LocationsRemoteDatasource(db: bancoDaSessao(ref)),
 );
 
 final activeLocationsProvider = StreamProvider<List<StorageLocation>>((ref) {

@@ -123,7 +123,7 @@ class AlertsRemoteDatasource {
 // ---------- Providers ----------
 
 final alertsDatasourceProvider = Provider<AlertsRemoteDatasource>(
-  (ref) => AlertsRemoteDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => AlertsRemoteDatasource(db: bancoDaSessao(ref)),
 );
 
 final activeAlertsProvider = StreamProvider<List<StockAlert>>((ref) {
@@ -189,12 +189,14 @@ final alertCheckerServiceProvider = Provider<AlertCheckerService>((ref) {
 /// (administrador e estoquista).
 final alertsAutoCheckProvider = Provider<void>((ref) {
   final user = ref.watch(currentUserProvider);
-  final config = ref.watch(alertsConfigProvider).valueOrNull;
   final canGenerate = user != null &&
       user.isActive &&
       (user.role == UserRole.admin || user.role == UserRole.estoquista);
-  // Respeita a opção "alertas de validade" das configurações (expiryEnabled).
-  if (!canGenerate || config == null || !config.expiryEnabled) return;
+  if (!canGenerate) return;
+  // Só lê a configuração com alguém da equipe logado (antes disso a leitura falha por
+  // permissão). Respeita a opção "alertas de validade" (expiryEnabled).
+  final config = ref.watch(alertsConfigProvider).valueOrNull;
+  if (config == null || !config.expiryEnabled) return;
 
   Future<void> run() async {
     try {

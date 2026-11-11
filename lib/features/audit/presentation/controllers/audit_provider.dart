@@ -73,7 +73,7 @@ class AuditRemoteDatasource {
 // ---------- Providers ----------
 
 final auditDatasourceProvider = Provider<AuditRemoteDatasource>(
-  (ref) => AuditRemoteDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => AuditRemoteDatasource(db: bancoDaSessao(ref)),
 );
 
 final auditLogsProvider = StreamProvider<List<AuditEntry>>((ref) {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/design_system.dart';
+import '../../../products/presentation/controllers/products_provider.dart';
 import '../../domain/entities/consumption_forecast.dart';
 
 // ─── TrendChip ────────────────────────────────────────────────────────────────
@@ -102,7 +104,7 @@ class SourceBadge extends StatelessWidget {
 // ─── ForecastSuggestionCard ───────────────────────────────────────────────────
 
 /// Card compacto para o dashboard mostrando sugestão de reposição.
-class ForecastSuggestionCard extends StatelessWidget {
+class ForecastSuggestionCard extends ConsumerWidget {
   final ConsumptionForecast forecast;
   final VoidCallback? onTap;
 
@@ -125,7 +127,8 @@ class ForecastSuggestionCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unidade = ref.watch(unidadeDoProdutoProvider(forecast.productId));
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = _urgencyColor();
@@ -208,7 +211,7 @@ class ForecastSuggestionCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       daysLeft < 999
-                          ? 'Estoque p/ ~$daysLeft dias  •  Repor ${forecast.suggestedReplenishment} un.'
+                          ? 'Estoque p/ ~$daysLeft dias  •  Repor ${forecast.suggestedReplenishment} $unidade'
                           : 'Repor ${forecast.suggestedReplenishment} un.  •  Sem histórico',
                       style: AppTypography.bodyMedium.copyWith(
                         color: cs.onSurfaceVariant,
@@ -298,7 +301,7 @@ class _ForecastBar extends StatelessWidget {
 // ─── ForecastDetailCard ───────────────────────────────────────────────────────
 
 /// Card expandido para a página de previsão de consumo.
-class ForecastDetailCard extends StatelessWidget {
+class ForecastDetailCard extends ConsumerWidget {
   final ConsumptionForecast forecast;
   final VoidCallback? onTap;
 
@@ -309,7 +312,8 @@ class ForecastDetailCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unidade = ref.watch(unidadeDoProdutoProvider(forecast.productId));
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasCi = forecast.ciLower != null && forecast.ciUpper != null;
@@ -355,7 +359,7 @@ class ForecastDetailCard extends StatelessWidget {
                 _MetricCell(
                   label: 'Próx. 7 dias',
                   value: forecast.forecastWeekly.toStringAsFixed(1),
-                  unit: 'un.',
+                  unit: unidade,
                   color: AppColors.brandPrimary600,
                   sub: hasCi
                       ? '${forecast.ciLower!.toStringAsFixed(0)}–${forecast.ciUpper!.toStringAsFixed(0)}'
@@ -365,14 +369,14 @@ class ForecastDetailCard extends StatelessWidget {
                 _MetricCell(
                   label: 'Próx. 30 dias',
                   value: forecast.forecastMonthly.toStringAsFixed(1),
-                  unit: 'un.',
+                  unit: unidade,
                   color: AppColors.secondaryBlue600,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 _MetricCell(
                   label: 'Estoque atual',
                   value: '${forecast.currentStock}',
-                  unit: 'un.',
+                  unit: unidade,
                   color: forecast.isCriticalStock
                       ? AppColors.danger600
                       : forecast.isLowStock
@@ -401,7 +405,7 @@ class ForecastDetailCard extends StatelessWidget {
                     const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
-                        'Sugestão de reposição: ${forecast.suggestedReplenishment} un.',
+                        'Sugestão de reposição: ${forecast.suggestedReplenishment} $unidade',
                         style: AppTypography.labelMedium.copyWith(
                           color: AppColors.warning600,
                           fontWeight: FontWeight.w700,

@@ -11,7 +11,7 @@ import '../../../batches/domain/entities/batch.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 
 final stockDatasourceProvider = Provider<StockRemoteDatasource>((ref) {
-  return StockRemoteDatasource(db: ref.watch(firestoreProvider));
+  return StockRemoteDatasource(db: bancoDaSessao(ref));
 });
 
 final stockMovementsProvider = StreamProvider<List<StockMovement>>((ref) {

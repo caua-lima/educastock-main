@@ -9,6 +9,8 @@ import '../../../ml/domain/entities/risk_prediction.dart';
 import '../../../ml/presentation/controllers/risk_classifier_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../controllers/alerts_provider.dart';
+import '../../domain/mensagem_alerta.dart';
+import '../../../batches/presentation/controllers/batches_provider.dart';
 import '../../../../core/utils/friendly_error.dart';
 
 class AlertsPage extends ConsumerStatefulWidget {
@@ -833,6 +835,13 @@ class _ModernAlertCard extends ConsumerWidget {
     final color = _colorForLevel(alert.level);
     final icon = _iconForLevel(alert.level);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final idLote = alert.batchId;
+    final lote = idLote == null
+        ? null
+        : ref.watch(allAvailableBatchesProvider).valueOrNull
+            ?.where((b) => b.id == idLote)
+            .firstOrNull;
+    final mensagem = mensagemDoAlerta(alert, lote);
 
     return Dismissible(
       key: ValueKey('alert-${alert.id}'),
@@ -977,7 +986,7 @@ class _ModernAlertCard extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              alert.message,
+                              mensagem,
                               style: AppTypography.bodySmall.copyWith(
                                 color: cs.onSurfaceVariant,
                                 height: 1.3,

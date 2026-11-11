@@ -87,7 +87,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
             context.go(AppRoutes.otpVerification);
           } else {
             ref.read(pendingOtpProvider.notifier).state = false;
-            context.go(AppRoutes.dashboard);
+            context.go(destinoDepoisDoLogin(GoRouterState.of(context).uri) ?? AppRoutes.dashboard);
           }
         } else {
           showCasaSnackbar(context,
@@ -127,7 +127,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
             context.go(AppRoutes.otpVerification);
           } else {
             ref.read(pendingOtpProvider.notifier).state = false;
-            context.go(AppRoutes.dashboard);
+            context.go(destinoDepoisDoLogin(GoRouterState.of(context).uri) ?? AppRoutes.dashboard);
           }
         }
         if (user == null) {
@@ -230,7 +230,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             const SizedBox(height: 20),
                             // ── Título + subtítulo ──
                             Text(
-                              'Bem-vinda de volta',
+                              'Que bom ter você de volta',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 24,
@@ -336,16 +336,20 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                                           _rememberLogin =
                                                               v ?? true),
                                                 ),
-                                                Text(
-                                                  'Lembrar de mim',
-                                                  style: TextStyle(
-                                                    fontSize: 12.5,
-                                                    color: isDark
-                                                        ? Colors.white
-                                                            .withValues(
-                                                                alpha: 0.75)
-                                                        : const Color(0xFF475569),
-                                                    fontWeight: FontWeight.w500,
+                                                // Flexible: com fonte grande no celular
+                                                // o texto quebra em vez de estourar.
+                                                Flexible(
+                                                  child: Text(
+                                                    'Lembrar de mim',
+                                                    style: TextStyle(
+                                                      fontSize: 12.5,
+                                                      color: isDark
+                                                          ? Colors.white
+                                                              .withValues(
+                                                                  alpha: 0.75)
+                                                          : const Color(0xFF475569),
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -431,9 +435,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             ),
                             const SizedBox(height: 22),
 
-                            // ── Footer cadastro ──
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            // ── Footer cadastro ── (Wrap: quebra linha com fonte grande)
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
                                   'Ainda não tem conta?',

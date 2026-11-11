@@ -20,7 +20,7 @@ import '../../../../core/firebase/firebase_providers.dart';
 
 final riskClassificationRepoProvider =
     Provider<RiskClassificationFirestoreRepository>(
-  (ref) => RiskClassificationFirestoreRepository(db: ref.watch(firestoreProvider)),
+  (ref) => RiskClassificationFirestoreRepository(db: bancoDaSessao(ref)),
 );
 
 final _ruleFallbackProvider = Provider<RuleBasedRiskClassifier>(

@@ -5,7 +5,7 @@ import '../../domain/entities/stock_recipe.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 
 final recipesDatasourceProvider = Provider<RecipesRemoteDatasource>(
-  (ref) => RecipesRemoteDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => RecipesRemoteDatasource(db: bancoDaSessao(ref)),
 );
 
 final recipesProvider = StreamProvider<List<StockRecipe>>((ref) {

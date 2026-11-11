@@ -9,7 +9,7 @@ import '../../../stock/presentation/controllers/stock_provider.dart';
 import '../../../reports/presentation/controllers/reports_provider.dart';
 
 final batchesDatasourceProvider = Provider<BatchesRemoteDatasource>(
-  (ref) => BatchesRemoteDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => BatchesRemoteDatasource(db: bancoDaSessao(ref)),
 );
 
 final batchesByProductProvider =

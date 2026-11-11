@@ -132,7 +132,7 @@ class ScanHistoryRepository {
 }
 
 final scanHistoryRepositoryProvider = Provider<ScanHistoryRepository>(
-  (ref) => ScanHistoryRepository(db: ref.watch(firestoreProvider)),
+  (ref) => ScanHistoryRepository(db: bancoDaSessao(ref)),
 );
 
 /// Stream dos códigos recentes — usado para exibir os chips no modal.

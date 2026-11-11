@@ -32,7 +32,7 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
   static const _tabRoutes = [
     AppRoutes.dashboard,
     AppRoutes.productList,
-    '${AppRoutes.movement}?batchId=',
+    AppRoutes.movement,
     AppRoutes.history,
     AppRoutes.reports,
   ];

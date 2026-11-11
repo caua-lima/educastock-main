@@ -165,7 +165,7 @@ const Map<String, AjudaTela> _porRota = {
   ),
   AppRoutes.settings: AjudaTela(
     titulo: 'Configurações',
-    finalidade: 'Tema (claro, escuro ou do sistema), conta, usuárias, categorias e alertas.',
+    finalidade: 'Tema (claro, escuro ou do sistema), conta, usuários, categorias e alertas.',
     icone: Icons.settings_rounded,
     duvidas: [
       HelpFaq(pergunta: 'O que é o tema "Sistema"?', resposta: 'Segue o modo claro/escuro do aparelho e muda junto com ele.'),
@@ -173,7 +173,7 @@ const Map<String, AjudaTela> _porRota = {
     ],
   ),
   AppRoutes.usersManagement: AjudaTela(
-    titulo: 'Usuárias e acessos',
+    titulo: 'Usuários e acessos',
     finalidade: 'Quem usa o sistema, o perfil de acesso de cada pessoa e se a conta está ativa.',
     icone: Icons.group_rounded,
     duvidas: [

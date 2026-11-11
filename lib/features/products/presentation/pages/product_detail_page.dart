@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/design_system/design_system.dart';
+import '../../../../core/utils/texto_validade.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../batches/domain/entities/batch.dart';
@@ -118,7 +119,7 @@ class _DetailBody extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               _ForecastCard(
-                  productId: productId, isDark: isDark, cs: cs),
+                  productId: productId, unidade: product.unit, isDark: isDark, cs: cs),
               const SizedBox(height: AppSpacing.lg),
               KeyedSubtree(
                 key: _keyDetailBatches,
@@ -152,6 +153,7 @@ class _DetailBody extends ConsumerWidget {
                     padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: _BatchCard(
                       batch: b,
+                      unidade: product.unit,
                       isDark: isDark,
                       cs: cs,
                       onEdit: () => context.push(
@@ -205,10 +207,10 @@ class _DetailBody extends ConsumerWidget {
     final subtitle = isExpired
         ? 'Lote vencido — ação imediata'
         : isCritical
-            ? 'Vence em ${b.daysToExpiry} ${b.daysToExpiry == 1 ? "dia" : "dias"}'
+            ? textoValidade(b.daysToExpiry)
             : isWarning
-                ? 'Vence em ${b.daysToExpiry} dias'
-                : 'Lote · ${b.quantity} un';
+                ? textoValidade(b.daysToExpiry)
+                : 'Lote · ${b.quantity} ${product.unit}';
 
     await showCasaActionSheet(
       context: context,
@@ -1063,6 +1065,7 @@ class _DeleteConfirmDialog extends StatelessWidget {
 
 class _BatchCard extends StatelessWidget {
   final Batch batch;
+  final String unidade;
   final bool isDark;
   final ColorScheme cs;
   final VoidCallback onEdit;
@@ -1070,6 +1073,7 @@ class _BatchCard extends StatelessWidget {
   final VoidCallback? onActions;
   const _BatchCard({
     required this.batch,
+    this.unidade = 'un',
     required this.isDark,
     required this.cs,
     required this.onEdit,
@@ -1222,7 +1226,7 @@ class _BatchCard extends StatelessWidget {
                         Border.all(color: sc.withValues(alpha: 0.35)),
                   ),
                   child: Text(
-                    '${batch.quantity} un.',
+                    '${batch.quantity} $unidade',
                     style: TextStyle(
                         color: sc,
                         fontSize: 12.5,
@@ -1513,11 +1517,13 @@ class _InfoChip extends StatelessWidget {
 
 class _ForecastCard extends ConsumerWidget {
   final String productId;
+  final String unidade;
   final bool isDark;
   final ColorScheme cs;
 
   const _ForecastCard({
     required this.productId,
+    this.unidade = 'un',
     required this.isDark,
     required this.cs,
   });
@@ -1655,7 +1661,7 @@ class _ForecastCard extends ConsumerWidget {
                       const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: Text(
-                          'Sugestão de reposição: ${forecast.suggestedReplenishment} un.',
+                          'Sugestão de reposição: ${forecast.suggestedReplenishment} $unidade',
                           style: AppTypography.labelMedium.copyWith(
                             color: AppColors.warning600,
                             fontWeight: FontWeight.w800,

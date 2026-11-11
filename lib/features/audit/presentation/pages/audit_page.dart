@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../domain/texto_auditoria.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/export/export_launcher.dart';
 import '../../../../core/export/report_table.dart';
@@ -24,10 +25,10 @@ ReportTable _auditTable(List<Map<String, dynamic>> logs) {
     rows.add([
       date != null ? fmt.format(date) : '',
       date != null ? fmtTime.format(date) : '',
-      log['action'] as String? ?? '',
+      rotuloAcao(log['action'] as String? ?? ''),
       log['performedByName'] as String? ?? '',
-      log['before']?.toString() ?? '',
-      log['after']?.toString() ?? '',
+      descreverMapa(log['before']),
+      descreverMapa(log['after']),
     ]);
   }
   return ReportTable(
@@ -553,7 +554,7 @@ class _AuditLogTile extends StatelessWidget {
                   style: AppTypography.bodySmall
                       .copyWith(color: cs.onSurfaceVariant),
                 ),
-                if (log['before'] != null || log['after'] != null) ...[
+                if (descreverMudanca(log['before'], log['after']).isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -564,11 +565,10 @@ class _AuditLogTile extends StatelessWidget {
                           BorderRadius.circular(AppRadius.small),
                     ),
                     child: Text(
-                      'Antes: ${log['before']}  ›  Depois: ${log['after']}',
+                      descreverMudanca(log['before'], log['after']),
                       style: AppTypography.labelSmall.copyWith(
                         color: cs.onSurfaceVariant,
-                        fontFamily: 'monospace',
-                        fontSize: 10,
+                        fontSize: 11,
                       ),
                     ),
                   ),
@@ -582,14 +582,7 @@ class _AuditLogTile extends StatelessWidget {
     );
   }
 
-  String _actionLabel(String action) => switch (action) {
-        'entrada' => 'Entrada registrada',
-        'saida' => 'Saída registrada',
-        'ajustePositivo' => 'Ajuste positivo',
-        'ajusteNegativo' => 'Ajuste negativo',
-        'descarte' => 'Descarte registrado',
-        _ => 'Operação: $action',
-      };
+  String _actionLabel(String action) => rotuloAcao(action);
 
   IconData _actionIcon(String action) => switch (action) {
         'entrada' => Icons.add_circle_outline_rounded,

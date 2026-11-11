@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/design_system/design_system.dart';
+import '../../../../core/utils/texto_validade.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../batches/domain/entities/batch.dart';
@@ -1795,14 +1796,14 @@ class _ProductGridCard extends ConsumerWidget {
     } else if (batchData.daysToExpiry <= 7) {
       palette = CasaProductCard.paletteRed;
       expiryLabel = batchData.expiryDate != null
-          ? '${dateFmt.format(batchData.expiryDate!)} · ${batchData.daysToExpiry}d'
+          ? '${dateFmt.format(batchData.expiryDate!)} · ${diasCurtos(batchData.daysToExpiry)}'
           : 'CRÍTICO';
       expiryBadgeColor = const Color(0xFFFCA5A5);
       expiryBadgeIcon = Icons.warning_amber_rounded;
     } else if (batchData.daysToExpiry <= 30) {
       palette = CasaProductCard.paletteYellow;
       expiryLabel = batchData.expiryDate != null
-          ? '${dateFmt.format(batchData.expiryDate!)} · ${batchData.daysToExpiry}d'
+          ? '${dateFmt.format(batchData.expiryDate!)} · ${diasCurtos(batchData.daysToExpiry)}'
           : 'ATENÇÃO';
       expiryBadgeColor = const Color(0xFFFDE68A);
       expiryBadgeIcon = Icons.schedule_rounded;

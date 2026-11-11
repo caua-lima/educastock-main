@@ -24,7 +24,7 @@ class UsersManagementPage extends ConsumerWidget {
       return Scaffold(
         body: Column(children: [
         ModernProfileAppBar(
-          title: 'Gerenciar usuárias',
+          title: 'Gerenciar usuários',
           subtitle: 'Acesso restrito',
           pageIcon: Icons.lock_rounded,
           iconColor: const Color(0xFFEF4444),
@@ -37,7 +37,7 @@ class UsersManagementPage extends ConsumerWidget {
                 steps: [
                   TutorialStep(
                     key: _keyUserCard,
-                    title: 'Cartão de Usuária',
+                    title: 'Cartão de usuário',
                     description: 'Cada cartão representa uma pessoa cadastrada no sistema. Mostra avatar com inicial, nome, e-mail e um chip verde/vermelho indicando se está ativa ou inativa. O conteúdo é centralizado para fácil leitura.',
                     icon: Icons.badge_rounded,
                     align: ContentAlign.bottom,
@@ -91,7 +91,7 @@ class UsersManagementPage extends ConsumerWidget {
       backgroundColor: cs.surface,
       body: Column(children: [
       ModernProfileAppBar(
-        title: 'Gerenciar usuárias',
+        title: 'Gerenciar usuários',
         subtitle: 'Controle de perfis e acessos',
         pageIcon: Icons.manage_accounts_rounded,
         iconColor: const Color(0xFF22C55E),
@@ -188,7 +188,7 @@ class UsersManagementPage extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            user.isActive ? 'Ativa' : 'Inativa',
+                            user.isActive ? 'Ativo' : 'Inativo',
                             style: AppTypography.labelSmall.copyWith(
                               color: user.isActive
                                   ? AppColors.success600
@@ -234,7 +234,7 @@ class UsersManagementPage extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              'Permitir login desta usuária',
+                              'Permitir login',
                               style: AppTypography.bodyMedium,
                             ),
                           ),
@@ -278,7 +278,7 @@ class UsersManagementPage extends ConsumerWidget {
   static String _roleLabel(UserRole role) => switch (role) {
         UserRole.admin => 'Administrador',
         UserRole.estoquista => 'Estoquista',
-        UserRole.voluntario => 'Voluntario autorizado',
+        UserRole.voluntario => 'Voluntário autorizado',
         UserRole.consulta => 'Consulta',
         UserRole.doador => 'Doador',
       };

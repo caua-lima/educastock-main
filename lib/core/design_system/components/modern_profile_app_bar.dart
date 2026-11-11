@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/theme_mode_controller.dart';
+import '../../utils/texto_validade.dart';
 import '../../../core/router/app_router.dart';
 import '../../../features/batches/domain/entities/batch.dart';
 import '../../../features/batches/presentation/controllers/batches_provider.dart';
@@ -583,15 +584,7 @@ class _AlertBubble extends ConsumerWidget {
     return AppColors.success600;
   }
 
-  String _daysLabel(dynamic b) {
-    if (b.isExpired) {
-      final d = b.daysToExpiry as int;
-      return 'Vencido há ${(-d).abs()} dia${(-d).abs() == 1 ? '' : 's'}';
-    }
-    final d = b.daysToExpiry as int;
-    if (d == 0) return 'Vence hoje!';
-    return 'Vence em $d dia${d == 1 ? '' : 's'}';
-  }
+  String _daysLabel(dynamic b) => textoValidade(b.daysToExpiry as int);
 
   // ─── Sheet de ações do lote ────────────────────────────────────────────
   Future<void> _showBatchActions(

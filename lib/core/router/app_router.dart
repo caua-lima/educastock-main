@@ -125,13 +125,35 @@ abstract class AppRoutes {
 Widget _framed(Widget page, [double maxWidth = AppBreakpoints.formMaxWidth]) =>
     ResponsivePageFrame(maxWidth: maxWidth, child: page);
 
+/// Login guardando a tela pedida (?from=), para voltar a ela depois de entrar.
+String _loginVoltandoPara(Uri pedido) {
+  if (pedido.path == AppRoutes.login || pedido.path == '/') return AppRoutes.login;
+  return Uri(path: AppRoutes.login, queryParameters: {'from': pedido.toString()}).toString();
+}
+
+/// Tela guardada em ?from= (só caminhos internos do app; nunca o próprio login).
+String? destinoDepoisDoLogin(Uri atual) {
+  final from = atual.queryParameters['from'];
+  if (from == null || !from.startsWith('/') || from.startsWith('//')) return null;
+  final path = Uri.tryParse(from)?.path ?? '';
+  if (path == AppRoutes.login || path == AppRoutes.register || path == '/') return null;
+  return from;
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authStateProvider);
-  ref.watch(pendingOtpProvider);
+  // Um roteador só: quando o login muda, as regras abaixo são reavaliadas na tela
+  // atual. Recriar o GoRouter a cada mudança perdia a tela aberta: F5 ou um link
+  // direto (ex.: /recipes) voltavam para o painel.
+  final mudouLogin = ValueNotifier<int>(0);
+  ref.listen(authStateProvider, (_, __) => mudouLogin.value++);
+  ref.listen(pendingOtpProvider, (_, __) => mudouLogin.value++);
+  ref.onDispose(mudouLogin.dispose);
 
   return GoRouter(
     initialLocation: AppRoutes.login,
+    refreshListenable: mudouLogin,
     redirect: (context, state) {
+      final auth = ref.read(authStateProvider);
       if (auth.isLoading) return null;
 
       final user = auth.valueOrNull;
@@ -166,8 +188,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // If authenticated with pending OTP, force to OTP page
       if (isLoggedIn && pendingOtp) return AppRoutes.otpVerification;
 
-      if (!isLoggedIn && !isPublicRoute) return AppRoutes.login;
-      if (isLoggedIn && isPublicRoute) return homeForRole;
+      // Na web o Firebase avisa "ninguém logado" por um instante antes de restaurar a
+      // sessão: guardar a tela faz o F5 voltar para ela, e não para o painel.
+      if (!isLoggedIn && !isPublicRoute) return _loginVoltandoPara(state.uri);
+      if (isLoggedIn && isPublicRoute) return destinoDepoisDoLogin(state.uri) ?? homeForRole;
 
       // Isolamento por papel: doador só circula em /doador/*; a equipe não
       // entra na área do doador (RN-D13, achado F3).

@@ -233,6 +233,28 @@ class _Body extends ConsumerWidget {
                           '${fmt.format(window.from)} a ${fmt.format(window.to)}',
                           style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant),
                         ),
+                      // Doação ainda aberta com a janela de entrega vencida: a expiração
+                      // automática depende das Cloud Functions; aqui a equipe é avisada.
+                      if (window != null &&
+                          donation.status.isOpen &&
+                          DateUtils.dateOnly(window.to).isBefore(DateUtils.dateOnly(DateTime.now())))
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.xs),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.event_busy_rounded,
+                                  size: 16, color: AppColors.warning600),
+                              const SizedBox(width: AppSpacing.xs),
+                              Expanded(
+                                child: Text(
+                                  'A janela de entrega já passou. Combine uma nova data com o doador.',
+                                  style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.warning600, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),

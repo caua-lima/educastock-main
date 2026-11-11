@@ -16,6 +16,8 @@ import '../../../ml/presentation/widgets/forecast_widgets.dart';
 import '../../../reports/presentation/controllers/reports_provider.dart';
 import '../../domain/daily_movement_series.dart';
 import '../../../../core/utils/friendly_error.dart';
+import '../../../../core/utils/texto_validade.dart';
+import '../../../products/presentation/controllers/products_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../../../core/theme/theme_mode_controller.dart';
 
@@ -205,7 +207,7 @@ class DashboardPage extends ConsumerWidget {
                           label: 'Saída',
                           subtitle: 'Baixa de estoque',
                           color: AppColors.danger600,
-                          onTap: () => context.push('${AppRoutes.movement}?batchId='),
+                          onTap: () => context.push(AppRoutes.movement),
                         ),
                       ),
                       _AnimatedQuickAction(
@@ -885,13 +887,14 @@ class _AnimatedQuickAction extends StatelessWidget {
   }
 }
 
-class _AlertBatchTile extends StatelessWidget {
+class _AlertBatchTile extends ConsumerWidget {
   final dynamic batch;
   const _AlertBatchTile({required this.batch});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
+    final unidade = ref.watch(unidadeDoProdutoProvider(batch.productId as String));
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -919,7 +922,7 @@ class _AlertBatchTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  'Vence em ${batch.daysToExpiry} dia(s) • ${batch.quantity} ${batch.quantity == 1 ? 'un' : 'uns'}',
+                  '${textoValidade(batch.daysToExpiry as int)} • ${batch.quantity} $unidade',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.danger600,
                   ),
