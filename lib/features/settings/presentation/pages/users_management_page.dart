@@ -64,7 +64,7 @@ class UsersManagementPage extends ConsumerWidget {
                   TutorialStep(
                     key: _keyUserActive,
                     title: 'Ativar / Desativar',
-                    description: 'O switch permite bloquear o acesso da pessoa sem excluir o cadastro. Use para colaboradoras de férias, voluntárias temporárias ou quando alguém sair da ONG. O histórico fica preservado para auditoria.',
+                    description: 'O switch permite bloquear o acesso da pessoa sem excluir o cadastro. Use para quem está de férias, voluntários temporários ou quando alguém sair da ONG. O histórico fica preservado para auditoria.',
                     icon: Icons.toggle_on_rounded,
                     align: ContentAlign.top,
                     hints: const [
@@ -80,7 +80,7 @@ class UsersManagementPage extends ConsumerWidget {
           ],
         ),
         const Expanded(child: Center(
-          child: Text('Acesso restrito a administradoras.'),
+          child: Text('Acesso restrito a administradores.'),
         )),
         ]),
       );
@@ -130,6 +130,9 @@ class UsersManagementPage extends ConsumerWidget {
             itemBuilder: (_, i) {
               final user = users[i];
               final cs = Theme.of(context).colorScheme;
+              // A própria conta não muda de perfil nem perde o login por aqui: um toque
+              // errado tiraria o acesso de administrador na hora (e pode não haver outro).
+              final ehVoce = user.id == ref.read(usuarioRealProvider)?.id;
               final card = Container(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
@@ -167,7 +170,7 @@ class UsersManagementPage extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(user.name,
+                              Text(ehVoce ? '${user.name} (você)' : user.name,
                                   style: AppTypography.labelLarge.copyWith(
                                       color: cs.onSurface)),
                               Text(user.email,
@@ -219,7 +222,7 @@ class UsersManagementPage extends ConsumerWidget {
                               ),
                             )
                             .toList(),
-                        onChanged: (newRole) async {
+                        onChanged: ehVoce ? null : (newRole) async {
                           if (newRole == null) return;
                           await ref
                               .read(userManagementNotifierProvider.notifier)
@@ -240,7 +243,7 @@ class UsersManagementPage extends ConsumerWidget {
                           ),
                           Switch(
                             value: user.isActive,
-                            onChanged: (v) async {
+                            onChanged: ehVoce ? null : (v) async {
                               await ref
                                   .read(userManagementNotifierProvider.notifier)
                                   .setActive(userId: user.id, isActive: v);
@@ -249,6 +252,11 @@ class UsersManagementPage extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    if (ehVoce)
+                      Text(
+                        'Esta é a sua conta: o perfil e o login dela só mudam por outro administrador.',
+                        style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant),
+                      ),
                   ],
                 ),
               );
@@ -266,7 +274,7 @@ class UsersManagementPage extends ConsumerWidget {
           ),
           error: (e, _) => CasaEmptyState(
             icon: Icons.error_outline_rounded,
-            title: 'Erro ao carregar usuarias',
+            title: 'Erro ao carregar os usuários',
             description: friendlyLoadError(e),
           ),
         ),

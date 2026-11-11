@@ -240,7 +240,7 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
-                        '${d.donorSnapshot.displayName} · ${d.totalUnits} unidades prometidas',
+                        '${d.donorSnapshot.displayName} · ${d.resumoQuantidade}',
                         style: AppTypography.bodyMedium.copyWith(
                           color: cs.onSurface,
                           fontWeight: FontWeight.w600,

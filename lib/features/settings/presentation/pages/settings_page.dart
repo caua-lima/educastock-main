@@ -5,6 +5,8 @@ import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/theme_mode_controller.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../widgets/escolha_visao_perfil.dart';
 import '../../../auth/presentation/utils/auth_error_mapper.dart';
 import '../../../auth/data/datasources/auth_remote_datasource.dart';
 
@@ -120,7 +122,7 @@ class SettingsPage extends ConsumerWidget {
                           if (next != confirm) {
                             showCasaSnackbar(
                               context,
-                              message: 'As senhas nao conferem.',
+                              message: 'As senhas não conferem.',
                               isError: true,
                             );
                             return;
@@ -148,7 +150,7 @@ class SettingsPage extends ConsumerWidget {
                                 context,
                                 message: mapAuthError(
                                   error,
-                                  fallback: 'Nao foi possivel trocar a senha.',
+                                  fallback: 'Não foi possível trocar a senha.',
                                 ),
                                 isError: true,
                               );
@@ -179,6 +181,12 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final themeMode = ref.watch(themeModeProvider);
+    // Itens conforme o papel (o mesmo que as regras do banco permitem). Com a visão de
+    // outro perfil ativa, vale o papel da visão.
+    final papel = user?.role;
+    final ehAdmin = papel == UserRole.admin;
+    final ehOps = ehAdmin || papel == UserRole.estoquista;
+    final adminDeVerdade = ref.watch(usuarioRealProvider)?.role == UserRole.admin;
 
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
@@ -200,13 +208,13 @@ class SettingsPage extends ConsumerWidget {
                 TutorialStep(
                   key: _keySettingsUsers,
                   title: 'Gerenciar Usuários',
-                  description: 'Toque para acessar a tela de gerenciamento de colaboradoras: cadastrar novas pessoas, definir o perfil (Admin/Estoquista/Voluntária/Consulta), ativar ou desativar acessos. Apenas administradoras enxergam essa opção.',
+                  description: 'Toque para gerenciar a equipe: cadastrar pessoas, definir o perfil (Administrador/Estoquista/Voluntário/Consulta), ativar ou desativar acessos. Só administradores veem esta opção.',
                   icon: Icons.manage_accounts_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
                     'Admin: acesso total — cria, edita, exclui',
                     'Estoquista: opera o dia-a-dia (cadastro + saída)',
-                    'Voluntária: ações básicas (entrada + consulta)',
+                    'Voluntário: ações básicas (entrada + consulta)',
                     'Consulta: apenas leitura (relatórios)',
                   ],
                 ),
@@ -233,7 +241,7 @@ class SettingsPage extends ConsumerWidget {
                     'Mínimo 6 caracteres (recomendado 8+)',
                     'Nunca compartilhe sua senha',
                     'Troque a cada 3-6 meses',
-                    'Esqueceu? Peça reset à administradora',
+                    'Esqueceu? Peça a um administrador para redefinir',
                   ],
                 ),
               ],
@@ -303,8 +311,20 @@ class SettingsPage extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
 
+            if (adminDeVerdade) ...[
+              const CasaSectionHeader(title: 'Apresentação'),
+              const SizedBox(height: AppSpacing.sm),
+              _SettingsTile(
+                icon: Icons.visibility_rounded,
+                label: 'Ver o app como outro perfil',
+                onTap: () => abrirEscolhaDeVisao(context, ref),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+            if (ehOps) ...[
             const CasaSectionHeader(title: 'Sistema'),
             const SizedBox(height: AppSpacing.sm),
+            if (ehAdmin)
             KeyedSubtree(
               key: _keySettingsUsers,
               child: _SettingsTile(
@@ -313,6 +333,7 @@ class SettingsPage extends ConsumerWidget {
                 onTap: () => context.push(AppRoutes.usersManagement),
               ),
             ),
+            if (ehAdmin)
             _SettingsTile(
               icon: Icons.category_outlined,
               label: 'Categorias',
@@ -323,20 +344,24 @@ class SettingsPage extends ConsumerWidget {
               label: 'Localizações / Prateleiras',
               onTap: () => context.push(AppRoutes.locations),
             ),
+            if (ehAdmin)
             _SettingsTile(
               icon: Icons.notifications_outlined,
               label: 'Configurações de Alertas',
               onTap: () => context.push(AppRoutes.alertsSettings),
             ),
+            if (ehAdmin)
             _SettingsTile(
               icon: Icons.approval_outlined,
               label: 'Aprovações de Ajuste',
               onTap: () => context.push(AppRoutes.adjustmentApprovals),
             ),
             const SizedBox(height: AppSpacing.lg),
+            ],
 
             const CasaSectionHeader(title: 'Dados'),
             const SizedBox(height: AppSpacing.sm),
+            if (ehOps)
             _SettingsTile(
               icon: Icons.history_rounded,
               label: 'Auditoria',

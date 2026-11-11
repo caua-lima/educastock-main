@@ -638,7 +638,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                   icon: Icons.filter_alt_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
-                    'Busca: nome do produto ou da colaboradora',
+                    'Busca: nome do produto ou de quem registrou',
                     'Chips de motivo: vencimento, avaria, doação, uso',
                     'Período: hoje, semana, mês, customizado',
                     'Filtros combinam — use vários ao mesmo tempo',
@@ -647,7 +647,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                 TutorialStep(
                   key: _keyHistoryList,
                   title: 'Registro de Movimentações',
-                  description: 'Lista cronológica (mais recente primeiro) de todas as saídas e descartes. Cada cartão mostra produto, quantidade, motivo colorido, colaboradora responsável e horário. Toque para ver detalhes completos da movimentação.',
+                  description: 'Lista cronológica (mais recente primeiro) de todas as saídas e descartes. Cada cartão mostra produto, quantidade, motivo colorido, quem registrou e horário. Toque para ver detalhes completos da movimentação.',
                   icon: Icons.history_rounded,
                   align: ContentAlign.top,
                   hints: const [

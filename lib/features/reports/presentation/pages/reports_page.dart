@@ -4597,10 +4597,10 @@ class _ForecastReportTab extends ConsumerWidget {
                 color: AppColors.secondaryBlue600,
                 onTap: hasForecast
                     ? () => showCasaSnackbar(context,
-                        message: 'Execute o notebook: scripts/ml/consumption_forecast.ipynb',
+                        message: 'As previsões vêm do modelo Prophet, treinado no notebook de ML do projeto (Google Colab).',
                         isSuccess: true)
                     : () => showCasaSnackbar(context,
-                        message: 'Abra scripts/ml/consumption_forecast.ipynb no Google Colab para gerar previsões.',
+                        message: 'Ainda não há previsões: a equipe técnica gera pelo notebook de ML do projeto (Google Colab).',
                         isSuccess: false),
               ),
             ),

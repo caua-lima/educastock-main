@@ -188,7 +188,8 @@ final alertCheckerServiceProvider = Provider<AlertCheckerService>((ref) {
 /// abrir a tela de alertas. Só roda para quem tem permissão de escrita em `alerts`
 /// (administrador e estoquista).
 final alertsAutoCheckProvider = Provider<void>((ref) {
-  final user = ref.watch(currentUserProvider);
+  // Conta real: a verificação segue rodando mesmo com a visão de outro perfil ativa.
+  final user = ref.watch(usuarioRealProvider);
   final canGenerate = user != null &&
       user.isActive &&
       (user.role == UserRole.admin || user.role == UserRole.estoquista);

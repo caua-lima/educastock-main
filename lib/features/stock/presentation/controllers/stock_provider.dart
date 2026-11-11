@@ -43,7 +43,7 @@ class StockNotifier extends AsyncNotifier<void> {
     String? nextStatusOverride,
   }) async {
     final user = ref.read(currentUserProvider);
-    if (user == null) throw Exception('Usuario nao autenticado');
+    if (user == null) throw Exception('Sessão expirada. Entre de novo.');
     final ds = ref.read(stockDatasourceProvider);
     final newQuantity = type == MovementType.entrada || type == MovementType.ajustePositivo
         ? previousQuantity + quantity

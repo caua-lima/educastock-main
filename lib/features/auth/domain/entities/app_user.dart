@@ -21,10 +21,10 @@ class AppUser {
     this.twoFactorEnabled = false,
   });
 
-  bool get canEdit =>
-      role == UserRole.admin ||
-      role == UserRole.estoquista ||
-      role == UserRole.voluntario;
+  /// Grava no estoque (entradas, saídas, lotes, produtos, receitas, localizações):
+  /// administrador e estoquista, a mesma regra do banco (canWrite). Voluntário e consulta
+  /// só leem.
+  bool get canEdit => role == UserRole.admin || role == UserRole.estoquista;
 
   /// Doador é ator externo: não opera o estoque (RN-D13).
   bool get isDonor => role == UserRole.doador;

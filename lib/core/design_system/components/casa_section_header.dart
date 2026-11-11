@@ -66,53 +66,60 @@ class CasaSectionHeader extends StatelessWidget {
             Icon(icon, size: 18, color: accent),
             const SizedBox(width: 6),
           ],
-          // ── Título
-          Flexible(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.productName(
-                size: 17,
-                weight: FontWeight.w900,
-                color: cs.onSurface,
-                letterSpacing: -0.4,
-              ),
+          // ── Título e contagem ocupam o espaço livre: a ação fica sempre na ponta.
+          // (Um Flexible com um Spacer dividia a sobra ao meio e a ação parava no meio
+          // da linha em telas largas.)
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.productName(
+                      size: 17,
+                      weight: FontWeight.w900,
+                      color: cs.onSurface,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ),
+                // ── Badge de contagem
+                if (count != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          accent.withValues(alpha: isDark ? 0.30 : 0.16),
+                          accent.withValues(alpha: isDark ? 0.18 : 0.10),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(
+                        color: accent.withValues(alpha: 0.30),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: AppTypography.productName(
+                        size: 12,
+                        weight: FontWeight.w900,
+                        color: accent,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          // ── Badge de contagem
-          if (count != null) ...[
-            const SizedBox(width: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 9,
-                vertical: 3,
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    accent.withValues(alpha: isDark ? 0.30 : 0.16),
-                    accent.withValues(alpha: isDark ? 0.18 : 0.10),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                border: Border.all(
-                  color: accent.withValues(alpha: 0.30),
-                  width: 1,
-                ),
-              ),
-              child: Text(
-                '$count',
-                style: AppTypography.productName(
-                  size: 12,
-                  weight: FontWeight.w900,
-                  color: accent,
-                  letterSpacing: 0,
-                ),
-              ),
-            ),
-          ],
-          const Spacer(),
           // ── Ação pill
           if (action != null)
             Material(

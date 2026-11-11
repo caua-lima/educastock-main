@@ -153,6 +153,21 @@ class Donation {
 
   int get totalUnits => items.fold(0, (total, item) => total + item.quantity);
 
+  /// Quantidade para os resumos: "134 unidades", "16 kg"… quando todos os itens têm a
+  /// mesma unidade; senão, quantos itens ("2 itens"). Somar quilos com unidades daria um
+  /// número sem sentido.
+  String get resumoQuantidade {
+    if (items.isEmpty) return '0 itens';
+    final unidades = items.map((i) => i.unit.trim().toLowerCase()).toSet();
+    if (unidades.length > 1) return '${items.length} itens';
+    final u = items.first.unit.trim();
+    final total = totalUnits;
+    if (u.isEmpty || const {'un', 'un.', 'unid', 'unidade', 'unidades'}.contains(u.toLowerCase())) {
+      return '$total ${total == 1 ? 'unidade' : 'unidades'}';
+    }
+    return '$total $u';
+  }
+
   String get displayProtocol => protocol.isEmpty ? 'Gerando protocolo…' : protocol;
 
   factory Donation.fromMap(Map<String, dynamic> map, String id) {

@@ -157,7 +157,14 @@ class _DonationTile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    Flexible(child: DonationStatusChip(status: donation.status)),
+                    // Align: o selo fica na ponta direita (sem ele, o Flexible dividia a
+                    // linha ao meio com o protocolo e o selo parava no meio do cartão).
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: DonationStatusChip(status: donation.status),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -170,7 +177,7 @@ class _DonationTile extends StatelessWidget {
                   ),
                 Text(
                   [
-                    '${donation.totalUnits} unidades',
+                    donation.resumoQuantidade,
                     if (created != null) DateFormat('dd/MM/yyyy').format(created),
                   ].join(' · '),
                   style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant),

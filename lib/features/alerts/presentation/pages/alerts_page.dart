@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
+import '../../../auth/domain/entities/app_user.dart';
 import '../../../ml/domain/entities/risk_prediction.dart';
 import '../../../ml/presentation/controllers/risk_classifier_provider.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
@@ -334,6 +335,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
                           alert: filtered[i],
                           cs: cs,
                           onOpenActions: () => _showActionsSheet(filtered[i]),
+                          podeExcluir: user?.role == UserRole.admin,
                         );
                         if (i == 0) {
                           return KeyedSubtree(key: _keyAlertCard, child: card);
@@ -351,7 +353,10 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
         ),
       ),
       ]),
-      floatingActionButton: FloatingActionButton.extended(
+      // Alerta manual grava no banco: só administrador e estoquista.
+      floatingActionButton: !(user?.canEdit ?? false)
+          ? null
+          : FloatingActionButton.extended(
         onPressed: () => _showCreateAlertSheet(context),
         icon: const Icon(Icons.add_alert_rounded),
         label: const Text('Alerta manual'),
@@ -367,9 +372,12 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
     final hasBatch = alert.batchId != null && alert.batchId!.isNotEmpty;
     final isCritical = alert.level == AlertLevel.critical;
 
+    final user = ref.read(currentUserProvider);
+    final podeGravar = user?.canEdit ?? false;
+    final ehAdmin = user?.role == UserRole.admin;
     final actions = <CasaSheetItem>[
       // Ação primária: distribuir/descartar (quando há lote)
-      if (hasBatch)
+      if (hasBatch && podeGravar)
         CasaSheetItem(
           icon: Icons.output_rounded,
           label: isCritical ? 'Registrar descarte' : 'Distribuir lote',
@@ -393,7 +401,8 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
           color: AppColors.brandPrimary600,
           onTap: () => context.push('/products/${alert.productId}'),
         ),
-      // Excluir (destrutivo)
+      // Excluir (destrutivo): só administrador, como nas regras do banco.
+      if (ehAdmin)
       CasaSheetItem(
         icon: Icons.delete_outline_rounded,
         label: 'Excluir alerta',
@@ -805,8 +814,9 @@ class _HeaderFilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
+            // "Todos" selecionado tem fundo branco: o texto fica escuro para ser lido.
             color: selected
-                ? Colors.white
+                ? (color.computeLuminance() > 0.5 ? const Color(0xFF0F2747) : Colors.white)
                 : Colors.white.withValues(alpha: 0.85),
           ),
         ),
@@ -823,11 +833,13 @@ class _ModernAlertCard extends ConsumerWidget {
   final StockAlert alert;
   final ColorScheme cs;
   final VoidCallback onOpenActions;
+  final bool podeExcluir;
 
   const _ModernAlertCard({
     required this.alert,
     required this.cs,
     required this.onOpenActions,
+    this.podeExcluir = false,
   });
 
   @override
@@ -845,8 +857,8 @@ class _ModernAlertCard extends ConsumerWidget {
 
     return Dismissible(
       key: ValueKey('alert-${alert.id}'),
-      // Só permite arrastar da direita para esquerda = excluir
-      direction: DismissDirection.endToStart,
+      // Arrastar da direita para a esquerda exclui (só administrador).
+      direction: podeExcluir ? DismissDirection.endToStart : DismissDirection.none,
       background: _SwipeBg(
         align: Alignment.centerRight,
         color: AppColors.danger600,

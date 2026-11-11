@@ -19,6 +19,7 @@ import '../../features/products/presentation/pages/product_form_page.dart';
 import '../../features/batches/presentation/pages/batch_form_page.dart';
 import '../../features/stock/presentation/pages/movement_page.dart';
 import '../../features/stock/presentation/pages/adjustment_approvals_page.dart';
+import 'so_quem_grava.dart';
 import '../../features/alerts/presentation/pages/alerts_page.dart';
 import '../../features/audit/presentation/pages/audit_page.dart';
 import '../../features/reports/presentation/pages/reports_page.dart' deferred as reports;
@@ -147,6 +148,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   final mudouLogin = ValueNotifier<int>(0);
   ref.listen(authStateProvider, (_, __) => mudouLogin.value++);
   ref.listen(pendingOtpProvider, (_, __) => mudouLogin.value++);
+  // Visão de outro perfil (administrador): as regras abaixo passam a valer para o papel
+  // escolhido; entrar na visão de doador leva ao portal e sair dela volta ao painel.
+  // Escuta o usuário efetivo (e não a visão): ele só avisa depois de recalculado, então
+  // as regras já leem o papel novo.
+  ref.listen(currentUserProvider, (_, __) => mudouLogin.value++);
   ref.onDispose(mudouLogin.dispose);
 
   return GoRouter(
@@ -156,7 +162,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final auth = ref.read(authStateProvider);
       if (auth.isLoading) return null;
 
-      final user = auth.valueOrNull;
+      final user = auth.valueOrNull == null ? null : ref.read(currentUserProvider);
       final isLoggedIn = user != null;
       final isDonor = user?.isDonor ?? false;
       final location = state.matchedLocation;
@@ -257,7 +263,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           final prefillUnit = state.uri.queryParameters['unit'];
           final prefillUnitSize = state.uri.queryParameters['unitSize'];
           final prefillDescription = state.uri.queryParameters['desc'];
-          return _framed(ProductFormPage(
+          return _framed(SoQuemGrava(titulo: 'Produto', child: ProductFormPage(
             productId: productId,
             barcode: barcode,
             prefillName: prefillName,
@@ -268,7 +274,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             prefillUnit: prefillUnit,
             prefillUnitSize: prefillUnitSize,
             prefillDescription: prefillDescription,
-          ));
+          )));
         },
       ),
       GoRoute(
@@ -276,7 +282,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final productId = state.uri.queryParameters['productId'] ?? '';
           final batchId = state.uri.queryParameters['id'] ?? '';
-          return _framed(BatchFormPage(productId: productId, batchId: batchId));
+          return _framed(SoQuemGrava(
+              titulo: 'Cadastrar lote',
+              child: BatchFormPage(productId: productId, batchId: batchId)));
         },
       ),
       // Formulário de doação (D06–D07): tela cheia, fora de qualquer shell.
@@ -325,10 +333,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               final batchId = state.uri.queryParameters['batchId'] ?? '';
               final productId = state.uri.queryParameters['productId'];
               final reason = state.uri.queryParameters['reason'];
-              return MovementPage(
-                batchId: batchId,
-                prefillProductId: productId,
-                prefillReason: reason,
+              return SoQuemGrava(
+                titulo: 'Saída',
+                child: MovementPage(
+                  batchId: batchId,
+                  prefillProductId: productId,
+                  prefillReason: reason,
+                ),
               );
             },
           ),
@@ -362,7 +373,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.locationCreate,
-            builder: (_, __) => _framed(const LocationCreatePage()),
+            builder: (_, __) => _framed(const SoQuemGrava(
+                titulo: 'Nova localização', child: LocationCreatePage())),
           ),
           GoRoute(
             path: AppRoutes.usersManagement,
@@ -400,7 +412,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.recipeCreate,
             builder: (context, state) {
               final recipe = state.extra as StockRecipe?;
-              return _framed(RecipeCreatePage(editRecipe: recipe));
+              return _framed(SoQuemGrava(
+                  titulo: 'Receita', child: RecipeCreatePage(editRecipe: recipe)));
             },
           ),
           GoRoute(

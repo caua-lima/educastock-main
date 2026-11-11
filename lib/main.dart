@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'features/auth/presentation/widgets/faixa_visao_perfil.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/router/app_router.dart';
@@ -15,6 +16,7 @@ import 'core/offline/offline_sync_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_controller.dart';
 import 'features/alerts/presentation/controllers/alerts_provider.dart';
+import 'features/auth/presentation/controllers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -144,10 +146,34 @@ class EducaStockApp extends ConsumerWidget {
         maxScaleFactor: 2.0,
         child: Column(
           children: [
+            const FaixaVisaoPerfil(),
             const OfflineBanner(),
-            Expanded(child: child ?? const SizedBox.shrink()),
+            Expanded(child: _EsperaASessao(child: child ?? const SizedBox.shrink())),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Enquanto o Firebase restaura a sessão (F5, link direto), nenhuma tela abre. Aberta sem
+/// saber quem entrou, a tela mostra por um instante o menu errado e pede dados ao banco
+/// sem login: o banco responde "sem permissão" e esses pedidos não se refazem depois do
+/// login (os contadores de alertas ficavam zerados até o F5).
+class _EsperaASessao extends ConsumerWidget {
+  final Widget child;
+
+  const _EsperaASessao({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final carregando =
+        ref.watch(authStateProvider.select((a) => a.isLoading && !a.hasValue));
+    if (!carregando) return child;
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surface,
+      child: const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Carregando'),
       ),
     );
   }

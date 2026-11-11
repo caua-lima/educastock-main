@@ -85,6 +85,7 @@ class CancelDonationNotifier extends AsyncNotifier<void> {
   Future<void> cancel(String donationId) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      if (ref.read(emVisaoDoadorProvider)) throw const AcaoBloqueadaNaVisao();
       await ref.read(donationsDatasourceProvider).cancel(donationId);
     });
   }

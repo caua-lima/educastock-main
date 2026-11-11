@@ -98,7 +98,7 @@ class AdjustmentApprovalsPage extends ConsumerWidget {
                 TutorialStep(
                   key: _keyReasonBox,
                   title: 'Motivo da Solicitação',
-                  description: 'A caixa cinza mostra o motivo informado pela colaboradora ao solicitar o ajuste. LEIA COM ATENÇÃO antes de decidir — motivos comuns incluem: avaria, validade, doação não registrada, erro de digitação, conferência de inventário.',
+                  description: 'A caixa cinza mostra o motivo informado por quem pediu o ajuste. LEIA COM ATENÇÃO antes de decidir — motivos comuns incluem: avaria, validade, doação não registrada, erro de digitação, conferência de inventário.',
                   icon: Icons.notes_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
@@ -124,12 +124,12 @@ class AdjustmentApprovalsPage extends ConsumerWidget {
                 TutorialStep(
                   key: _keyRejectBtn,
                   title: 'Rejeitar Ajuste',
-                  description: 'O botão "Rejeitar" cancela a solicitação sem alterar o estoque. A colaboradora é notificada e pode fazer nova solicitação com mais detalhes. Use quando o motivo não estiver claro ou a quantidade parecer suspeita.',
+                  description: 'O botão "Rejeitar" cancela a solicitação sem alterar o estoque. Quem pediu é avisado e pode fazer nova solicitação com mais detalhes. Use quando o motivo não estiver claro ou a quantidade parecer suspeita.',
                   icon: Icons.cancel_rounded,
                   align: ContentAlign.top,
                   hints: const [
                     'Rejeitar NÃO afeta o estoque (continua original)',
-                    'A colaboradora pode reabrir a solicitação melhorada',
+                    'Quem pediu pode fazer uma nova solicitação mais detalhada',
                     'Em casos suspeitos, abra um diálogo antes',
                     'Sempre aprovado/rejeitado fica em auditoria',
                   ],
