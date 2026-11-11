@@ -946,10 +946,36 @@
     // ─────────────────────────────────────────────────────────────────────────
   }
 
-  // Inicia o Flutter imediatamente e carrega o ZXing em paralelo (sem bloquear o app).
-  var _flutterScript = document.createElement('script');
-  _flutterScript.src = 'flutter_bootstrap.js';
-  document.body.appendChild(_flutterScript);
+  // Inicia o Flutter (o ZXing carrega à parte, sem bloquear o app). Antes, confere com o
+  // servidor as fontes de ícones: um navegador que abriu uma versão anterior pode ter
+  // guardado a fonte antiga (o site mandava guardá-la por 24 h) e os ícones novos
+  // apareceriam vazios. A conferência é rápida (304 quando nada mudou) e tem limite de
+  // tempo para nunca atrasar a abertura.
+  (function () {
+    var aberto = false;
+    function abrirFlutter() {
+      if (aberto) return;
+      aberto = true;
+      var s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js';
+      document.body.appendChild(s);
+    }
+    try {
+      var arquivos = [
+        'assets/FontManifest.json',
+        'assets/fonts/MaterialIcons-Regular.otf',
+        'assets/packages/cupertino_icons/assets/CupertinoIcons.ttf'
+      ];
+      Promise.all(arquivos.map(function (a) {
+        return fetch(a, { cache: 'no-cache' })
+          .then(function (r) { return r.arrayBuffer(); })
+          .catch(function () {});
+      })).then(abrirFlutter, abrirFlutter);
+      setTimeout(abrirFlutter, 2500);
+    } catch (_) {
+      abrirFlutter();
+    }
+  })();
 
   // ZXing sob demanda: só quando o scanner abre (antes era baixado em toda abertura do app).
   // Versão fixa. O script usa o MESMO id do leitor do mobile_scanner: ele vê que já existe e

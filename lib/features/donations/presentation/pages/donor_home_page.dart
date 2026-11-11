@@ -11,20 +11,28 @@ import '../widgets/donation_status_chip.dart';
 import '../widgets/donor_header.dart';
 import '../widgets/email_verification_banner.dart';
 import '../../domain/entities/donation.dart';
+import '../../domain/entities/donor_profile.dart';
 import '../widgets/need_card.dart';
+
+/// Nome na saudação do portal: o primeiro nome da pessoa ("Olá, Luciana") ou, para
+/// empresa, o nome sem "Ltda", "S.A."… ("Olá, Supermercado Boa Compra").
+String nomeNaSaudacao(String? nomePerfil, String? nomeConta, DonorType? tipo) {
+  final completo = ((nomePerfil?.trim().isNotEmpty ?? false) ? nomePerfil! : (nomeConta ?? ''))
+      .trim()
+      .replaceAll(RegExp(r'\s+'), ' ');
+  if (completo.isEmpty) return 'doador';
+  final sufixo = RegExp(r'[\s,-]+(ltda\.?|eireli|epp|s\.a\.?|s/a)$', caseSensitive: false);
+  final ehEmpresa = tipo == DonorType.pj || sufixo.hasMatch(completo);
+  if (!ehEmpresa) return completo.split(' ').first;
+  final semSufixo = completo.replaceFirst(sufixo, '').trim();
+  return semSufixo.isEmpty ? completo : semSufixo;
+}
 
 /// D03 — Home do doador: saudação, última doação, CTA "Quero doar" e as duas
 /// prioridades mais urgentes da semana.
 class DonorHomePage extends ConsumerWidget {
   const DonorHomePage({super.key});
 
-  String _firstName(String? profileName, String? userName) {
-    final full = (profileName != null && profileName.trim().isNotEmpty)
-        ? profileName
-        : (userName ?? '');
-    final first = full.trim().split(' ').first;
-    return first.isEmpty ? 'doador' : first;
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,7 +47,7 @@ class DonorHomePage extends ConsumerWidget {
       body: Column(
         children: [
           DonorHeader(
-            title: 'Olá, ${_firstName(profile?.displayName, user?.name)}',
+            title: 'Olá, ${nomeNaSaudacao(profile?.displayName, user?.name, profile?.donorType)}',
             subtitle: 'Portal do Doador · Casa da Criança',
           ),
           Expanded(

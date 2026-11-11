@@ -12,6 +12,7 @@ import '../../../batches/domain/entities/batch.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
 import '../../../ml/presentation/controllers/consumption_forecast_provider.dart';
 import '../../../ml/presentation/widgets/forecast_widgets.dart';
+import '../../../settings/presentation/controllers/system_settings_provider.dart';
 import '../../domain/entities/product.dart';
 import '../controllers/products_provider.dart';
 
@@ -587,7 +588,9 @@ class _ProductSliverAppBar extends ConsumerWidget {
                       runSpacing: 4,
                       children: [
                         _HChip(product.unit),
-                        _HChip(product.category.name,
+                        _HChip(
+                            ref.watch(categoryLabelMapProvider)[product.category.name] ??
+                                product.categoryLabel,
                             icon: Icons.category_outlined,
                             color: const Color(0xFFBAD4FF)),
                         if (product.isPerishable)

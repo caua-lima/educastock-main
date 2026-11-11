@@ -215,7 +215,12 @@ class _DonationCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    Flexible(child: DonationStatusChip(status: donation.status)),
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: DonationStatusChip(status: donation.status),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -234,7 +239,7 @@ class _DonationCard extends StatelessWidget {
                     _Meta(Icons.person_outline_rounded, donation.donorSnapshot.displayName),
                     if (created != null)
                       _Meta(Icons.schedule_rounded, DateFormat('dd/MM, HH:mm').format(created)),
-                    _Meta(Icons.inventory_2_outlined, '${donation.totalUnits} un.'),
+                    _Meta(Icons.inventory_2_outlined, donation.resumoQuantidade),
                   ],
                 ),
                 if (review) ...[

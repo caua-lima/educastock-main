@@ -814,8 +814,9 @@ class _HeaderFilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
+            // "Todos" selecionado tem fundo branco: o texto fica escuro para ser lido.
             color: selected
-                ? Colors.white
+                ? (color.computeLuminance() > 0.5 ? const Color(0xFF0F2747) : Colors.white)
                 : Colors.white.withValues(alpha: 0.85),
           ),
         ),
