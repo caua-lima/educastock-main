@@ -59,7 +59,8 @@ List<PaletteEntry> paletteActionsFor(AppUser? user) {
   final role = user?.role;
   final isAdmin = role == UserRole.admin;
   final canOps = role == UserRole.admin || role == UserRole.estoquista;
-  final canWrite = canOps || role == UserRole.voluntario;
+  // Grava no estoque: administrador e estoquista (mesma regra do banco).
+  final canWrite = canOps;
   return [
     const PaletteEntry(
         kind: PaletteKind.page, icon: Icons.home_rounded, color: AppColors.brandPrimary600,
@@ -117,6 +118,7 @@ List<PaletteEntry> paletteActionsFor(AppUser? user) {
         kind: PaletteKind.page, icon: Icons.place_rounded, color: AppColors.secondaryBlue600,
         title: 'Locais de armazenamento', subtitle: 'Despensa, geladeira, almoxarifado',
         route: AppRoutes.locations, keywords: 'locais armazenamento despensa geladeira prateleira'),
+    if (canOps)
     const PaletteEntry(
         kind: PaletteKind.page, icon: Icons.fact_check_rounded, color: Color(0xFF475569),
         title: 'Auditoria', subtitle: 'Quem fez o quê e quando', route: AppRoutes.audit,

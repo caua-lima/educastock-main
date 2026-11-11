@@ -168,7 +168,8 @@ final pushNotificationServiceProvider = Provider<PushNotificationService>(
 );
 
 final pushNotificationsBootstrapProvider = Provider<void>((ref) {
-  final user = ref.watch(currentUserProvider);
+  // Conta real (não a visão de outro perfil): o token do aparelho é do administrador.
+  final user = ref.watch(usuarioRealProvider);
   final router = ref.watch(routerProvider);
   // Modo silencioso dos alertas: só a equipe lê (e só depois de entrar; antes disso a
   // leitura falharia por permissão).

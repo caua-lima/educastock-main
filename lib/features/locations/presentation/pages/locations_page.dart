@@ -139,7 +139,9 @@ class LocationsPage extends ConsumerWidget {
         ),
       ),
       ]),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: !(user?.canEdit ?? false)
+          ? null
+          : FloatingActionButton.extended(
         key: _keyLocationFAB,
         onPressed: () => context.push(AppRoutes.locationCreate),
         backgroundColor: AppColors.brandPrimary600,
@@ -544,7 +546,8 @@ class _LocationCard extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // Botão desativar
+                        // Botão desativar: só quem grava (administrador e estoquista).
+                        if (ref.watch(currentUserProvider)?.canEdit ?? false)
                         GestureDetector(
                           onTap: onDeactivate,
                           child: Container(

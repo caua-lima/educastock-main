@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
+import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../controllers/recipes_provider.dart';
 
 class RecipesPage extends ConsumerStatefulWidget {
@@ -673,7 +674,9 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
         ),
       )),
       ]),
-      floatingActionButton: _buildFab(),
+      // Nova receita grava no banco: só administrador e estoquista.
+      floatingActionButton:
+          (ref.watch(currentUserProvider)?.canEdit ?? false) ? _buildFab() : null,
     );
   }
 

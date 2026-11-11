@@ -32,6 +32,7 @@ class DonationSubmitNotifier extends Notifier<AsyncValue<String?>> {
   }
 
   Future<String?> _submit() async {
+    if (ref.read(emVisaoDoadorProvider)) throw const AcaoBloqueadaNaVisao();
     final user = ref.read(currentUserProvider);
     if (user == null) {
       throw const DonationSubmitException('Sessão expirada. Entre novamente.');

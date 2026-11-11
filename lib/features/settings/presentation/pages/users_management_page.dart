@@ -64,7 +64,7 @@ class UsersManagementPage extends ConsumerWidget {
                   TutorialStep(
                     key: _keyUserActive,
                     title: 'Ativar / Desativar',
-                    description: 'O switch permite bloquear o acesso da pessoa sem excluir o cadastro. Use para colaboradoras de férias, voluntárias temporárias ou quando alguém sair da ONG. O histórico fica preservado para auditoria.',
+                    description: 'O switch permite bloquear o acesso da pessoa sem excluir o cadastro. Use para quem está de férias, voluntários temporários ou quando alguém sair da ONG. O histórico fica preservado para auditoria.',
                     icon: Icons.toggle_on_rounded,
                     align: ContentAlign.top,
                     hints: const [
@@ -80,7 +80,7 @@ class UsersManagementPage extends ConsumerWidget {
           ],
         ),
         const Expanded(child: Center(
-          child: Text('Acesso restrito a administradoras.'),
+          child: Text('Acesso restrito a administradores.'),
         )),
         ]),
       );

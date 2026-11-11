@@ -23,6 +23,7 @@ class DonorProfileNotifier extends AsyncNotifier<void> {
   Future<void> save(DonorProfile profile) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      if (ref.read(emVisaoDoadorProvider)) throw const AcaoBloqueadaNaVisao();
       await ref.read(donorProfileDatasourceProvider).updateProfile(profile);
     });
   }
@@ -34,6 +35,7 @@ class DonorProfileNotifier extends AsyncNotifier<void> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      if (ref.read(emVisaoDoadorProvider)) throw const AcaoBloqueadaNaVisao();
       await ref
           .read(donorProfileDatasourceProvider)
           .ensureProfile(uid: uid, displayName: displayName);
@@ -45,6 +47,7 @@ class DonorProfileNotifier extends AsyncNotifier<void> {
     if (uid == null) return;
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      if (ref.read(emVisaoDoadorProvider)) throw const AcaoBloqueadaNaVisao();
       await ref.read(donorProfileDatasourceProvider).requestDeletion(uid);
     });
   }

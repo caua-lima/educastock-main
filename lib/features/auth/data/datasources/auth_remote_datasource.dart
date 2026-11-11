@@ -366,7 +366,7 @@ class AuthRemoteDatasource {
     if (user == null || user.email == null || user.email!.trim().isEmpty) {
       throw FirebaseAuthException(
         code: 'user-not-found',
-        message: 'Sessao invalida para trocar senha.',
+        message: 'Sessão inválida para trocar a senha. Entre de novo.',
       );
     }
 
@@ -386,7 +386,7 @@ class AuthRemoteDatasource {
       id: firebaseUser.uid,
       name: firebaseUser.displayName?.trim().isNotEmpty == true
           ? firebaseUser.displayName!.trim()
-          : (firebaseUser.email?.split('@').first ?? 'Novo usuario'),
+          : (firebaseUser.email?.split('@').first ?? 'Novo usuário'),
       email: firebaseUser.email ?? '',
       role: UserRole.doador,
       isActive: true,

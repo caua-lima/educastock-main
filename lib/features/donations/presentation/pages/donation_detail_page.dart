@@ -233,8 +233,7 @@ class _DetailBody extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: AppSpacing.xs),
                   child: Text(
-                    '${dateFormat.format(window.from)} · '
-                    '${timeFormat.format(window.from)} às ${timeFormat.format(window.to)}',
+                    _textoJanela(window.from, window.to, dateFormat, timeFormat),
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.neutral900,
                       fontWeight: FontWeight.w600,
@@ -310,6 +309,15 @@ class _DetailBody extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Janela de entrega: "12/11/2026 · 09:00 às 11:00"; sem horário marcado, só a data
+/// ("12/11/2026" ou "12/11/2026 a 15/11/2026"), em vez de "00:00 às 00:00".
+String _textoJanela(DateTime de, DateTime ate, DateFormat data, DateFormat hora) {
+  final semHorario = de.hour == 0 && de.minute == 0 && ate.hour == 0 && ate.minute == 0;
+  if (!semHorario) return '${data.format(de)} · ${hora.format(de)} às ${hora.format(ate)}';
+  final mesmoDia = de.year == ate.year && de.month == ate.month && de.day == ate.day;
+  return mesmoDia ? data.format(de) : '${data.format(de)} a ${data.format(ate)}';
 }
 
 /// QR Code do protocolo (RF22): o doador mostra na entrega e a equipe lê no Escanear,

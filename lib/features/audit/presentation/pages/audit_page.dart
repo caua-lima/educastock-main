@@ -354,7 +354,7 @@ class _AuditPageState extends ConsumerState<AuditPage> {
                   hints: const [
                     'Ícone verde = criação | azul = edição | vermelho = exclusão',
                     'Toque para ver detalhes completos em modal',
-                    'Acompanhe responsabilidades por colaboradora',
+                    'Acompanhe o que cada pessoa da equipe fez',
                     'Combine com Histórico de Saídas para visão completa',
                   ],
                 ),

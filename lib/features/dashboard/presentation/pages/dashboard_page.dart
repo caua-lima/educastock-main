@@ -200,6 +200,8 @@ class DashboardPage extends ConsumerWidget {
                           onTap: () => context.go(AppRoutes.productList),
                         ),
                       ),
+                      // Saída só para quem grava no estoque (administrador e estoquista).
+                      if (user?.canEdit ?? false)
                       _AnimatedQuickAction(
                         delayMs: 120,
                         child: _QuickActionTile(

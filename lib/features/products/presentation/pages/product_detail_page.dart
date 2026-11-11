@@ -35,7 +35,9 @@ class ProductDetailPage extends ConsumerWidget {
     // imediatamente, e a lista de lotes mostra apenas skeleton local.
     return Scaffold(
       backgroundColor: cs.surface,
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: !(ref.watch(currentUserProvider)?.canEdit ?? false)
+          ? null
+          : FloatingActionButton.extended(
         key: _keyDetailFAB,
         onPressed: () =>
             context.push('${AppRoutes.batchForm}?productId=$productId'),
@@ -83,6 +85,7 @@ class _DetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final podeGravar = ref.watch(currentUserProvider)?.canEdit ?? false;
     final batches = batchesAsync.valueOrNull ?? const [];
     final loading = batchesAsync.isLoading && batches.isEmpty;
     final totalQty = batches.fold<int>(0, (s, b) => s + b.quantity);
@@ -126,9 +129,10 @@ class _DetailBody extends ConsumerWidget {
                 child: CasaSectionHeader(
                   title: 'Lotes',
                   count: batches.length,
-                  action: 'Novo Lote',
-                  onAction: () => context
-                      .push('${AppRoutes.batchForm}?productId=$productId'),
+                  action: podeGravar ? 'Novo Lote' : null,
+                  onAction: podeGravar
+                      ? () => context.push('${AppRoutes.batchForm}?productId=$productId')
+                      : null,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -153,6 +157,7 @@ class _DetailBody extends ConsumerWidget {
                     padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: _BatchCard(
                       batch: b,
+                      podeGravar: podeGravar,
                       unidade: product.unit,
                       isDark: isDark,
                       cs: cs,
@@ -384,6 +389,7 @@ class _ProductSliverAppBar extends ConsumerWidget {
               onTap: () => context.pop(),
             ),
             const Spacer(),
+            if (ref.watch(currentUserProvider)?.canEdit ?? false)
             _NavButton(
               icon: Icons.edit_rounded,
               onTap: () =>
@@ -1071,8 +1077,11 @@ class _BatchCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback? onActions;
+  /// Quem só consulta (voluntário, consulta) não vê editar, excluir nem dar saída.
+  final bool podeGravar;
   const _BatchCard({
     required this.batch,
+    this.podeGravar = true,
     this.unidade = 'un',
     required this.isDark,
     required this.cs,
@@ -1129,7 +1138,7 @@ class _BatchCard extends StatelessWidget {
     final onCardSub = cs.onSurfaceVariant;
 
     return GestureDetector(
-      onLongPress: onActions == null
+      onLongPress: (!podeGravar || onActions == null)
           ? null
           : () {
               HapticFeedback.mediumImpact();
@@ -1236,7 +1245,7 @@ class _BatchCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 // Botão kebab SEMPRE disponível — abre sheet com todas as
                 // ações (distribuir, editar, excluir).
-                if (onActions != null)
+                if (podeGravar && onActions != null)
                   _ActionBtn(
                     icon: Icons.more_vert_rounded,
                     color: sc,
@@ -1244,7 +1253,7 @@ class _BatchCard extends StatelessWidget {
                     onTap: onActions!,
                     tooltip: 'Ações do lote',
                   )
-                else ...[
+                else if (podeGravar) ...[
                   _ActionBtn(
                     icon: Icons.edit_rounded,
                     color: const Color(0xFF60A5FA),
@@ -1326,7 +1335,7 @@ class _BatchCard extends StatelessWidget {
                     ],
                   ),
                 ],
-                if (onActions != null) ...[
+                if (podeGravar && onActions != null) ...[
                   const SizedBox(height: 10),
                   Row(
                     children: [

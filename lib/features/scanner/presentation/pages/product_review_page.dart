@@ -1530,6 +1530,8 @@ class _BatchesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final batchesAsync = ref.watch(batchesByProductProvider(product.id));
+    // Voluntário e consulta só consultam os lotes (mesma regra do banco).
+    final podeGravar = ref.watch(currentUserProvider)?.canEdit ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1546,6 +1548,7 @@ class _BatchesSection extends ConsumerWidget {
                       color: AppColors.brandPrimary600,
                       fontWeight: FontWeight.w700)),
             ),
+            if (podeGravar)
             TextButton.icon(
               onPressed: () => context.push(
                   '${AppRoutes.batchForm}?productId=${product.id}'),
@@ -1599,6 +1602,7 @@ class _BatchesSection extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  if (podeGravar)
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
@@ -1633,6 +1637,7 @@ class _BatchesSection extends ConsumerWidget {
                       ),
                     )),
                 const SizedBox(height: AppSpacing.sm),
+                if (podeGravar)
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -1970,6 +1975,8 @@ class _ExistingBatchCardState extends ConsumerState<_ExistingBatchCard> {
               ],
             ),
           ),
+          // Somar unidades grava no lote: só administrador e estoquista.
+          if (ref.watch(currentUserProvider)?.canEdit ?? false)
           GestureDetector(
             onTap: _showAddQtySheet,
             child: Container(
