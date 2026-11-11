@@ -45,6 +45,7 @@ import '../../features/donations/presentation/pages/donor_profile_page.dart';
 import '../../features/donation_ops/presentation/pages/donation_queue_page.dart';
 import '../../features/donation_ops/presentation/pages/donation_review_page.dart';
 import '../../features/donation_ops/presentation/pages/donation_receive_page.dart';
+import '../../features/donation_ops/presentation/pages/nova_necessidade_page.dart';
 import '../../features/chatbot/presentation/pages/chat_screen.dart' deferred as chat;
 import 'deferred_page.dart';
 
@@ -107,6 +108,7 @@ abstract class AppRoutes {
 
   // ─── Equipe: doações recebidas pelo portal (S01–S03) ──────────────────────
   static const opsDonations = '/doacoes';
+  static const opsNewNeed = '/doacoes/nova-necessidade';
   static const opsDonationDetail = '/doacoes/:id';
   static const opsDonationReceive = '/doacoes/:id/receber';
 
@@ -292,6 +294,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.donorDonate,
         builder: (_, state) =>
             _framed(DonationFormPage(needId: state.uri.queryParameters['needId'])),
+      ),
+      // Nova necessidade da ONG (antes de /doacoes/:id, que também casaria com o endereço).
+      GoRoute(
+        path: AppRoutes.opsNewNeed,
+        builder: (_, __) => _framed(const NovaNecessidadePage(), 960),
       ),
       // Telas de decisão e recebimento da equipe (S02, S03): tela cheia, sem TabBar.
       GoRoute(

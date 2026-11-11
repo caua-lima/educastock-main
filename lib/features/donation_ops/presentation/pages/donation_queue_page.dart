@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../donations/domain/entities/donation.dart';
+import '../../../donations/domain/entities/donation_need.dart';
+import '../../../donations/presentation/controllers/donation_needs_provider.dart';
+import '../../../donations/presentation/widgets/need_priority_chip.dart';
 import '../../../donations/domain/entities/donation_status.dart';
 import '../../../donations/presentation/widgets/donation_status_chip.dart';
 import '../../../donations/presentation/widgets/donor_header.dart';
@@ -15,6 +18,7 @@ import '../controllers/donation_ops_provider.dart';
 /// Aba "Triagem": intenções pendentes que aguardam aprovação.
 /// Aba "Para destinar": doações aprovadas (esperando a entrega física) e doações já
 /// recebidas que ainda não têm destino registrado.
+/// Aba "Necessidades": o que a ONG pede aos doadores; a equipe publica e encerra.
 class DonationQueuePage extends ConsumerWidget {
   const DonationQueuePage({super.key});
 
@@ -23,9 +27,10 @@ class DonationQueuePage extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final triage = ref.watch(triageDonationsProvider);
     final allocate = ref.watch(toAllocateDonationsProvider);
+    final needs = ref.watch(donationNeedsProvider);
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: cs.surface,
         body: Column(
@@ -40,10 +45,14 @@ class DonationQueuePage extends ConsumerWidget {
                 labelColor: AppColors.brandPrimary600,
                 unselectedLabelColor: cs.onSurfaceVariant,
                 indicatorColor: AppColors.brandPrimary600,
-                labelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w700),
+                labelStyle: AppTypography.labelLarge
+                    .copyWith(fontWeight: FontWeight.w700),
                 tabs: [
                   Tab(text: 'Triagem (${triage.valueOrNull?.length ?? 0})'),
-                  Tab(text: 'Para destinar (${allocate.valueOrNull?.length ?? 0})'),
+                  Tab(
+                      text:
+                          'Para destinar (${allocate.valueOrNull?.length ?? 0})'),
+                  Tab(text: 'Necessidades (${needs.valueOrNull?.length ?? 0})'),
                 ],
               ),
             ),
@@ -53,7 +62,8 @@ class DonationQueuePage extends ConsumerWidget {
                   _QueueList(
                     donations: triage,
                     emptyTitle: 'Nenhuma doação aguardando aprovação',
-                    emptyDescription: 'Quando um doador registrar uma intenção, ela aparece aqui.',
+                    emptyDescription:
+                        'Quando um doador registrar uma intenção, ela aparece aqui.',
                   ),
                   _QueueList(
                     donations: allocate,
@@ -61,6 +71,7 @@ class DonationQueuePage extends ConsumerWidget {
                     emptyDescription:
                         'Doações aprovadas e recebidas aguardando destino aparecem nesta aba.',
                   ),
+                  _NeedsTab(needs: needs),
                 ],
               ),
             ),
@@ -112,8 +123,10 @@ class _QueueList extends ConsumerWidget {
         }
         final awaitingDelivery =
             list.where((d) => d.status == DonationStatus.aprovada).toList();
-        final awaitingDestination = list.where((d) => d.needsDestination).toList();
-        final pending = list.where((d) => d.status == DonationStatus.pendente).toList();
+        final awaitingDestination =
+            list.where((d) => d.needsDestination).toList();
+        final pending =
+            list.where((d) => d.status == DonationStatus.pendente).toList();
 
         return ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -185,7 +198,8 @@ class _DonationCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final action = _action;
     final first = donation.items.isEmpty ? null : donation.items.first;
-    final extra = donation.items.length > 1 ? ' +${donation.items.length - 1}' : '';
+    final extra =
+        donation.items.length > 1 ? ' +${donation.items.length - 1}' : '';
     final created = donation.createdAt;
     final review = donation.items.any((i) => i.subjectToReview);
 
@@ -201,7 +215,8 @@ class _DonationCard extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+              border:
+                  Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,7 +226,8 @@ class _DonationCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         donation.displayProtocol,
-                        style: AppTypography.headingSmall.copyWith(color: cs.onSurface),
+                        style: AppTypography.headingSmall
+                            .copyWith(color: cs.onSurface),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -229,17 +245,21 @@ class _DonationCard extends StatelessWidget {
                     '${first.quantity}× ${first.description}$extra',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodyMedium.copyWith(color: cs.onSurface),
+                    style:
+                        AppTypography.bodyMedium.copyWith(color: cs.onSurface),
                   ),
                 const SizedBox(height: AppSpacing.xs),
                 Wrap(
                   spacing: AppSpacing.md,
                   runSpacing: 2,
                   children: [
-                    _Meta(Icons.person_outline_rounded, donation.donorSnapshot.displayName),
+                    _Meta(Icons.person_outline_rounded,
+                        donation.donorSnapshot.displayName),
                     if (created != null)
-                      _Meta(Icons.schedule_rounded, DateFormat('dd/MM, HH:mm').format(created)),
-                    _Meta(Icons.inventory_2_outlined, donation.resumoQuantidade),
+                      _Meta(Icons.schedule_rounded,
+                          DateFormat('dd/MM, HH:mm').format(created)),
+                    _Meta(
+                        Icons.inventory_2_outlined, donation.resumoQuantidade),
                   ],
                 ),
                 if (review) ...[
@@ -255,7 +275,8 @@ class _DonationCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Validade abaixo do mínimo recomendado',
-                      style: AppTypography.labelSmall.copyWith(color: AppColors.warning600),
+                      style: AppTypography.labelSmall
+                          .copyWith(color: AppColors.warning600),
                     ),
                   ),
                 ],
@@ -299,8 +320,156 @@ class _Meta extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
-        Flexible(child: Text(text, style: AppTypography.bodySmall.copyWith(color: color))),
+        Flexible(
+            child: Text(text,
+                style: AppTypography.bodySmall.copyWith(color: color))),
       ],
+    );
+  }
+}
+
+/// O que a ONG pede aos doadores, com o botão para publicar uma nova necessidade.
+class _NeedsTab extends ConsumerWidget {
+  final AsyncValue<List<DonationNeed>> needs;
+
+  const _NeedsTab({required this.needs});
+
+  Future<void> _encerrar(
+      BuildContext context, WidgetRef ref, DonationNeed n) async {
+    final ok = await CasaDialogConfirmacao.show(
+      context: context,
+      title: 'Encerrar "${n.title}"?',
+      message:
+          'Ela sai do Portal do Doador. As doações já registradas para ela continuam valendo.',
+      confirmLabel: 'Encerrar',
+      isDanger: true,
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      await ref.read(donationNeedsDatasourceProvider).encerrarNecessidade(n.id);
+      if (context.mounted)
+        showCasaSnackbar(context,
+            message: '"${n.title}" encerrada.', isSuccess: true);
+    } catch (_) {
+      if (context.mounted) {
+        showCasaSnackbar(context,
+            message: 'Não foi possível encerrar agora. Tente de novo.',
+            isError: true);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final botao = CasaButton(
+      label: 'Nova necessidade',
+      icon: Icons.add_rounded,
+      onPressed: () => context.push(AppRoutes.opsNewNeed),
+    );
+    return needs.when(
+      loading: () => ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: const [
+          CasaCardSkeleton(),
+          SizedBox(height: AppSpacing.md),
+          CasaCardSkeleton()
+        ],
+      ),
+      error: (_, __) => CasaEmptyState(
+        icon: Icons.cloud_off_rounded,
+        title: 'Não foi possível carregar as necessidades',
+        description: 'Verifique sua conexão e tente novamente.',
+        ctaLabel: 'Tentar de novo',
+        onCta: () => ref.invalidate(donationNeedsProvider),
+      ),
+      data: (list) => ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          Text(
+            'O que a Casa da Criança pede aos doadores. Cada necessidade aparece no Portal do Doador.',
+            style:
+                AppTypography.bodyMedium.copyWith(color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          botao,
+          const SizedBox(height: AppSpacing.lg),
+          if (list.isEmpty)
+            const CasaEmptyState(
+              icon: Icons.favorite_border_rounded,
+              title: 'Nenhuma necessidade publicada',
+              description:
+                  'Publique o que a ONG precisa para os doadores verem no portal.',
+            ),
+          for (final n in list)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(n.title,
+                              style: AppTypography.headingSmall
+                                  .copyWith(color: cs.onSurface)),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        NeedPriorityChip(priority: n.priority),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      [
+                        n.isCovered
+                            ? 'Meta atingida (${n.suggestedQty} ${n.unit})'
+                            : 'Faltam ${n.remainingQty} de ${n.suggestedQty} ${n.unit}',
+                        if (n.minShelfLifeDays > 0)
+                          'validade mín. ${n.minShelfLifeDays} d',
+                      ].join(' · '),
+                      style: AppTypography.bodySmall
+                          .copyWith(color: cs.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: LinearProgressIndicator(
+                        value: n.pledgedProgress,
+                        minHeight: 6,
+                        backgroundColor:
+                            cs.outlineVariant.withValues(alpha: 0.3),
+                        color: AppColors.success600,
+                      ),
+                    ),
+                    if ((n.note ?? '').isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(n.note!,
+                          style: AppTypography.bodySmall
+                              .copyWith(color: cs.onSurface)),
+                    ],
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => _encerrar(context, ref, n),
+                        icon: const Icon(Icons.do_not_disturb_on_outlined,
+                            size: 18),
+                        label: const Text('Encerrar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
