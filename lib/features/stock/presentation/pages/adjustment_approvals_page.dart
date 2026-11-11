@@ -85,12 +85,12 @@ class AdjustmentApprovalsPage extends ConsumerWidget {
                 TutorialStep(
                   key: _keyApprovalCard,
                   title: 'Card de Solicitação',
-                  description: 'Cada card representa uma solicitação de ajuste de estoque feita por uma colaboradora não-admin. Mostra: produto afetado, quantidade ajustada (+ ou −), nome de quem solicitou e horário. Como admin, cabe a você revisar e decidir.',
+                  description: 'Cada card é um pedido de baixa no estoque (perda, avaria, diferença de contagem) acima do limite, feito por alguém da equipe. Mostra o produto, quantas unidades saem, quem pediu e o motivo. Como admin, você aprova ou rejeita.',
                   icon: Icons.approval_rounded,
                   align: ContentAlign.bottom,
                   hints: const [
                     'Badge amarelo no canto = quantidade ajustada',
-                    '"+" indica entrada extra, "-" indica baixa',
+                    'Ao aprovar, essas unidades saem do lote',
                     'Solicitações ficam paradas até decisão do admin',
                     'Apenas admins veem esta tela (acesso restrito)',
                   ],
@@ -309,7 +309,8 @@ class _AdjustmentCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Text(
-                  qty > 0 ? '+$qty' : '$qty',
+                  // O pedido é sempre de baixa: aprovar tira essas unidades do lote.
+                  '−${qty.abs()}',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppColors.warning600,

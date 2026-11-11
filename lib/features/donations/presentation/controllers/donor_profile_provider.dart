@@ -5,7 +5,7 @@ import '../../domain/entities/donor_profile.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 
 final donorProfileDatasourceProvider = Provider<DonorProfileDatasource>(
-  (ref) => DonorProfileDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => DonorProfileDatasource(db: bancoDaSessao(ref)),
 );
 
 /// Perfil do doador logado (null enquanto não existe `donors/{uid}`).

@@ -5,11 +5,21 @@ import '../../domain/entities/product.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 
 final productsDatasourceProvider = Provider<ProductsRemoteDatasource>(
-  (ref) => ProductsRemoteDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => ProductsRemoteDatasource(db: bancoDaSessao(ref)),
 );
 
 final productsProvider = StreamProvider<List<Product>>((ref) {
   return ref.watch(productsDatasourceProvider).watchProducts();
+});
+
+/// Unidade do produto (un, kg, dúzia...) pelo id; "un" enquanto carrega ou se não achar.
+/// Lotes, alertas e previsões não guardam a unidade.
+final unidadeDoProdutoProvider = Provider.family<String, String>((ref, productId) {
+  final produtos = ref.watch(productsProvider).valueOrNull ?? const <Product>[];
+  for (final p in produtos) {
+    if (p.id == productId) return p.unit.isEmpty ? 'un' : p.unit;
+  }
+  return 'un';
 });
 
 // autoDispose garante que o cache é descartado quando o widget sai da tela.

@@ -7,7 +7,7 @@ import '../../data/donation_ops_repository.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 
 final donationOpsRepositoryProvider = Provider<DonationOpsRepository>(
-  (ref) => DonationOpsRepository(db: ref.watch(firestoreProvider)),
+  (ref) => DonationOpsRepository(db: bancoDaSessao(ref)),
 );
 
 /// Administrador e estoquista operam as doações (mesma regra do Firestore: `isOps`).

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/export/export_launcher.dart';
+import '../../../../core/utils/texto_validade.dart';
 import '../../../../core/utils/friendly_error.dart';
 import '../../../../core/export/report_table.dart';
 import '../../domain/report_tables.dart';
@@ -1087,7 +1088,7 @@ class _MlRiskTab extends ConsumerWidget {
               ? Icons.memory_rounded
               : Icons.rule_rounded,
           color: AppColors.brandPrimary600,
-          badge: classifierSrc == 'tflite' ? 'TFLite' : 'Rules',
+          badge: classifierSrc == 'tflite' ? 'TFLite' : 'Regras',
         ),
         const SizedBox(height: AppSpacing.md),
 
@@ -6298,9 +6299,7 @@ class _BatchListSheet extends StatelessWidget {
                     final days = b.noExpiry ? null : b.daysToExpiry;
                     final daysText = b.noExpiry
                         ? 'Sem validade'
-                        : b.isExpired
-                            ? 'Vencido há ${-days!}d'
-                            : 'Vence em ${days}d';
+                        : textoValidadeCurto(days!);
                     final daysColor = b.isExpired
                         ? AppColors.danger600
                         : days != null && days <= 7

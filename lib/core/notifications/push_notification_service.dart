@@ -170,8 +170,11 @@ final pushNotificationServiceProvider = Provider<PushNotificationService>(
 final pushNotificationsBootstrapProvider = Provider<void>((ref) {
   final user = ref.watch(currentUserProvider);
   final router = ref.watch(routerProvider);
-  // Feed silent-mode config into the service whenever it changes
-  final alertsConfig = ref.watch(alertsConfigProvider).valueOrNull;
+  // Modo silencioso dos alertas: só a equipe lê (e só depois de entrar; antes disso a
+  // leitura falharia por permissão).
+  final alertsConfig = (user != null && user.isStaff)
+      ? ref.watch(alertsConfigProvider).valueOrNull
+      : null;
   final service = ref.read(pushNotificationServiceProvider);
   if (alertsConfig != null) {
     service.updateAlertsConfig(alertsConfig);

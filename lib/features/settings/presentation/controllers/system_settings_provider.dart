@@ -259,7 +259,7 @@ class StockRulesSettingsDatasource {
 }
 
 final userAdminDatasourceProvider = Provider<UserAdminDatasource>(
-  (ref) => UserAdminDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => UserAdminDatasource(db: bancoDaSessao(ref)),
 );
 
 final usersManagementProvider = StreamProvider<List<AppUser>>((ref) {
@@ -302,7 +302,7 @@ final userManagementNotifierProvider =
         UserManagementNotifier.new);
 
 final categorySettingsDatasourceProvider = Provider<CategorySettingsDatasource>(
-  (ref) => CategorySettingsDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => CategorySettingsDatasource(db: bancoDaSessao(ref)),
 );
 
 final categorySettingsProvider = StreamProvider<List<CategorySetting>>((ref) {
@@ -381,12 +381,12 @@ final categoryLabelMapProvider = Provider<Map<String, String>>((ref) {
 });
 
 final alertsSettingsDatasourceProvider = Provider<AlertsSettingsDatasource>(
-  (ref) => AlertsSettingsDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => AlertsSettingsDatasource(db: bancoDaSessao(ref)),
 );
 
 final stockRulesSettingsDatasourceProvider =
     Provider<StockRulesSettingsDatasource>(
-  (ref) => StockRulesSettingsDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => StockRulesSettingsDatasource(db: bancoDaSessao(ref)),
 );
 
 final alertsConfigProvider = StreamProvider<AlertsConfig>((ref) {
@@ -484,7 +484,7 @@ class ReportScheduleDatasource {
 }
 
 final reportScheduleDatasourceProvider = Provider<ReportScheduleDatasource>(
-  (ref) => ReportScheduleDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => ReportScheduleDatasource(db: bancoDaSessao(ref)),
 );
 
 final reportScheduleConfigProvider = StreamProvider<ReportScheduleConfig>((ref) {

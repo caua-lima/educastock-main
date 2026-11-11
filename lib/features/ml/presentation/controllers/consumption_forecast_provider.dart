@@ -10,7 +10,7 @@ import '../../../../core/firebase/firebase_providers.dart';
 
 final consumptionForecastRepositoryProvider =
     Provider<ConsumptionForecastFirestoreRepository>(
-  (ref) => ConsumptionForecastFirestoreRepository(db: ref.watch(firestoreProvider)),
+  (ref) => ConsumptionForecastFirestoreRepository(db: bancoDaSessao(ref)),
 );
 
 // ---------------------------------------------------------------------------

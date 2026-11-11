@@ -606,7 +606,7 @@ alerts.push({
 for (const od of openDonations.filter((d) => d.status === 'pendente')) {
   alerts.push({
     id: `alert-doacao-${od.protocol}`, productId: 'donation', productName: od.protocol, batchId: null, donationId: od.protocol, level: 'info',
-    message: `Nova intenção de doação ${od.protocol} de ${od.donor.name} (${od.lines.length} item(ns)).`, createdAt: ts(od.created), resolved: false,
+    message: `Nova intenção de doação ${od.protocol} de ${od.donor.name} (${od.lines.length} ${od.lines.length === 1 ? 'item' : 'itens'}).`, createdAt: ts(od.created), resolved: false,
   });
 }
 

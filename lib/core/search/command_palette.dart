@@ -73,7 +73,7 @@ List<PaletteEntry> paletteActionsFor(AppUser? user) {
       const PaletteEntry(
           kind: PaletteKind.action, icon: Icons.outbound_rounded, color: AppColors.danger600,
           title: 'Registrar saída', subtitle: 'Baixa de estoque (consumo, doação, perda)',
-          route: '${AppRoutes.movement}?batchId=', keywords: 'saida baixa consumo retirada uso'),
+          route: AppRoutes.movement, keywords: 'saida baixa consumo retirada uso'),
     if (canWrite)
       const PaletteEntry(
           kind: PaletteKind.action, icon: Icons.qr_code_scanner_rounded, color: AppColors.brandPrimary600,
@@ -250,7 +250,11 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final user = ref.watch(currentUserProvider);
-    final products = ref.watch(productsProvider).valueOrNull ?? const <Product>[];
+    final produtosAsync = ref.watch(productsProvider);
+    final products = produtosAsync.valueOrNull ?? const <Product>[];
+    // Logo depois de abrir o app a lista ainda está chegando: dizer "nada encontrado"
+    // nessa hora engana.
+    final carregandoProdutos = produtosAsync.isLoading && !produtosAsync.hasValue;
     final results = searchPalette(_controller.text, paletteActionsFor(user), products);
     if (_selected >= results.length) _selected = results.isEmpty ? 0 : results.length - 1;
 
@@ -311,7 +315,9 @@ class _CommandPaletteState extends ConsumerState<CommandPalette> {
                     ? Padding(
                         padding: const EdgeInsets.all(28),
                         child: Text(
-                          'Nada encontrado para “${_controller.text.trim()}”.',
+                          carregandoProdutos
+                              ? 'Carregando os produtos…'
+                              : 'Nada encontrado para “${_controller.text.trim()}”.',
                           textAlign: TextAlign.center,
                           style: AppTypography.bodyMedium.copyWith(color: cs.onSurfaceVariant),
                         ),

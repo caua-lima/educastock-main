@@ -199,7 +199,7 @@ class SettingsPage extends ConsumerWidget {
               steps: [
                 TutorialStep(
                   key: _keySettingsUsers,
-                  title: 'Gerenciar Usuárias',
+                  title: 'Gerenciar Usuários',
                   description: 'Toque para acessar a tela de gerenciamento de colaboradoras: cadastrar novas pessoas, definir o perfil (Admin/Estoquista/Voluntária/Consulta), ativar ou desativar acessos. Apenas administradoras enxergam essa opção.',
                   icon: Icons.manage_accounts_rounded,
                   align: ContentAlign.bottom,

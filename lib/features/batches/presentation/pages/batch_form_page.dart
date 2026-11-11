@@ -1,6 +1,7 @@
 import '../../../../core/offline/offline_sync_controller.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../../locations/domain/rotulo_prateleira.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -1327,7 +1328,7 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
       children: _locsInGroup.map((loc) {
         final lv = loc.level ?? '—';
         final nomeNivel = niveisRepetidos.contains(lv)
-            ? '${loc.room ?? loc.locationName ?? 'Local'} · Prat. ${loc.shelf} · Nível $lv'
+            ? '${loc.room ?? loc.locationName ?? 'Local'} · ${rotuloPrateleira(loc.shelf)} · Nível $lv'
             : 'Nível $lv';
         final isSelected = widget.selectedLabel == loc.label;
         final limit = loc.productsPerLevel;

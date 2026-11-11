@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/web/recomecar.dart' if (dart.library.html) '../../../../core/web/recomecar_web.dart';
 import '../../../donations/domain/entities/donor_profile.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../domain/entities/app_user.dart';
@@ -101,6 +102,10 @@ class AuthNotifier extends Notifier<AsyncValue<AppUser?>> {
     await ds.signOut();
     ref.read(pendingOtpProvider.notifier).state = false;
     state = const AsyncValue.data(null);
+    // Web: recomeça o app no login. As leituras abertas na sessão que saiu falham por
+    // permissão e ficariam presas em erro para a próxima pessoa; reabri-las todas de uma
+    // vez provoca uma falha interna do SDK web do Firestore ("Unexpected state").
+    recomecarNoLogin();
   }
 }
 

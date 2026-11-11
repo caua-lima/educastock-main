@@ -4,7 +4,7 @@ import '../../domain/entities/donation_need.dart';
 import '../../../../core/firebase/firebase_providers.dart';
 
 final donationNeedsDatasourceProvider = Provider<DonationNeedsDatasource>(
-  (ref) => DonationNeedsDatasource(db: ref.watch(firestoreProvider)),
+  (ref) => DonationNeedsDatasource(db: bancoDaSessao(ref)),
 );
 
 /// Necessidades ativas, já na ordem do servidor (prioridade e atualização).

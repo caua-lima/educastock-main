@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/rotulo_prateleira.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/design_system.dart';
@@ -571,6 +572,15 @@ class _LocationCard extends ConsumerWidget {
                       spacing: 5,
                       runSpacing: 5,
                       children: [
+                        // Prateleira: dois locais com o mesmo nome e nível (Prat. 1 e
+                        // Prat. 2) ficavam idênticos na lista.
+                        if (location.shelf.trim().isNotEmpty)
+                          _Chip(
+                            icon: Icons.view_column_rounded,
+                            label: rotuloPrateleira(location.shelf),
+                            color: AppColors.brandPrimary600,
+                            isDark: isDark,
+                          ),
                         if (hasLevel)
                           _Chip(
                             icon: Icons.layers_rounded,
@@ -698,10 +708,13 @@ class _Chip extends StatelessWidget {
         children: [
           Icon(icon, size: 11, color: color),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w600, color: color),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: color),
+            ),
           ),
         ],
       ),

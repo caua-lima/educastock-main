@@ -124,7 +124,7 @@ class ReportsRemoteDatasource {
 // ---------- Providers ----------
 
 final reportsDatasourceProvider = Provider<ReportsRemoteDatasource>(
-  (ref) => ReportsRemoteDatasource(firestore: ref.watch(firestoreProvider)),
+  (ref) => ReportsRemoteDatasource(firestore: bancoDaSessao(ref)),
 );
 
 /// Tempo em que um relatório já calculado é reaproveitado antes de nova leitura.

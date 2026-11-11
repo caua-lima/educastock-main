@@ -242,7 +242,7 @@ export const onDonationCreated = onDocumentCreated('donations/{donationId}', asy
     batchId: null,
     donationId,
     level: 'info',
-    message: `Nova intenção de doação ${protocol} de ${donorName} (${items.length} item(ns)).`,
+    message: `Nova intenção de doação ${protocol} de ${donorName} (${items.length} ${items.length === 1 ? 'item' : 'itens'}).`,
     createdAt: Timestamp.now(),
     resolved: false,
   });
