@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/web/recomecar.dart' if (dart.library.html) '../../../../core/web/recomecar_web.dart';
+import '../../../../core/web/recomecar.dart'
+    if (dart.library.html) '../../../../core/web/recomecar_web.dart';
 import '../../../donations/domain/entities/donor_profile.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../domain/entities/app_user.dart';
@@ -85,7 +86,8 @@ class AcaoBloqueadaNaVisao implements Exception {
   const AcaoBloqueadaNaVisao();
 
   @override
-  String toString() => 'Esta é a visão do doador: nada é gravado. Para fazer isso de verdade, '
+  String toString() =>
+      'Esta é a visão do doador: nada é gravado. Para fazer isso de verdade, '
       'entre com a conta do doador.';
 }
 
@@ -118,6 +120,18 @@ class AuthNotifier extends Notifier<AsyncValue<AppUser?>> {
       final ds = ref.read(authDatasourceProvider);
       return ds.signInWithGoogle(rememberLogin: rememberLogin);
     });
+    _recomecarJaLogado();
+  }
+
+  /// Depois de entrar pelo Google ou criar a conta, a web reabre o app já logado: o
+  /// perfil (users/{uid}) é gravado logo depois do login, e as telas abertas antes disso
+  /// ficavam vazias até sair e entrar de novo.
+  void _recomecarJaLogado() {
+    final user = state.valueOrNull;
+    if (user == null) return;
+    // Com 2FA ativo, quem segue é a tela do código (recarregar pularia essa etapa).
+    if (user.twoFactorEnabled && AuthRemoteDatasource.otpDeliveryAvailable) return;
+    recomecarEm(user.role == UserRole.doador ? '/doador' : '/dashboard');
   }
 
   /// Cadastro autônomo do doador (RF16 / tela D02).
@@ -143,6 +157,7 @@ class AuthNotifier extends Notifier<AsyncValue<AppUser?>> {
         rememberLogin: rememberLogin,
       );
     });
+    _recomecarJaLogado();
   }
 
   Future<void> changePassword({
@@ -150,7 +165,8 @@ class AuthNotifier extends Notifier<AsyncValue<AppUser?>> {
     required String newPassword,
   }) async {
     // Na visão de outro perfil a conta é a do administrador: nunca trocar a senha dela.
-    if (ref.read(visaoPerfilProvider) != null) throw const AcaoBloqueadaNaVisao();
+    if (ref.read(visaoPerfilProvider) != null)
+      throw const AcaoBloqueadaNaVisao();
     final ds = ref.read(authDatasourceProvider);
     await ds.changePassword(
       currentPassword: currentPassword,

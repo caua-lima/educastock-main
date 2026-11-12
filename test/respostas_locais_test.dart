@@ -41,4 +41,15 @@ void main() {
     expect(ultima.isError, isFalse);
     expect(ultima.text, contains('aceita alimentos'));
   });
+
+  test('dados da Casa da Criança: endereço, contato, horário, dinheiro e história', () {
+    expect(respostaLocal('Onde fica a Casa da Criança?'), contains('Rua Sílvio Galizoni, 238'));
+    expect(respostaLocal('qual o telefone de vocês?'), contains('(19) 3863-0229'));
+    expect(respostaLocal('Qual o horário de funcionamento?'), contains('não publica o horário'));
+    expect(respostaLocal('Posso doar em dinheiro?'), contains('agência 0171-6'));
+    expect(respostaLocal('Qual a chave pix?'), contains('Não há chave PIX'));
+    expect(respostaLocal('Qual a história da Casa?'), contains('1945'));
+    expect(respostaLocal('Vocês aceitam óleo de cozinha usado?'), contains('óleo de cozinha'));
+    expect(respostaLocal('Como funciona a entrega da doação?'), contains('ponto de entrega'));
+  });
 }
