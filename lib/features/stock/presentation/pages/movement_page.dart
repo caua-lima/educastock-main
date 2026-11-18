@@ -607,8 +607,8 @@ class _MovementPageState extends ConsumerState<MovementPage> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: Column(children: [
       ModernProfileAppBar(
-        title: 'Distribuição',
-        subtitle: 'Produtos avulsos ou por receita',
+        title: 'Saída',
+        subtitle: 'Distribuição avulsa ou por receita',
         pageIcon: Icons.outbound_rounded,
         iconColor: const Color(0xFFEF4444),
         showBackButton: true,

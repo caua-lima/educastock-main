@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/alerts/presentation/controllers/alerts_provider.dart';
+import '../../features/auth/domain/entities/app_user.dart';
 import '../../features/auth/presentation/controllers/auth_provider.dart';
 import '../../features/donation_ops/presentation/controllers/donation_ops_provider.dart';
 import '../../features/ml/domain/entities/risk_prediction.dart';
@@ -29,14 +30,6 @@ class AppNavigationShell extends ConsumerStatefulWidget {
 }
 
 class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
-  static const _tabRoutes = [
-    AppRoutes.dashboard,
-    AppRoutes.productList,
-    AppRoutes.movement,
-    AppRoutes.history,
-    AppRoutes.reports,
-  ];
-
   bool _tutorialActive = false;
   bool _paletteOpen = false;
 
@@ -65,16 +58,15 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
     super.dispose();
   }
 
-  List<String> get _routes => [
-        ..._tabRoutes,
-        if (canOperateDonations(ref.read(currentUserProvider))) AppRoutes.opsDonations,
-      ];
+  List<String> get _routes =>
+      [for (final a in abasDoPerfil(ref.read(currentUserProvider))) a.rota];
 
   /// Ctrl+K (ou Cmd+K) abre a busca; Alt+1 a Alt+6 trocam de aba.
   bool _onKey(KeyEvent event) {
     if (event is! KeyDownEvent || !mounted || _tutorialActive) return false;
     final kb = HardwareKeyboard.instance;
-    if (event.logicalKey == LogicalKeyboardKey.keyK && (kb.isControlPressed || kb.isMetaPressed)) {
+    if (event.logicalKey == LogicalKeyboardKey.keyK &&
+        (kb.isControlPressed || kb.isMetaPressed)) {
       _openPalette();
       return true;
     }
@@ -103,35 +95,15 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
     if (mounted) setState(() => _tutorialActive = tutorialActiveNotifier.value);
   }
 
-  int _selectedIndex(String currentLocation) {
-    if (currentLocation.startsWith(AppRoutes.opsDonations)) return 5;
-    if (currentLocation.startsWith(AppRoutes.movement)) return 2;
-    if (currentLocation.startsWith(AppRoutes.history)) return 3;
-    if (currentLocation.startsWith(AppRoutes.reports)) return 4;
-    if (currentLocation.startsWith(AppRoutes.productList)) return 1;
-    return 0;
-  }
-
-  /// Índice da aba principal que corresponde à rota atual, ou -1 se for outra tela.
-  int _railIndex(String location) {
-    if (location.startsWith(AppRoutes.dashboard)) return 0;
-    if (location.startsWith(AppRoutes.opsDonations)) return 5;
-    if (location.startsWith(AppRoutes.history)) return 3;
-    if (location.startsWith(AppRoutes.reports)) return 4;
-    if (location.startsWith(AppRoutes.productList)) return 1;
-    if (location == AppRoutes.movement) return 2;
-    return -1;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final idx = _selectedIndex(widget.location);
-    // A aba de doações só existe para quem opera o portal (administrador e estoquista).
+    // Abas do perfil: Saída só para quem registra saídas; Doações só para quem opera o portal.
     final usuario = ref.watch(currentUserProvider);
+    final abas = abasDoPerfil(usuario);
+    final idx = indiceDaAba(widget.location, abas);
     final showDonations = canOperateDonations(usuario);
     // Progresso dos tutoriais é guardado por conta.
     TutorialProgresso.usuarioAtual = usuario?.id ?? 'anonimo';
-    final routes = [..._tabRoutes, if (showDonations) AppRoutes.opsDonations];
     final width = MediaQuery.sizeOf(context).width;
 
     // Celular: barra inferior (como antes).
@@ -142,8 +114,8 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
         // destaque apontava para o lugar errado. O tutorial é modal (por cima).
         bottomNavigationBar: _AnimatedTabBar(
           selectedIndex: idx,
-          showDonations: showDonations,
-          onTap: (i) => context.go(routes[i]),
+          abas: abas,
+          onTap: (i) => context.go(abas[i].rota),
         ),
       );
     }
@@ -153,13 +125,12 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
           data: (counts) => counts[RiskLevel.vermelho] ?? 0,
           orElse: () => 0,
         );
-    final pendingDonations = showDonations ? ref.watch(pendingDonationsCountProvider) : 0;
+    final pendingDonations =
+        showDonations ? ref.watch(pendingDonationsCountProvider) : 0;
     final openAlerts = ref.watch(activeAlertsProvider).maybeWhen(
           data: (list) => list.length,
           orElse: () => 0,
         );
-    final railIdx = _railIndex(widget.location);
-    final visibleTabs = [..._tabs, if (showDonations) _donationsTab];
     final loc = widget.location;
 
     return Scaffold(
@@ -170,15 +141,17 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
             subtitle: 'Casa da Criança · Equipe',
             onSearch: _openPalette,
             primary: [
-              for (var i = 0; i < visibleTabs.length; i++)
+              for (var i = 0; i < abas.length; i++)
                 RailDestination(
-                  icon: visibleTabs[i].icon,
-                  activeIcon: visibleTabs[i].activeIcon,
-                  label: visibleTabs[i].label,
-                  color: visibleTabs[i].color,
-                  selected: railIdx == i,
-                  badge: i == 5 ? pendingDonations : ((i == 1 || i == 2) ? criticalCount : 0),
-                  onTap: () => context.go(routes[i]),
+                  icon: abas[i].def.icon,
+                  activeIcon: abas[i].def.activeIcon,
+                  label: abas[i].def.label,
+                  color: abas[i].def.color,
+                  selected: idx == i,
+                  badge: abas[i].rota == AppRoutes.opsDonations
+                      ? pendingDonations
+                      : (abas[i].mostraRisco ? criticalCount : 0),
+                  onTap: () => context.go(abas[i].rota),
                 ),
             ],
             secondary: [
@@ -204,7 +177,8 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
           Expanded(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: AppBreakpoints.contentMaxWidth),
+                constraints: const BoxConstraints(
+                    maxWidth: AppBreakpoints.contentMaxWidth),
                 child: widget.child,
               ),
             ),
@@ -217,12 +191,12 @@ class _AppNavigationShellState extends ConsumerState<AppNavigationShell> {
 
 // ─── Tab definitions ────────────────────────────────────────────────────────
 
-class _TabDef {
+class DefinicaoAba {
   final IconData icon;
   final IconData activeIcon;
   final String label;
   final Color color;
-  const _TabDef({
+  const DefinicaoAba({
     required this.icon,
     required this.activeIcon,
     required this.label,
@@ -230,7 +204,7 @@ class _TabDef {
   });
 }
 
-const _donationsTab = _TabDef(
+const _donationsTab = DefinicaoAba(
   icon: Icons.volunteer_activism_outlined,
   activeIcon: Icons.volunteer_activism_rounded,
   label: 'Doações',
@@ -238,31 +212,31 @@ const _donationsTab = _TabDef(
 );
 
 const _tabs = [
-  _TabDef(
+  DefinicaoAba(
     icon: Icons.home_outlined,
     activeIcon: Icons.home_rounded,
     label: 'Início',
     color: Color(0xFF1D5FA8),
   ),
-  _TabDef(
+  DefinicaoAba(
     icon: Icons.inventory_2_outlined,
     activeIcon: Icons.inventory_2_rounded,
     label: 'Estoque',
     color: Color(0xFF2563EB),
   ),
-  _TabDef(
+  DefinicaoAba(
     icon: Icons.outbound_outlined,
     activeIcon: Icons.outbound_rounded,
     label: 'Saída',
     color: Color(0xFFC53030),
   ),
-  _TabDef(
+  DefinicaoAba(
     icon: Icons.history_outlined,
     activeIcon: Icons.history_rounded,
     label: 'Histórico',
     color: Color(0xFF7C3AED),
   ),
-  _TabDef(
+  DefinicaoAba(
     icon: Icons.bar_chart_outlined,
     activeIcon: Icons.bar_chart_rounded,
     label: 'Relatórios',
@@ -270,16 +244,50 @@ const _tabs = [
   ),
 ];
 
+/// Uma aba da navegação principal.
+class Aba {
+  final String rota;
+  final DefinicaoAba def;
+
+  /// Mostra o número de lotes em risco crítico (Estoque e Saída lidam com lotes).
+  final bool mostraRisco;
+  const Aba(this.rota, this.def, {this.mostraRisco = false});
+}
+
+/// Abas que o perfil vê: Saída só para quem registra saídas (administrador e estoquista);
+/// Doações só para quem opera o portal de doações.
+List<Aba> abasDoPerfil(AppUser? usuario) => [
+      Aba(AppRoutes.dashboard, _tabs[0]),
+      Aba(AppRoutes.productList, _tabs[1], mostraRisco: true),
+      if (usuario?.canEdit ?? false)
+        Aba(AppRoutes.movement, _tabs[2], mostraRisco: true),
+      Aba(AppRoutes.history, _tabs[3]),
+      Aba(AppRoutes.reports, _tabs[4]),
+      if (canOperateDonations(usuario))
+        Aba(AppRoutes.opsDonations, _donationsTab),
+    ];
+
+/// Índice da aba da rota atual, ou -1 nas telas que não são abas (Configurações,
+/// Alertas, Auditoria…). Aprovações de ajuste ficam em Configurações, não em Saída.
+int indiceDaAba(String location, List<Aba> abas) {
+  if (location.startsWith(AppRoutes.adjustmentApprovals)) return -1;
+  for (var i = 0; i < abas.length; i++) {
+    final r = abas[i].rota;
+    if (location == r || location.startsWith('$r/')) return i;
+  }
+  return -1;
+}
+
 // ─── Animated Tab Bar ────────────────────────────────────────────────────────
 
 class _AnimatedTabBar extends ConsumerWidget {
   final int selectedIndex;
-  final bool showDonations;
+  final List<Aba> abas;
   final ValueChanged<int> onTap;
 
   const _AnimatedTabBar({
     required this.selectedIndex,
-    required this.showDonations,
+    required this.abas,
     required this.onTap,
   });
 
@@ -293,8 +301,9 @@ class _AnimatedTabBar extends ConsumerWidget {
           orElse: () => 0,
         );
 
-    final visibleTabs = [..._tabs, if (showDonations) _donationsTab];
-    final pendingDonations = showDonations ? ref.watch(pendingDonationsCountProvider) : 0;
+    final temDoacoes = abas.any((a) => a.rota == AppRoutes.opsDonations);
+    final pendingDonations =
+        temDoacoes ? ref.watch(pendingDonationsCountProvider) : 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -318,12 +327,12 @@ class _AnimatedTabBar extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           child: Row(
-            children: List.generate(visibleTabs.length, (i) {
-              final isDonations = showDonations && i == _tabs.length;
-              final showBadge = criticalCount > 0 && (i == 1 || i == 2);
+            children: List.generate(abas.length, (i) {
+              final isDonations = abas[i].rota == AppRoutes.opsDonations;
+              final showBadge = criticalCount > 0 && abas[i].mostraRisco;
               return Expanded(
                 child: _TabItem(
-                  tab: visibleTabs[i],
+                  tab: abas[i].def,
                   selected: selectedIndex == i,
                   badgeCount: isDonations
                       ? pendingDonations
@@ -340,7 +349,7 @@ class _AnimatedTabBar extends ConsumerWidget {
 }
 
 class _TabItem extends StatelessWidget {
-  final _TabDef tab;
+  final DefinicaoAba tab;
   final bool selected;
   final int badgeCount;
   final VoidCallback onTap;

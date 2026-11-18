@@ -101,7 +101,7 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
       backgroundColor: cs.surface,
       body: Column(children: [
       ModernProfileAppBar(
-        title: 'Notificações',
+        title: 'Alertas',
         pageIcon: Icons.notifications_active_rounded,
         iconColor: const Color(0xFFFBBF24),
         subtitle: alertsAsync.when(

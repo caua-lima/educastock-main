@@ -29,8 +29,8 @@ class LocationsPage extends ConsumerWidget {
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: Column(children: [
       ModernProfileAppBar(
-        title: 'Depósito',
-        subtitle: 'Prateleiras e armários',
+        title: 'Localizações',
+        subtitle: 'Prateleiras e armários do depósito',
         pageIcon: Icons.warehouse_rounded,
         iconColor: const Color(0xFFA78BFA),
         profileName: user?.name,

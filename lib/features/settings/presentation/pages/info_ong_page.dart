@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/firebase/firebase_providers.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../chatbot/domain/info_ong.dart';
@@ -23,13 +25,13 @@ class _InfoOngPageState extends ConsumerState<InfoOngPage> {
       'horarioFuncionamento',
       'Horário de funcionamento',
       'Ex.: de segunda a sexta, das 7h às 17h',
-      1
+      2
     ),
     (
       'horarioEntregas',
       'Horário para receber doações',
       'Ex.: de segunda a sexta, das 8h às 16h',
-      1
+      2
     ),
     ('telefone', 'Telefone', '(19) 3863-0229', 1),
     ('whatsapp', 'WhatsApp', 'Ex.: (19) 9 9999-9999', 1),
@@ -104,7 +106,13 @@ class _InfoOngPageState extends ConsumerState<InfoOngPage> {
     final user = ref.watch(currentUserProvider);
     if (user?.role != UserRole.admin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Informações da ONG')),
+        appBar: AppBar(
+          leading: BackButton(
+              onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(AppRoutes.settings)),
+          title: const Text('Informações da ONG'),
+        ),
         body: const Center(
           child: CasaEmptyState(
             icon: Icons.lock_outline_rounded,
@@ -117,7 +125,13 @@ class _InfoOngPageState extends ConsumerState<InfoOngPage> {
     }
     final info = ref.watch(infoOngProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Informações da ONG')),
+      appBar: AppBar(
+        leading: BackButton(
+            onPressed: () => context.canPop()
+                ? context.pop()
+                : context.go(AppRoutes.settings)),
+        title: const Text('Informações da ONG'),
+      ),
       body: info.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => _formulario(cs, InfoOng.padrao),

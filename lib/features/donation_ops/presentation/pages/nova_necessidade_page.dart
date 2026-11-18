@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_system.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../donations/domain/entities/donation_need.dart';
 import '../../../donations/domain/nova_necessidade.dart';
@@ -128,7 +129,14 @@ class _NovaNecessidadePageState extends ConsumerState<NovaNecessidadePage> {
 
     return Scaffold(
       backgroundColor: cs.surface,
-      appBar: AppBar(title: const Text('Nova necessidade')),
+      appBar: AppBar(
+        // Volta para Doações mesmo quando a tela foi aberta direto pelo endereço.
+        leading: BackButton(
+            onPressed: () => context.canPop()
+                ? context.pop()
+                : context.go(AppRoutes.opsDonations)),
+        title: const Text('Nova necessidade'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
