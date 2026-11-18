@@ -29,6 +29,7 @@ import '../../features/locations/presentation/pages/location_create_page.dart';
 import '../../features/settings/presentation/pages/users_management_page.dart';
 import '../../features/settings/presentation/pages/categories_settings_page.dart';
 import '../../features/settings/presentation/pages/alerts_settings_page.dart';
+import '../../features/settings/presentation/pages/info_ong_page.dart';
 import '../../features/ml/presentation/pages/ml_insights_page.dart' deferred as insights;
 import '../../features/ml/presentation/pages/forecast_page.dart' deferred as forecast;
 import '../../features/recipes/presentation/pages/recipes_page.dart';
@@ -89,6 +90,7 @@ abstract class AppRoutes {
   static const usersManagement = '/settings/users';
   static const categoriesSettings = '/settings/categories';
   static const alertsSettings = '/settings/alerts';
+  static const infoOng = '/settings/ong';
   static const mlInsights = '/ml/insights';
   static const mlForecast = '/ml/forecast';
   static const recipes = '/recipes';
@@ -394,6 +396,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.alertsSettings,
             builder: (_, __) => _framed(const AlertsSettingsPage()),
+          ),
+          GoRoute(
+            path: AppRoutes.infoOng,
+            builder: (_, __) => _framed(const InfoOngPage()),
           ),
           GoRoute(
             path: AppRoutes.mlInsights,

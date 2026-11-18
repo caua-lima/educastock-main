@@ -54,7 +54,8 @@ class GeminiChatService {
         model: model,
         apiKey: key,
         systemInstruction: Content.system(kAssistantSystemPrompt),
-        generationConfig: GenerationConfig(temperature: 0.5, maxOutputTokens: 700),
+        generationConfig:
+            GenerationConfig(temperature: 0.5, maxOutputTokens: 700),
       );
       final chat = generative.startChat(history: [
         for (final m in history)
@@ -113,11 +114,14 @@ class GeminiChatService {
       }
     }
     throw last ??
-        const ChatServiceException('Não consegui responder agora. Tente de novo.');
+        const ChatServiceException(
+            'Não consegui responder agora. Tente de novo.');
   }
 
   static bool _isKeyProblem(String message) {
     final m = message.toLowerCase();
-    return m.contains('api key') || m.contains('api_key') || m.contains('permission_denied');
+    return m.contains('api key') ||
+        m.contains('api_key') ||
+        m.contains('permission_denied');
   }
 }

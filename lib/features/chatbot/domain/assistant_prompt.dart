@@ -37,7 +37,9 @@ const List<String> kAssistantSuggestions = [
   'O que posso doar?',
   'Qual a validade mínima dos alimentos?',
   'Como funciona a entrega da doação?',
+  'Qual o horário de funcionamento?',
   'Onde fica a Casa da Criança?',
+  'Do que vocês mais precisam?',
   'Posso doar em dinheiro?',
 ];
 
