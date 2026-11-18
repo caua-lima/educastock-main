@@ -345,6 +345,12 @@ class SettingsPage extends ConsumerWidget {
               onTap: () => context.push(AppRoutes.locations),
             ),
             if (ehAdmin)
+            if (ehAdmin)
+            _SettingsTile(
+              icon: Icons.smart_toy_outlined,
+              label: 'Informações da ONG (assistente)',
+              onTap: () => context.push(AppRoutes.infoOng),
+            ),
             _SettingsTile(
               icon: Icons.notifications_outlined,
               label: 'Configurações de Alertas',

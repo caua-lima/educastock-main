@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/donation_need.dart';
+import '../../domain/nova_necessidade.dart';
 
 /// Necessidades ativas da ONG (`donation_needs`) — RF19.
 class DonationNeedsDatasource {
@@ -25,6 +26,24 @@ class DonationNeedsDatasource {
             .map((d) => DonationNeed.fromMap(d.data(), d.id))
             .toList(growable: false));
   }
+
+  /// Publica uma necessidade criada pela equipe (regra do banco: só administrador e
+  /// estoquista). `updatedAt` é obrigatório: a lista do doador ordena por ele.
+  Future<String> criarNecessidade(NovaNecessidade n,
+      {required String criadoPor}) async {
+    final doc = await _col.add({
+      ...n.dados(criadoPor: criadoPor),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return doc.id;
+  }
+
+  /// Tira a necessidade do portal (o banco não permite apagar: fica o histórico).
+  Future<void> encerrarNecessidade(String id) => _col.doc(id).update({
+        'isActive': false,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
   Future<DonationNeed?> getNeedById(String id) async {
     if (id.isEmpty) return null;

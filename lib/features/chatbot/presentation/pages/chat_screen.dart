@@ -92,15 +92,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 child: ListView.builder(
                   controller: _scroll,
                   padding: const EdgeInsets.all(AppSpacing.lg),
-                  itemCount: itemCount + (chat.isFresh && !chat.sending ? 1 : 0),
+                  itemCount:
+                      itemCount + (chat.isFresh && !chat.sending ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index < chat.messages.length) {
                       final message = chat.messages[index];
                       return _Bubble(
                         message: message,
-                        onRetry: message.isError && index == chat.messages.length - 1
-                            ? () => ref.read(chatControllerProvider.notifier).retry()
-                            : null,
+                        onRetry:
+                            message.isError && index == chat.messages.length - 1
+                                ? () => ref
+                                    .read(chatControllerProvider.notifier)
+                                    .retry()
+                                : null,
                       );
                     }
                     if (chat.sending && index == chat.messages.length) {
@@ -117,7 +121,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: Container(
               decoration: BoxDecoration(
                 color: cs.surfaceContainerLow,
-                border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5))),
+                border: Border(
+                    top: BorderSide(
+                        color: cs.outlineVariant.withValues(alpha: 0.5))),
               ),
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
@@ -164,7 +170,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           backgroundColor: AppColors.brandPrimary600,
                           minimumSize: const Size(48, 48),
                         ),
-                        icon: const Icon(Icons.send_rounded, color: Colors.white),
+                        icon:
+                            const Icon(Icons.send_rounded, color: Colors.white),
                       ),
                     ],
                   ),
@@ -190,7 +197,9 @@ class _Bubble extends StatelessWidget {
     final isUser = message.isUser;
     final background = isUser
         ? AppColors.brandPrimary600
-        : (message.isError ? AppColors.danger600.withValues(alpha: 0.1) : cs.surfaceContainerHighest);
+        : (message.isError
+            ? AppColors.danger600.withValues(alpha: 0.1)
+            : cs.surfaceContainerHighest);
     final foreground = isUser
         ? Colors.white
         : (message.isError ? AppColors.danger600 : cs.onSurface);
@@ -199,8 +208,12 @@ class _Bubble extends StatelessWidget {
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.md),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.82 > 560 ? 560 : MediaQuery.of(context).size.width * 0.82),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.82 > 560
+                ? 560
+                : MediaQuery.of(context).size.width * 0.82),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.only(
@@ -216,7 +229,8 @@ class _Bubble extends StatelessWidget {
           children: [
             SelectableText(
               message.text,
-              style: AppTypography.bodyMedium.copyWith(color: foreground, height: 1.4),
+              style: AppTypography.bodyMedium
+                  .copyWith(color: foreground, height: 1.4),
             ),
             if (onRetry != null)
               TextButton(
@@ -247,7 +261,8 @@ class _TypingBubble extends StatelessWidget {
         label: 'O assistente está digitando',
         child: Container(
           margin: const EdgeInsets.only(bottom: AppSpacing.md),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.md),
           decoration: BoxDecoration(
             color: cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(18),
@@ -255,7 +270,9 @@ class _TypingBubble extends StatelessWidget {
           child: const SizedBox(
             width: 36,
             height: 12,
-            child: LinearProgressIndicator(minHeight: 4, borderRadius: BorderRadius.all(Radius.circular(4))),
+            child: LinearProgressIndicator(
+                minHeight: 4,
+                borderRadius: BorderRadius.all(Radius.circular(4))),
           ),
         ),
       ),
@@ -277,7 +294,8 @@ class _Suggestions extends StatelessWidget {
           ActionChip(
             label: Text(s),
             onPressed: () => onPick(s),
-            labelStyle: AppTypography.labelMedium.copyWith(color: AppColors.brandPrimary600),
+            labelStyle: AppTypography.labelMedium
+                .copyWith(color: AppColors.brandPrimary600),
             side: const BorderSide(color: AppColors.brandPrimary600),
             backgroundColor: Colors.transparent,
           ),
