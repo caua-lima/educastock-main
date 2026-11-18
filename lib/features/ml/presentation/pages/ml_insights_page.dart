@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/utils/texto_validade.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../batches/domain/entities/batch.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
 import '../controllers/risk_classifier_provider.dart';
@@ -148,8 +149,8 @@ class _MlInsightsPageState extends ConsumerState<MlInsightsPage> {
                     },
                     loading: () => const _GridSkeleton(),
                     error: (e, _) => Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                       child: Text('Erro: $e', style: AppTypography.bodySmall),
                     ),
                   ),
@@ -457,9 +458,7 @@ class _FilterChipsBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md, vertical: 6),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? color
-                      : color.withValues(alpha: 0.10),
+                  color: selected ? color : color.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   border: Border.all(
                     color: color.withValues(alpha: selected ? 1 : 0.3),
@@ -563,18 +562,20 @@ class _GridSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      child: LayoutBuilder(builder: (context, box) => GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: box.maxWidth >= 900 ? 5 : (box.maxWidth >= 620 ? 4 : 2),
-          mainAxisSpacing: AppSpacing.sm,
-          crossAxisSpacing: AppSpacing.sm,
-          mainAxisExtent: alturaCartaoRisco(context),
-        ),
-        itemCount: 6,
-        itemBuilder: (_, __) => const CasaCardSkeleton(),
-      )),
+      child: LayoutBuilder(
+          builder: (context, box) => GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount:
+                      box.maxWidth >= 900 ? 5 : (box.maxWidth >= 620 ? 4 : 2),
+                  mainAxisSpacing: AppSpacing.sm,
+                  crossAxisSpacing: AppSpacing.sm,
+                  mainAxisExtent: alturaCartaoRisco(context),
+                ),
+                itemCount: 6,
+                itemBuilder: (_, __) => const CasaCardSkeleton(),
+              )),
     );
   }
 }
@@ -638,9 +639,7 @@ class _RiskGridCard extends StatelessWidget {
     final dateFmt = DateFormat('dd/MM');
     final b = batch;
     final qty = b?.quantity ?? 0;
-    final dExp = b == null
-        ? null
-        : (b.noExpiry ? null : b.daysToExpiry);
+    final dExp = b == null ? null : (b.noExpiry ? null : b.daysToExpiry);
     final expDate = b?.expiryDate;
     final expLabel = b == null
         ? '—'
@@ -656,7 +655,8 @@ class _RiskGridCard extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (_, v, child) => Opacity(
         opacity: v,
-        child: Transform.translate(offset: Offset(0, 10 * (1 - v)), child: child),
+        child:
+            Transform.translate(offset: Offset(0, 10 * (1 - v)), child: child),
       ),
       child: GestureDetector(
         onTap: () => _openProduct(context),
@@ -690,8 +690,8 @@ class _RiskGridCard extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(13)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(13)),
                     ),
                     child: Stack(
                       children: [
@@ -777,7 +777,8 @@ class _RiskGridCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Icon(Icons.event_rounded, size: 13, color: cs.onSurfaceVariant),
+                              Icon(Icons.event_rounded,
+                                  size: 13, color: cs.onSurfaceVariant),
                               const SizedBox(width: 3),
                               Flexible(
                                 child: Text(
@@ -794,26 +795,41 @@ class _RiskGridCard extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _MiniActionButton(
-                                  icon: Icons.outbound_rounded,
-                                  label: 'Saída',
-                                  color: accent,
-                                  onTap: () => _openMovement(context),
-                                ),
-                              ),
-                              const SizedBox(width: 3),
-                              Tooltip(
-                                message: 'Mais ações do lote',
-                                child: _MiniIconButton(
-                                  icon: Icons.more_horiz_rounded,
-                                  color: cs.onSurfaceVariant,
-                                  onTap: () => _openActionsSheet(context),
-                                ),
-                              ),
-                            ],
+                          // Saída e descarte só para quem registra saídas; voluntário e
+                          // consulta veem o produto.
+                          Consumer(
+                            builder: (context, ref, _) => (ref
+                                        .watch(currentUserProvider)
+                                        ?.canEdit ??
+                                    false)
+                                ? Row(
+                                    children: [
+                                      Expanded(
+                                        child: _MiniActionButton(
+                                          icon: Icons.outbound_rounded,
+                                          label: 'Saída',
+                                          color: accent,
+                                          onTap: () => _openMovement(context),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Tooltip(
+                                        message: 'Mais ações do lote',
+                                        child: _MiniIconButton(
+                                          icon: Icons.more_horiz_rounded,
+                                          color: cs.onSurfaceVariant,
+                                          onTap: () =>
+                                              _openActionsSheet(context),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : _MiniActionButton(
+                                    icon: Icons.info_outline_rounded,
+                                    label: 'Ver produto',
+                                    color: accent,
+                                    onTap: () => _openProduct(context),
+                                  ),
                           ),
                         ],
                       ),
@@ -889,8 +905,8 @@ class _RiskGridCard extends StatelessWidget {
             Text(
               'Nível ${prediction.level.label} • '
               '${(prediction.confidence * 100).toStringAsFixed(0)}% confiança',
-              style: AppTypography.bodySmall
-                  .copyWith(color: cs.onSurfaceVariant),
+              style:
+                  AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: AppSpacing.md),
             _ActionTile(
@@ -951,27 +967,27 @@ class _MiniActionButton extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
           child: SizedBox(
-           height: 40,
-           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: Colors.white, size: 16),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
+            height: 40,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white, size: 16),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
-              ),
-            ],
-           ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1055,8 +1071,7 @@ class _ActionTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded,
-                    color: color, size: 20),
+                Icon(Icons.chevron_right_rounded, color: color, size: 20),
               ],
             ),
           ),
@@ -1065,4 +1080,3 @@ class _ActionTile extends StatelessWidget {
     );
   }
 }
-

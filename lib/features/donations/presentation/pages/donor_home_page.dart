@@ -17,11 +17,14 @@ import '../widgets/need_card.dart';
 /// Nome na saudação do portal: o primeiro nome da pessoa ("Olá, Luciana") ou, para
 /// empresa, o nome sem "Ltda", "S.A."… ("Olá, Supermercado Boa Compra").
 String nomeNaSaudacao(String? nomePerfil, String? nomeConta, DonorType? tipo) {
-  final completo = ((nomePerfil?.trim().isNotEmpty ?? false) ? nomePerfil! : (nomeConta ?? ''))
+  final completo = ((nomePerfil?.trim().isNotEmpty ?? false)
+          ? nomePerfil!
+          : (nomeConta ?? ''))
       .trim()
       .replaceAll(RegExp(r'\s+'), ' ');
   if (completo.isEmpty) return 'doador';
-  final sufixo = RegExp(r'[\s,-]+(ltda\.?|eireli|epp|s\.a\.?|s/a)$', caseSensitive: false);
+  final sufixo =
+      RegExp(r'[\s,-]+(ltda\.?|eireli|epp|s\.a\.?|s/a)$', caseSensitive: false);
   final ehEmpresa = tipo == DonorType.pj || sufixo.hasMatch(completo);
   if (!ehEmpresa) return completo.split(' ').first;
   final semSufixo = completo.replaceFirst(sufixo, '').trim();
@@ -32,7 +35,6 @@ String nomeNaSaudacao(String? nomePerfil, String? nomeConta, DonorType? tipo) {
 /// prioridades mais urgentes da semana.
 class DonorHomePage extends ConsumerWidget {
   const DonorHomePage({super.key});
-
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,7 +49,8 @@ class DonorHomePage extends ConsumerWidget {
       body: Column(
         children: [
           DonorHeader(
-            title: 'Olá, ${nomeNaSaudacao(profile?.displayName, user?.name, profile?.donorType)}',
+            title:
+                'Olá, ${nomeNaSaudacao(profile?.displayName, user?.name, profile?.donorType)}',
             subtitle: 'Portal do Doador · Casa da Criança',
           ),
           Expanded(
@@ -68,7 +71,8 @@ class DonorHomePage extends ConsumerWidget {
                     loading: () => const CasaLoadingSkeleton(height: 72),
                     error: (_, __) => const SizedBox.shrink(),
                     data: (list) {
-                      if (list.isEmpty) return const SizedBox.shrink();
+                      // Doador novo: explica o caminho antes da primeira doação.
+                      if (list.isEmpty) return const _ComoFunciona();
                       final last = list.first;
                       return Column(
                         children: [
@@ -228,7 +232,8 @@ class _ImpactSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final received = donations.where((d) => d.status.isConcluded).toList();
-    final unitsReceived = received.fold<int>(0, (total, d) => total + d.totalUnits);
+    final unitsReceived =
+        received.fold<int>(0, (total, d) => total + d.totalUnits);
     final inProgress = donations.where((d) => d.status.isOpen).length;
 
     return Container(
@@ -246,7 +251,8 @@ class _ImpactSummary extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.volunteer_activism_rounded, color: Colors.white, size: 20),
+              const Icon(Icons.volunteer_activism_rounded,
+                  color: Colors.white, size: 20),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'Seu impacto',
@@ -297,6 +303,79 @@ class _Stat extends StatelessWidget {
             style: AppTypography.labelSmall
                 .copyWith(color: Colors.white.withValues(alpha: 0.85)),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Para quem ainda não doou: o caminho da doação em três passos.
+class _ComoFunciona extends StatelessWidget {
+  const _ComoFunciona();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    const passos = [
+      (
+        Icons.favorite_rounded,
+        'Escolha o que doar',
+        'Veja em "Precisa" o que a Casa da Criança mais precisa agora.'
+      ),
+      (
+        Icons.qr_code_2_rounded,
+        'Registre a doação',
+        'Informe quantidade e validade. Você recebe um protocolo e um QR Code.'
+      ),
+      (
+        Icons.local_shipping_rounded,
+        'Entregue e acompanhe',
+        'Leve no dia combinado, mostre o QR Code e veja o impacto da sua doação.'
+      ),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Como funciona',
+              style: AppTypography.headingSmall.copyWith(color: cs.onSurface)),
+          const SizedBox(height: AppSpacing.md),
+          for (var i = 0; i < passos.length; i++) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor:
+                      AppColors.brandPrimary600.withValues(alpha: 0.12),
+                  child: Icon(passos[i].$1,
+                      size: 18, color: AppColors.brandPrimary600),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${i + 1}. ${passos[i].$2}',
+                          style: AppTypography.labelLarge
+                              .copyWith(color: cs.onSurface)),
+                      const SizedBox(height: 2),
+                      Text(passos[i].$3,
+                          style: AppTypography.bodySmall
+                              .copyWith(color: cs.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (i < passos.length - 1) const SizedBox(height: AppSpacing.md),
+          ],
         ],
       ),
     );

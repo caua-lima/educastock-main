@@ -243,7 +243,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Entre para continuar gerenciando o estoque da Casa da Criança',
+                              'Equipe e doadores da Casa da Criança entram por aqui',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13.5,
@@ -441,7 +441,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
-                                  'Ainda não tem conta?',
+                                  'Quer doar e ainda não tem conta?',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: isDark
@@ -453,7 +453,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   onPressed: () =>
                                       context.go(AppRoutes.register),
                                   child: const Text(
-                                    'Criar agora',
+                                    'Cadastre-se',
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w800,

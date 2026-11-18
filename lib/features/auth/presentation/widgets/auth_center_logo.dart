@@ -33,12 +33,13 @@ class AuthCenterLogo extends StatelessWidget {
               width: 2.5,
             ),
           ),
+          // O logo inteiro cabe no círculo (o zoom anterior cortava "EducaStock").
           child: ClipOval(
-            child: Transform.scale(
-              scale: 1.55, // zoom in para eliminar espaços em branco
+            child: Padding(
+              padding: const EdgeInsets.all(14),
               child: Image.asset(
                 'assets/images/logo.png',
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
               ),
             ),
           ),

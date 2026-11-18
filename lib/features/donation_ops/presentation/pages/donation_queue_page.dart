@@ -42,6 +42,11 @@ class DonationQueuePage extends ConsumerWidget {
             Material(
               color: cs.surfaceContainerLow,
               child: TabBar(
+                // No celular as três abas não cabem com os números: rolam de lado.
+                isScrollable: MediaQuery.sizeOf(context).width < 600,
+                tabAlignment: MediaQuery.sizeOf(context).width < 600
+                    ? TabAlignment.start
+                    : null,
                 labelColor: AppColors.brandPrimary600,
                 unselectedLabelColor: cs.onSurfaceVariant,
                 indicatorColor: AppColors.brandPrimary600,
