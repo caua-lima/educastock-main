@@ -161,7 +161,8 @@ class _FooterBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
-        border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5))),
+        border: Border(
+            top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5))),
       ),
       child: SafeArea(
         top: false,
@@ -203,7 +204,8 @@ class _StepOrigin extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
               if (draft.items.isNotEmpty) ...[
-                CasaSectionHeader(title: 'Itens da doação', count: draft.items.length),
+                CasaSectionHeader(
+                    title: 'Itens da doação', count: draft.items.length),
                 const SizedBox(height: AppSpacing.sm),
                 for (var i = 0; i < draft.items.length; i++) ...[
                   _ItemTile(
@@ -235,7 +237,8 @@ class _StepOrigin extends ConsumerWidget {
                 error: (_, __) => Text(
                   'Não foi possível carregar as necessidades. '
                   'Você ainda pode oferecer um item livre abaixo.',
-                  style: AppTypography.bodyMedium.copyWith(color: cs.onSurfaceVariant),
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: cs.onSurfaceVariant),
                 ),
                 data: (list) {
                   if (list.isEmpty) {
@@ -321,7 +324,8 @@ class _NeedPickTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(need.title,
-                        style: AppTypography.labelLarge.copyWith(color: cs.onSurface)),
+                        style: AppTypography.labelLarge
+                            .copyWith(color: cs.onSurface)),
                     Text(
                       'Restam ${need.remainingQty} ${need.unit} a cobrir · '
                       'prioridade ${need.priority.label.toLowerCase()}',
@@ -379,10 +383,11 @@ class _ItemTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(item.description,
-                    style: AppTypography.labelLarge.copyWith(color: cs.onSurface)),
-                Text(details,
                     style:
-                        AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant)),
+                        AppTypography.labelLarge.copyWith(color: cs.onSurface)),
+                Text(details,
+                    style: AppTypography.bodySmall
+                        .copyWith(color: cs.onSurfaceVariant)),
                 if (item.subjectToReview)
                   Text(
                     'Sujeito a avaliação da equipe',
@@ -400,7 +405,8 @@ class _ItemTile extends StatelessWidget {
           IconButton(
             tooltip: 'Remover item',
             onPressed: onRemove,
-            icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger600),
+            icon: const Icon(Icons.delete_outline_rounded,
+                color: AppColors.danger600),
           ),
         ],
       ),
@@ -424,7 +430,8 @@ class _StepItem extends ConsumerWidget {
       return CasaEmptyState(
         icon: Icons.inventory_2_outlined,
         title: 'Nenhum item selecionado',
-        description: 'Escolha o que será doado para informar quantidade e validade.',
+        description:
+            'Escolha o que será doado para informar quantidade e validade.',
         ctaLabel: 'Escolher item',
         onCta: () => onGoTo(0),
       );
@@ -432,7 +439,8 @@ class _StepItem extends ConsumerWidget {
 
     // Chave por sessão de edição: recria os controllers ao trocar de item.
     return _ItemEditor(
-      key: ValueKey('${draft.editingIndex}-${editing.needId}-${draft.items.length}'),
+      key: ValueKey(
+          '${draft.editingIndex}-${editing.needId}-${draft.items.length}'),
       onGoTo: onGoTo,
     );
   }
@@ -459,7 +467,8 @@ class _ItemEditorState extends ConsumerState<_ItemEditor> {
     final item = ref.read(donationDraftProvider).editing;
     _description = TextEditingController(text: item?.description ?? '');
     _expiry = TextEditingController(
-      text: item?.expiryDate == null ? '' : _dateFormat.format(item!.expiryDate!),
+      text:
+          item?.expiryDate == null ? '' : _dateFormat.format(item!.expiryDate!),
     );
   }
 
@@ -478,6 +487,12 @@ class _ItemEditorState extends ConsumerState<_ItemEditor> {
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: now.add(const Duration(days: 365 * 10)),
       helpText: 'Validade do item',
+      // Abre digitando a data (dd/mm/aaaa); o ícone do calendário continua disponível.
+      initialEntryMode: DatePickerEntryMode.input,
+      fieldLabelText: 'Data de validade',
+      fieldHintText: 'dd/mm/aaaa',
+      errorFormatText: 'Digite a data no formato dd/mm/aaaa',
+      errorInvalidText: 'Data fora do intervalo permitido',
     );
     if (picked == null) return;
     _expiry.text = _dateFormat.format(picked);
@@ -494,7 +509,8 @@ class _ItemEditorState extends ConsumerState<_ItemEditor> {
       showCasaSnackbar(context, message: error, isError: true);
       return;
     }
-    showCasaSnackbar(context, message: 'Item adicionado à doação.', isSuccess: true);
+    showCasaSnackbar(context,
+        message: 'Item adicionado à doação.', isSuccess: true);
     widget.onGoTo(0);
   }
 
@@ -506,7 +522,8 @@ class _ItemEditorState extends ConsumerState<_ItemEditor> {
     if (item == null) return const SizedBox.shrink();
 
     final notifier = ref.read(donationDraftProvider.notifier);
-    final rules = ref.watch(donationRulesProvider).valueOrNull ?? const DonationRules();
+    final rules =
+        ref.watch(donationRulesProvider).valueOrNull ?? const DonationRules();
     final need = ref.watch(editingNeedProvider);
     final fromNeed = item.needId != null;
 
@@ -530,7 +547,8 @@ class _ItemEditorState extends ConsumerState<_ItemEditor> {
               if (fromNeed)
                 Text(
                   item.description,
-                  style: AppTypography.headingMedium.copyWith(color: cs.onSurface),
+                  style:
+                      AppTypography.headingMedium.copyWith(color: cs.onSurface),
                 )
               else ...[
                 CasaTextField(
@@ -538,7 +556,8 @@ class _ItemEditorState extends ConsumerState<_ItemEditor> {
                   hint: 'Ex.: Arroz tipo 1, 5 kg',
                   controller: _description,
                   textInputAction: TextInputAction.next,
-                  onChanged: (v) => notifier.updateEditing(item.copyWith(description: v)),
+                  onChanged: (v) =>
+                      notifier.updateEditing(item.copyWith(description: v)),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 DropdownButtonFormField<String>(
@@ -568,20 +587,24 @@ class _ItemEditorState extends ConsumerState<_ItemEditor> {
                   initialValue: _units.contains(item.unit) ? item.unit : 'un',
                   decoration: const InputDecoration(labelText: 'Unidade'),
                   items: [
-                    for (final u in _units) DropdownMenuItem(value: u, child: Text(u)),
+                    for (final u in _units)
+                      DropdownMenuItem(value: u, child: Text(u)),
                   ],
                   onChanged: (value) {
-                    if (value != null) notifier.updateEditing(item.copyWith(unit: value));
+                    if (value != null) {
+                      notifier.updateEditing(item.copyWith(unit: value));
+                    }
                   },
                 ),
               ],
               const SizedBox(height: AppSpacing.xl),
-
-              Text('Quantidade (${item.unit})', style: AppTypography.labelLarge),
+              Text('Quantidade (${item.unit})',
+                  style: AppTypography.labelLarge),
               const SizedBox(height: AppSpacing.sm),
               QuantityStepper(
                 value: item.quantity,
-                onChanged: (v) => notifier.updateEditing(item.copyWith(quantity: v)),
+                onChanged: (v) =>
+                    notifier.updateEditing(item.copyWith(quantity: v)),
               ),
               if (need != null)
                 Padding(
@@ -596,7 +619,6 @@ class _ItemEditorState extends ConsumerState<_ItemEditor> {
                   ),
                 ),
               const SizedBox(height: AppSpacing.xl),
-
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('O item tem data de validade'),
@@ -623,7 +645,6 @@ class _ItemEditorState extends ConsumerState<_ItemEditor> {
                 _ShelfLifeHint(item: item, validation: validation),
               ],
               const SizedBox(height: AppSpacing.xl),
-
               Text('Estado do item', style: AppTypography.labelLarge),
               const SizedBox(height: AppSpacing.sm),
               Wrap(
@@ -797,7 +818,8 @@ class _StepDeliveryState extends ConsumerState<_StepDelivery> {
         ? null
         : ref.watch(donationPointByIdProvider(draft.pointId!));
     final windowError = _windowError(draft.window, point);
-    final canContinue = point != null && draft.window != null && windowError == null;
+    final canContinue =
+        point != null && draft.window != null && windowError == null;
 
     return Column(
       children: [
@@ -811,7 +833,8 @@ class _StepDeliveryState extends ConsumerState<_StepDelivery> {
                 loading: () => const CasaCardSkeleton(),
                 error: (_, __) => Text(
                   'Não foi possível carregar os pontos de recebimento.',
-                  style: AppTypography.bodyMedium.copyWith(color: AppColors.danger600),
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.danger600),
                 ),
                 data: (list) {
                   if (list.isEmpty) {
@@ -857,7 +880,9 @@ class _StepDeliveryState extends ConsumerState<_StepDelivery> {
                     child: OutlinedButton.icon(
                       onPressed: () => _pickTime(isStart: true),
                       icon: const Icon(Icons.schedule_rounded),
-                      label: Text(_start == null ? 'Das' : 'Das ${_start!.format(context)}'),
+                      label: Text(_start == null
+                          ? 'Das'
+                          : 'Das ${_start!.format(context)}'),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -865,7 +890,9 @@ class _StepDeliveryState extends ConsumerState<_StepDelivery> {
                     child: OutlinedButton.icon(
                       onPressed: () => _pickTime(isStart: false),
                       icon: const Icon(Icons.schedule_rounded),
-                      label: Text(_end == null ? 'Até' : 'Até ${_end!.format(context)}'),
+                      label: Text(_end == null
+                          ? 'Até'
+                          : 'Até ${_end!.format(context)}'),
                     ),
                   ),
                 ],
@@ -875,7 +902,8 @@ class _StepDeliveryState extends ConsumerState<_StepDelivery> {
                   padding: const EdgeInsets.only(top: AppSpacing.sm),
                   child: Text(
                     windowError,
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.danger600),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.danger600),
                   ),
                 ),
             ],
@@ -939,7 +967,8 @@ class _PointCard extends StatelessWidget {
                 selected
                     ? Icons.radio_button_checked_rounded
                     : Icons.radio_button_off_rounded,
-                color: selected ? AppColors.brandPrimary600 : cs.onSurfaceVariant,
+                color:
+                    selected ? AppColors.brandPrimary600 : cs.onSurfaceVariant,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -947,7 +976,8 @@ class _PointCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(point.name,
-                        style: AppTypography.labelLarge.copyWith(color: cs.onSurface)),
+                        style: AppTypography.labelLarge
+                            .copyWith(color: cs.onSurface)),
                     Text(point.address,
                         style: AppTypography.bodyMedium
                             .copyWith(color: cs.onSurfaceVariant)),
@@ -985,7 +1015,8 @@ class _StepReview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final draft = ref.watch(donationDraftProvider);
-    final rules = ref.watch(donationRulesProvider).valueOrNull ?? const DonationRules();
+    final rules =
+        ref.watch(donationRulesProvider).valueOrNull ?? const DonationRules();
     final submit = ref.watch(donationSubmitProvider);
     final point = draft.pointId == null
         ? null
@@ -1008,7 +1039,8 @@ class _StepReview extends ConsumerWidget {
           final message = error is DonationSubmitException
               ? error.message
               : mapAuthError(error,
-                  fallback: 'Não foi possível registrar a doação. Seu rascunho foi mantido.');
+                  fallback:
+                      'Não foi possível registrar a doação. Seu rascunho foi mantido.');
           showCasaSnackbar(context, message: message, isError: true);
         },
       );
@@ -1033,7 +1065,8 @@ class _StepReview extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
-              CasaSectionHeader(title: 'Resumo da doação', count: draft.items.length),
+              CasaSectionHeader(
+                  title: 'Resumo da doação', count: draft.items.length),
               const SizedBox(height: AppSpacing.sm),
               for (final item in draft.items) ...[
                 _ReviewItemRow(item: item),
@@ -1045,13 +1078,15 @@ class _StepReview extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+                  border: Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.4)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Entrega',
-                        style: AppTypography.labelLarge.copyWith(color: cs.onSurface)),
+                        style: AppTypography.labelLarge
+                            .copyWith(color: cs.onSurface)),
                     const SizedBox(height: AppSpacing.xs),
                     Text(point?.name ?? 'Ponto não escolhido',
                         style: AppTypography.bodyMedium),
@@ -1083,7 +1118,8 @@ class _StepReview extends ConsumerWidget {
                   child: Text(
                     'Alguns itens têm validade abaixo do mínimo ou quantidade acima '
                     'do que falta. Eles seguem sujeitos à avaliação da equipe.',
-                    style: AppTypography.bodySmall.copyWith(color: cs.onSurface),
+                    style:
+                        AppTypography.bodySmall.copyWith(color: cs.onSurface),
                   ),
                 ),
               ],
@@ -1106,7 +1142,8 @@ class _StepReview extends ConsumerWidget {
                   padding: const EdgeInsets.only(top: AppSpacing.sm),
                   child: Text(
                     errors.first,
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.danger600),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.danger600),
                   ),
                 ),
             ],

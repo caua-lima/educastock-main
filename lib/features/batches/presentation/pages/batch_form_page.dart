@@ -100,11 +100,11 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
   Future<void> _pickExpiryDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate:
-          _expiryDate ?? DateTime.now().add(const Duration(days: 30)),
+      initialDate: _expiryDate ?? DateTime.now().add(const Duration(days: 30)),
       firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
       helpText: 'Data de validade do lote',
+      initialEntryMode: DatePickerEntryMode.input,
       confirmText: 'CONFIRMAR',
       cancelText: 'CANCELAR',
       fieldLabelText: 'Data',
@@ -123,7 +123,8 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
     if (!ref.read(offlineSyncProvider).online) {
       showCasaSnackbar(
         context,
-        message: 'Sem conexão. O cadastro de lote precisa de internet; tente de novo quando voltar. '
+        message:
+            'Sem conexão. O cadastro de lote precisa de internet; tente de novo quando voltar. '
             'Saídas e ajustes de estoque podem ser feitos offline.',
         isError: true,
         duration: const Duration(seconds: 5),
@@ -153,7 +154,8 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
     }
 
     // Vencido só se a data já passou (validade de hoje ainda vale hoje).
-    if (_expiryDate != null && Batch.civilDaysBetween(DateTime.now(), _expiryDate!) < 0) {
+    if (_expiryDate != null &&
+        Batch.civilDaysBetween(DateTime.now(), _expiryDate!) < 0) {
       final confirm = await CasaDialogConfirmacao.show(
         context: context,
         title: 'Produto Vencido',
@@ -191,8 +193,7 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
     }
 
     final unitPrice = _origin == 'compra'
-        ? double.tryParse(
-            _unitPriceController.text.replaceAll(',', '.'))
+        ? double.tryParse(_unitPriceController.text.replaceAll(',', '.'))
         : null;
 
     if (_origin == 'compra' && (unitPrice == null || unitPrice < 0)) {
@@ -205,10 +206,9 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
     var effectiveProductId = existingProductId;
     if (linkedProduct == null) {
       final activeCategories = ref.read(activeProductCategoriesProvider);
-      final fallbackCategory =
-          activeCategories.contains(ProductCategory.outro)
-              ? ProductCategory.outro
-              : activeCategories.first;
+      final fallbackCategory = activeCategories.contains(ProductCategory.outro)
+          ? ProductCategory.outro
+          : activeCategories.first;
       final created = Product(
         id: '',
         name: productName,
@@ -241,8 +241,7 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
       batchNumber: _batchNumberController.text.trim().isEmpty
           ? null
           : _batchNumberController.text.trim(),
-      supplier:
-          _origin == 'compra' ? _donorController.text.trim() : null,
+      supplier: _origin == 'compra' ? _donorController.text.trim() : null,
       unitPrice: unitPrice,
       shelfLocation: _selectedLocationLabel,
       imageUrl: _existingImagePath,
@@ -331,461 +330,452 @@ class _BatchFormPageState extends ConsumerState<BatchFormPage> {
 
     return Scaffold(
       body: Column(children: [
-      ModernProfileAppBar(
-        title: _isEdit ? 'Editar Lote' : 'Cadastrar Lote',
-        pageIcon: Icons.inventory_rounded,
-        iconColor: const Color(0xFF38BDF8),
-        subtitle: productName != null
-            ? 'Produto: $productName'
-            : 'Adicionar ao estoque',
-        showBackButton: true,
-        actions: [
-          buildHelpButton(
-            context: context,
-            onPressed: () => showCasaTutorial(
+        ModernProfileAppBar(
+          title: _isEdit ? 'Editar Lote' : 'Cadastrar Lote',
+          pageIcon: Icons.inventory_rounded,
+          iconColor: const Color(0xFF38BDF8),
+          subtitle: productName != null
+              ? 'Produto: $productName'
+              : 'Adicionar ao estoque',
+          showBackButton: true,
+          actions: [
+            buildHelpButton(
               context: context,
-              steps: [
-                TutorialStep(
+              onPressed: () => showCasaTutorial(
+                context: context,
+                steps: [
+                  TutorialStep(
+                    key: _keyBatchQty,
+                    title: 'Identificação do Lote',
+                    description:
+                        'Preencha o número que identifica este lote (geralmente impresso na embalagem como "LOT" + código) e a quantidade total de unidades recebidas. Cada lote representa UMA entrada com mesma origem e validade.',
+                    icon: Icons.tag_rounded,
+                    align: ContentAlign.bottom,
+                    hints: const [
+                      'Use o código LOT impresso pelo fornecedor',
+                      '1 lote = 1 entrada com mesma validade',
+                      'Quantidade em unidades (kg, un, L conforme produto)',
+                      'Lotes diferentes do mesmo produto = entradas separadas',
+                    ],
+                  ),
+                  TutorialStep(
+                    key: _keyBatchExpiry,
+                    title: 'Validade e Origem',
+                    description:
+                        'Informe a data de validade EXATA da embalagem (campo só aparece se o produto for perecível) e a origem do lote: Doação, Compra, Parceiro ou Transferência. Estes dados alimentam alertas e relatórios.',
+                    icon: Icons.event_rounded,
+                    align: ContentAlign.bottom,
+                    hints: const [
+                      'Validade alimenta o sistema de alertas automaticamente',
+                      'Doação: itens recebidos sem custo',
+                      'Compra: itens adquiridos pela ONG',
+                      'Parceiro: vindos de organizações parceiras',
+                    ],
+                  ),
+                  TutorialStep(
+                    key: _keyBatchLocation,
+                    title: 'Localização Física',
+                    description:
+                        'Selecione onde este lote será guardado fisicamente no depósito. Escolha a prateleira e o nível na lista suspensa. Esta informação ajuda a equipe a encontrar rapidamente o lote na hora da distribuição.',
+                    icon: Icons.shelves,
+                    align: ContentAlign.bottom,
+                    hints: const [
+                      'Padrão: "Prateleira A · Nível 1"',
+                      'Não tem a localização? Crie em Configurações › Depósito',
+                      'Use nomes especiais para áreas (geladeira, freezer)',
+                      'Localização correta acelera distribuição em 70%',
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        Expanded(
+            child: SafeArea(
+          top: false,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 100),
+              children: [
+                // ── 1. Número do lote + Quantidade ──────────────────────
+                KeyedSubtree(
                   key: _keyBatchQty,
-                  title: 'Identificação do Lote',
-                  description: 'Preencha o número que identifica este lote (geralmente impresso na embalagem como "LOT" + código) e a quantidade total de unidades recebidas. Cada lote representa UMA entrada com mesma origem e validade.',
-                  icon: Icons.tag_rounded,
-                  align: ContentAlign.bottom,
-                  hints: const [
-                    'Use o código LOT impresso pelo fornecedor',
-                    '1 lote = 1 entrada com mesma validade',
-                    'Quantidade em unidades (kg, un, L conforme produto)',
-                    'Lotes diferentes do mesmo produto = entradas separadas',
-                  ],
+                  child: _BatchSection(
+                    icon: Icons.tag_rounded,
+                    iconColor: AppColors.brandPrimary600,
+                    title: 'Informações do Lote',
+                    cs: cs,
+                    child: Column(
+                      children: [
+                        CasaTextField(
+                          label: 'Número do Lote (embalagem)',
+                          hint: 'Ex: LOT20251201, L4578',
+                          controller: _batchNumberController,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.done,
+                          prefixIcon: const Icon(Icons.tag_rounded, size: 20),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        _QuantityRow(
+                          quantity: _quantity,
+                          cs: cs,
+                          onAdd: (add) => _setQuantity(_quantity + add),
+                          onDecrement: () => _setQuantity(_quantity - 1),
+                          onIncrement: () => _setQuantity(_quantity + 1),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                TutorialStep(
-                  key: _keyBatchExpiry,
-                  title: 'Validade e Origem',
-                  description: 'Informe a data de validade EXATA da embalagem (campo só aparece se o produto for perecível) e a origem do lote: Doação, Compra, Parceiro ou Transferência. Estes dados alimentam alertas e relatórios.',
-                  icon: Icons.event_rounded,
-                  align: ContentAlign.bottom,
-                  hints: const [
-                    'Validade alimenta o sistema de alertas automaticamente',
-                    'Doação: itens recebidos sem custo',
-                    'Compra: itens adquiridos pela ONG',
-                    'Parceiro: vindos de organizações parceiras',
-                  ],
+                const SizedBox(height: AppSpacing.lg),
+
+                // ── 2. Validade ──────────────────────────────────────────
+                Builder(builder: (_) {
+                  final isPerishable =
+                      productAsync.valueOrNull?.isPerishable ?? true;
+                  if (!isPerishable) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!_noExpiry) {
+                        setState(() {
+                          _noExpiry = true;
+                          _expiryDate = null;
+                        });
+                      }
+                    });
+                    return KeyedSubtree(
+                      key: _keyBatchExpiry,
+                      child: _BatchSection(
+                        icon: Icons.all_inclusive_rounded,
+                        iconColor: AppColors.neutral500,
+                        title: 'Validade',
+                        cs: cs,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.neutral500.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            border: Border.all(
+                                color: AppColors.neutral500
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.shield_outlined,
+                                  size: 18, color: AppColors.neutral500),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Produto não perecível — sem data de validade',
+                                  style: TextStyle(
+                                      fontSize: 13, color: cs.onSurfaceVariant),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return KeyedSubtree(
+                    key: _keyBatchExpiry,
+                    child: _BatchSection(
+                      icon: Icons.event_rounded,
+                      iconColor: _expiryDate != null
+                          ? AppColors.success600
+                          : AppColors.warning600,
+                      title: 'Validade',
+                      cs: cs,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GestureDetector(
+                            onTap: _pickExpiryDate,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 14),
+                              decoration: BoxDecoration(
+                                gradient: _expiryDate != null
+                                    ? LinearGradient(colors: [
+                                        AppColors.success600
+                                            .withValues(alpha: 0.1),
+                                        AppColors.brandPrimary600
+                                            .withValues(alpha: 0.04),
+                                      ])
+                                    : null,
+                                color: _expiryDate == null
+                                    ? cs.surfaceContainer
+                                    : null,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.input),
+                                border: Border.all(
+                                  color: _expiryDate != null
+                                      ? AppColors.success600
+                                          .withValues(alpha: 0.55)
+                                      : cs.outlineVariant
+                                          .withValues(alpha: 0.5),
+                                  width: _expiryDate != null ? 1.5 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: _expiryDate != null
+                                            ? [
+                                                AppColors.success600,
+                                                const Color(0xFF22C55E)
+                                              ]
+                                            : [
+                                                AppColors.warning600,
+                                                AppColors.brandPrimary600
+                                              ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(11),
+                                    ),
+                                    child: const Icon(
+                                        Icons.calendar_month_rounded,
+                                        size: 20,
+                                        color: Colors.white),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _expiryDate != null
+                                              ? 'Data de validade'
+                                              : 'Toque para selecionar',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: _expiryDate != null
+                                                ? AppColors.success600
+                                                    .withValues(alpha: 0.85)
+                                                : cs.onSurfaceVariant,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          _expiryDate != null
+                                              ? fmt.format(_expiryDate!)
+                                              : 'dd/mm/aaaa',
+                                          style: TextStyle(
+                                            fontSize:
+                                                _expiryDate != null ? 19 : 14,
+                                            fontWeight: _expiryDate != null
+                                                ? FontWeight.w800
+                                                : FontWeight.w400,
+                                            color: _expiryDate != null
+                                                ? cs.onSurface
+                                                : cs.onSurfaceVariant
+                                                    .withValues(alpha: 0.5),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (_expiryDate != null)
+                                    GestureDetector(
+                                      onTap: () =>
+                                          setState(() => _expiryDate = null),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: cs.outlineVariant
+                                              .withValues(alpha: 0.18),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(Icons.close_rounded,
+                                            size: 15,
+                                            color: cs.onSurfaceVariant),
+                                      ),
+                                    )
+                                  else
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.brandPrimary600
+                                            .withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                          Icons.chevron_right_rounded,
+                                          size: 16,
+                                          color: AppColors.brandPrimary600),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // OCR fica embaixo, alinhado à direita
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ExpiryOcrButton(
+                              onDateSuggested: (date) {
+                                setState(() => _expiryDate = date);
+                                showCasaSnackbar(
+                                  context,
+                                  message:
+                                      'Data lida: ${DateFormat('dd/MM/yyyy').format(date)} — confirme se está correta',
+                                  isSuccess: true,
+                                );
+                              },
+                            ),
+                          ),
+                          // Preview ML em tempo real (assim que a data é definida)
+                          if (_noExpiry || _expiryDate != null) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            RiskPreviewBanner(
+                              expiryDate: _expiryDate,
+                              noExpiry: _noExpiry,
+                              quantity: _quantity,
+                              entryDate: _entryDate,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: AppSpacing.lg),
+
+                // ── 3. Origem ────────────────────────────────────────────
+                _BatchSection(
+                  icon: Icons.source_outlined,
+                  iconColor: AppColors.secondaryBlue600,
+                  title: 'Origem',
+                  cs: cs,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          _OriginCard(
+                            originKey: 'doacao',
+                            label: 'Doação',
+                            icon: Icons.volunteer_activism_rounded,
+                            color: AppColors.success600,
+                            selected: _origin == 'doacao',
+                            onTap: () => setState(() => _origin = 'doacao'),
+                            cs: cs,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          _OriginCard(
+                            originKey: 'compra',
+                            label: 'Compra',
+                            icon: Icons.shopping_cart_rounded,
+                            color: AppColors.brandPrimary600,
+                            selected: _origin == 'compra',
+                            onTap: () => setState(() => _origin = 'compra'),
+                            cs: cs,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          _OriginCard(
+                            originKey: 'parceiro',
+                            label: 'Parceiro',
+                            icon: Icons.handshake_rounded,
+                            color: AppColors.warning600,
+                            selected: _origin == 'parceiro',
+                            onTap: () => setState(() => _origin = 'parceiro'),
+                            cs: cs,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          _OriginCard(
+                            originKey: 'transferencia',
+                            label: 'Transfer.',
+                            icon: Icons.swap_horiz_rounded,
+                            color: AppColors.secondaryBlue600,
+                            selected: _origin == 'transferencia',
+                            onTap: () =>
+                                setState(() => _origin = 'transferencia'),
+                            cs: cs,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      CasaTextField(
+                        label: _origin == 'compra'
+                            ? 'Fornecedor'
+                            : 'Doador / Parceiro',
+                        controller: _donorController,
+                        prefixIcon:
+                            const Icon(Icons.person_outline_rounded, size: 20),
+                      ),
+                      if (_origin == 'compra') ...[
+                        const SizedBox(height: AppSpacing.md),
+                        CasaTextField(
+                          label: 'Preço unitário (R\$) *',
+                          hint: 'Ex: 12,50',
+                          controller: _unitPriceController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          prefixIcon:
+                              const Icon(Icons.attach_money_rounded, size: 20),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'Total: R\$ ${((double.tryParse(_unitPriceController.text.replaceAll(',', '.')) ?? 0) * _quantity).toStringAsFixed(2)}',
+                            style: AppTypography.labelSmall
+                                .copyWith(color: AppColors.success600),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                TutorialStep(
-                  key: _keyBatchLocation,
-                  title: 'Localização Física',
-                  description: 'Selecione onde este lote será guardado fisicamente no depósito. Escolha a prateleira e o nível na lista suspensa. Esta informação ajuda a equipe a encontrar rapidamente o lote na hora da distribuição.',
-                  icon: Icons.shelves,
-                  align: ContentAlign.bottom,
-                  hints: const [
-                    'Padrão: "Prateleira A · Nível 1"',
-                    'Não tem a localização? Crie em Configurações › Depósito',
-                    'Use nomes especiais para áreas (geladeira, freezer)',
-                    'Localização correta acelera distribuição em 70%',
-                  ],
+                const SizedBox(height: AppSpacing.lg),
+
+                // ── 4. Localização ───────────────────────────────────────
+                locationsState.when(
+                  data: (locations) => KeyedSubtree(
+                    key: _keyBatchLocation,
+                    child: _LocationPicker(
+                      locations: locations,
+                      selectedLabel: _selectedLocationLabel,
+                      onChanged: (label) =>
+                          setState(() => _selectedLocationLabel = label),
+                      onManageLocations: () =>
+                          context.push(AppRoutes.locations),
+                    ),
+                  ),
+                  loading: () => const CasaCardSkeleton(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // ── 5. Observações ───────────────────────────────────────
+                _BatchSection(
+                  icon: Icons.notes_rounded,
+                  iconColor: AppColors.neutral500,
+                  title: 'Observações (opcional)',
+                  cs: cs,
+                  child: CasaTextField(
+                    label: '',
+                    hint: 'Informações adicionais sobre este lote...',
+                    controller: _notesController,
+                    maxLines: 3,
+                  ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-      Expanded(child: SafeArea(
-        top: false,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 100),
-            children: [
-              // ── 1. Número do lote + Quantidade ──────────────────────
-              KeyedSubtree(
-                key: _keyBatchQty,
-                child: _BatchSection(
-                  icon: Icons.tag_rounded,
-                  iconColor: AppColors.brandPrimary600,
-                  title: 'Informações do Lote',
-                  cs: cs,
-                  child: Column(
-                    children: [
-                      CasaTextField(
-                        label: 'Número do Lote (embalagem)',
-                        hint: 'Ex: LOT20251201, L4578',
-                        controller: _batchNumberController,
-                        keyboardType: TextInputType.text,
-                        textInputAction: TextInputAction.done,
-                        prefixIcon:
-                            const Icon(Icons.tag_rounded, size: 20),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _QuantityRow(
-                        quantity: _quantity,
-                        cs: cs,
-                        onAdd: (add) => _setQuantity(_quantity + add),
-                        onDecrement: () => _setQuantity(_quantity - 1),
-                        onIncrement: () => _setQuantity(_quantity + 1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // ── 2. Validade ──────────────────────────────────────────
-              Builder(builder: (_) {
-                final isPerishable =
-                    productAsync.valueOrNull?.isPerishable ?? true;
-                if (!isPerishable) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (!_noExpiry) {
-                      setState(() {
-                        _noExpiry = true;
-                        _expiryDate = null;
-                      });
-                    }
-                  });
-                  return KeyedSubtree(
-                    key: _keyBatchExpiry,
-                    child: _BatchSection(
-                      icon: Icons.all_inclusive_rounded,
-                      iconColor: AppColors.neutral500,
-                      title: 'Validade',
-                      cs: cs,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.neutral500
-                              .withValues(alpha: 0.08),
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.card),
-                          border: Border.all(
-                              color: AppColors.neutral500
-                                  .withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.shield_outlined,
-                                size: 18,
-                                color: AppColors.neutral500),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Produto não perecível — sem data de validade',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: cs.onSurfaceVariant),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }
-                return KeyedSubtree(
-                  key: _keyBatchExpiry,
-                  child: _BatchSection(
-                    icon: Icons.event_rounded,
-                    iconColor: _expiryDate != null
-                        ? AppColors.success600
-                        : AppColors.warning600,
-                    title: 'Validade',
-                    cs: cs,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: _pickExpiryDate,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 250),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              gradient: _expiryDate != null
-                                  ? LinearGradient(colors: [
-                                      AppColors.success600
-                                          .withValues(alpha: 0.1),
-                                      AppColors.brandPrimary600
-                                          .withValues(alpha: 0.04),
-                                    ])
-                                  : null,
-                              color: _expiryDate == null
-                                  ? cs.surfaceContainer
-                                  : null,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.input),
-                              border: Border.all(
-                                color: _expiryDate != null
-                                    ? AppColors.success600
-                                        .withValues(alpha: 0.55)
-                                    : cs.outlineVariant
-                                        .withValues(alpha: 0.5),
-                                width: _expiryDate != null ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: _expiryDate != null
-                                          ? [
-                                              AppColors.success600,
-                                              const Color(0xFF22C55E)
-                                            ]
-                                          : [
-                                              AppColors.warning600,
-                                              AppColors.brandPrimary600
-                                            ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(11),
-                                  ),
-                                  child: const Icon(
-                                      Icons.calendar_month_rounded,
-                                      size: 20,
-                                      color: Colors.white),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _expiryDate != null
-                                            ? 'Data de validade'
-                                            : 'Toque para selecionar',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: _expiryDate != null
-                                              ? AppColors.success600
-                                                  .withValues(alpha: 0.85)
-                                              : cs.onSurfaceVariant,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        _expiryDate != null
-                                            ? fmt.format(_expiryDate!)
-                                            : 'dd/mm/aaaa',
-                                        style: TextStyle(
-                                          fontSize:
-                                              _expiryDate != null ? 19 : 14,
-                                          fontWeight: _expiryDate != null
-                                              ? FontWeight.w800
-                                              : FontWeight.w400,
-                                          color: _expiryDate != null
-                                              ? cs.onSurface
-                                              : cs.onSurfaceVariant
-                                                  .withValues(alpha: 0.5),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (_expiryDate != null)
-                                  GestureDetector(
-                                    onTap: () => setState(
-                                        () => _expiryDate = null),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: cs.outlineVariant
-                                            .withValues(alpha: 0.18),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(Icons.close_rounded,
-                                          size: 15,
-                                          color: cs.onSurfaceVariant),
-                                    ),
-                                  )
-                                else
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.brandPrimary600
-                                          .withValues(alpha: 0.1),
-                                      borderRadius:
-                                          BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                        Icons.chevron_right_rounded,
-                                        size: 16,
-                                        color: AppColors.brandPrimary600),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // OCR fica embaixo, alinhado à direita
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: ExpiryOcrButton(
-                            onDateSuggested: (date) {
-                              setState(() => _expiryDate = date);
-                              showCasaSnackbar(
-                                context,
-                                message:
-                                    'Data lida: ${DateFormat('dd/MM/yyyy').format(date)} — confirme se está correta',
-                                isSuccess: true,
-                              );
-                            },
-                          ),
-                        ),
-                        // Preview ML em tempo real (assim que a data é definida)
-                        if (_noExpiry || _expiryDate != null) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          RiskPreviewBanner(
-                            expiryDate: _expiryDate,
-                            noExpiry: _noExpiry,
-                            quantity: _quantity,
-                            entryDate: _entryDate,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: AppSpacing.lg),
-
-              // ── 3. Origem ────────────────────────────────────────────
-              _BatchSection(
-                icon: Icons.source_outlined,
-                iconColor: AppColors.secondaryBlue600,
-                title: 'Origem',
-                cs: cs,
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        _OriginCard(
-                          originKey: 'doacao',
-                          label: 'Doação',
-                          icon: Icons.volunteer_activism_rounded,
-                          color: AppColors.success600,
-                          selected: _origin == 'doacao',
-                          onTap: () =>
-                              setState(() => _origin = 'doacao'),
-                          cs: cs,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        _OriginCard(
-                          originKey: 'compra',
-                          label: 'Compra',
-                          icon: Icons.shopping_cart_rounded,
-                          color: AppColors.brandPrimary600,
-                          selected: _origin == 'compra',
-                          onTap: () =>
-                              setState(() => _origin = 'compra'),
-                          cs: cs,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        _OriginCard(
-                          originKey: 'parceiro',
-                          label: 'Parceiro',
-                          icon: Icons.handshake_rounded,
-                          color: AppColors.warning600,
-                          selected: _origin == 'parceiro',
-                          onTap: () =>
-                              setState(() => _origin = 'parceiro'),
-                          cs: cs,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        _OriginCard(
-                          originKey: 'transferencia',
-                          label: 'Transfer.',
-                          icon: Icons.swap_horiz_rounded,
-                          color: AppColors.secondaryBlue600,
-                          selected: _origin == 'transferencia',
-                          onTap: () =>
-                              setState(() => _origin = 'transferencia'),
-                          cs: cs,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    CasaTextField(
-                      label: _origin == 'compra'
-                          ? 'Fornecedor'
-                          : 'Doador / Parceiro',
-                      controller: _donorController,
-                      prefixIcon: const Icon(
-                          Icons.person_outline_rounded,
-                          size: 20),
-                    ),
-                    if (_origin == 'compra') ...[
-                      const SizedBox(height: AppSpacing.md),
-                      CasaTextField(
-                        label: 'Preço unitário (R\$) *',
-                        hint: 'Ex: 12,50',
-                        controller: _unitPriceController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        prefixIcon: const Icon(Icons.attach_money_rounded,
-                            size: 20),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'Total: R\$ ${((double.tryParse(_unitPriceController.text.replaceAll(',', '.')) ?? 0) * _quantity).toStringAsFixed(2)}',
-                          style: AppTypography.labelSmall
-                              .copyWith(color: AppColors.success600),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // ── 4. Localização ───────────────────────────────────────
-              locationsState.when(
-                data: (locations) => KeyedSubtree(
-                  key: _keyBatchLocation,
-                  child: _LocationPicker(
-                    locations: locations,
-                    selectedLabel: _selectedLocationLabel,
-                    onChanged: (label) =>
-                        setState(() => _selectedLocationLabel = label),
-                    onManageLocations: () =>
-                        context.push(AppRoutes.locations),
-                  ),
-                ),
-                loading: () => const CasaCardSkeleton(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // ── 5. Observações ───────────────────────────────────────
-              _BatchSection(
-                icon: Icons.notes_rounded,
-                iconColor: AppColors.neutral500,
-                title: 'Observações (opcional)',
-                cs: cs,
-                child: CasaTextField(
-                  label: '',
-                  hint: 'Informações adicionais sobre este lote...',
-                  controller: _notesController,
-                  maxLines: 3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      )),
+        )),
       ]),
-      floatingActionButton: _BatchSaveFab(
-          isLoading: isLoading,
-          isEdit: _isEdit,
-          onSave: _submit),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerFloat,
+      floatingActionButton:
+          _BatchSaveFab(isLoading: isLoading, isEdit: _isEdit, onSave: _submit),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
@@ -797,9 +787,7 @@ class _BatchSaveFab extends StatelessWidget {
   final bool isEdit;
   final VoidCallback onSave;
   const _BatchSaveFab(
-      {required this.isLoading,
-      required this.isEdit,
-      required this.onSave});
+      {required this.isLoading, required this.isEdit, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
@@ -836,18 +824,12 @@ class _BatchSaveFab extends StatelessWidget {
                 height: 16,
                 child: CircularProgressIndicator(
                     color: Colors.white, strokeWidth: 2))
-            : Icon(
-                isEdit
-                    ? Icons.save_rounded
-                    : Icons.inventory_2_rounded,
-                size: 18,
-                color: Colors.white),
+            : Icon(isEdit ? Icons.save_rounded : Icons.inventory_2_rounded,
+                size: 18, color: Colors.white),
         label: Text(
           isEdit ? 'Salvar Alterações' : 'Cadastrar',
           style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 14),
+              color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
         ),
       ),
     );
@@ -902,7 +884,10 @@ class _BatchSection extends StatelessWidget {
                 padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [iconColor, Color.lerp(iconColor, Colors.black, 0.18)!],
+                    colors: [
+                      iconColor,
+                      Color.lerp(iconColor, Colors.black, 0.18)!
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -963,68 +948,62 @@ class _QuantityRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(AppRadius.input),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: LayoutBuilder(builder: (context, box) {
-      // Em telas estreitas os atalhos +5/+10/+20 somem (os botões − e + continuam).
-      final showQuickAdd = box.maxWidth >= 330;
-      return Row(
-        children: [
-          const Icon(Icons.inventory_rounded,
-              size: 18, color: AppColors.brandPrimary600),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text('Quantidade',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.labelMedium
-                    .copyWith(color: cs.onSurface)),
-          ),
-          if (showQuickAdd)
-          for (final add in [5, 10, 20])
-            GestureDetector(
-              onTap: () => onAdd(add),
-              child: Container(
-                margin: const EdgeInsets.only(right: 6),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.brandPrimary600
-                      .withValues(alpha: 0.1),
-                  borderRadius:
-                      BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(
-                      color: AppColors.brandPrimary600
-                          .withValues(alpha: 0.25)),
+        // Em telas estreitas os atalhos +5/+10/+20 somem (os botões − e + continuam).
+        final showQuickAdd = box.maxWidth >= 330;
+        return Row(
+          children: [
+            const Icon(Icons.inventory_rounded,
+                size: 18, color: AppColors.brandPrimary600),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text('Quantidade',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      AppTypography.labelMedium.copyWith(color: cs.onSurface)),
+            ),
+            if (showQuickAdd)
+              for (final add in [5, 10, 20])
+                GestureDetector(
+                  onTap: () => onAdd(add),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandPrimary600.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(
+                          color: AppColors.brandPrimary600
+                              .withValues(alpha: 0.25)),
+                    ),
+                    child: Text('+$add',
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.brandPrimary600,
+                            fontWeight: FontWeight.w700)),
+                  ),
                 ),
-                child: Text('+$add',
-                    style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.brandPrimary600,
-                        fontWeight: FontWeight.w700)),
+            const SizedBox(width: 4),
+            _QtyBtn(
+                icon: Icons.remove_rounded,
+                enabled: quantity > 1,
+                onTap: onDecrement),
+            SizedBox(
+              width: 44,
+              child: Text(
+                '$quantity',
+                textAlign: TextAlign.center,
+                style: AppTypography.headingSmall
+                    .copyWith(color: cs.onSurface, fontWeight: FontWeight.w800),
               ),
             ),
-          const SizedBox(width: 4),
-          _QtyBtn(
-              icon: Icons.remove_rounded,
-              enabled: quantity > 1,
-              onTap: onDecrement),
-          SizedBox(
-            width: 44,
-            child: Text(
-              '$quantity',
-              textAlign: TextAlign.center,
-              style: AppTypography.headingSmall.copyWith(
-                  color: cs.onSurface, fontWeight: FontWeight.w800),
-            ),
-          ),
-          _QtyBtn(
-              icon: Icons.add_rounded,
-              enabled: true,
-              onTap: onIncrement),
-        ],
-      );
+            _QtyBtn(icon: Icons.add_rounded, enabled: true, onTap: onIncrement),
+          ],
+        );
       }),
     );
   }
@@ -1057,9 +1036,7 @@ class _QtyBtn extends StatelessWidget {
         ),
         child: Icon(icon,
             size: 16,
-            color: enabled
-                ? AppColors.brandPrimary600
-                : cs.onSurfaceVariant),
+            color: enabled ? AppColors.brandPrimary600 : cs.onSurfaceVariant),
       ),
     );
   }
@@ -1093,30 +1070,25 @@ class _OriginCard extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected
-                ? color.withValues(alpha: 0.15)
-                : cs.surfaceContainer,
+            color:
+                selected ? color.withValues(alpha: 0.15) : cs.surfaceContainer,
             borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(
-              color: selected
-                  ? color
-                  : cs.outlineVariant.withValues(alpha: 0.4),
+              color:
+                  selected ? color : cs.outlineVariant.withValues(alpha: 0.4),
               width: selected ? 1.5 : 1,
             ),
           ),
           child: Column(
             children: [
               Icon(icon,
-                  size: 22,
-                  color: selected ? color : cs.onSurfaceVariant),
+                  size: 22, color: selected ? color : cs.onSurfaceVariant),
               const SizedBox(height: 4),
               Text(label,
                   style: TextStyle(
                     fontSize: 10,
                     color: selected ? color : cs.onSurfaceVariant,
-                    fontWeight: selected
-                        ? FontWeight.w700
-                        : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
                   textAlign: TextAlign.center),
             ],
@@ -1167,8 +1139,7 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
 
   List<StorageLocation> get _locsInGroup =>
       widget.locations.where((l) => l.groupKey == _shelfGroup).toList()
-        ..sort((a, b) =>
-            (a.level ?? '').compareTo(b.level ?? ''));
+        ..sort((a, b) => (a.level ?? '').compareTo(b.level ?? ''));
 
   void _pickShelf(String group) {
     setState(() => _shelfGroup = group);
@@ -1213,16 +1184,15 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
                   ),
                 ],
               ),
-              child:
-                  const Icon(Icons.shelves, size: 15, color: Colors.white),
+              child: const Icon(Icons.shelves, size: 15, color: Colors.white),
             ),
             const SizedBox(width: AppSpacing.sm),
             // O título quebra linha com fonte grande (antes estourava à direita).
             Expanded(
               child: Text(
                 'Localização no Depósito',
-                style: AppTypography.labelLarge.copyWith(
-                    color: cs.onSurface, fontWeight: FontWeight.w700),
+                style: AppTypography.labelLarge
+                    .copyWith(color: cs.onSurface, fontWeight: FontWeight.w700),
               ),
             ),
             TextButton(
@@ -1239,8 +1209,7 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
         const SizedBox(height: AppSpacing.md),
 
         // Etapa 1: Prateleira
-        _StepLabel(
-            label: '1. Prateleira', done: _shelfGroup != null),
+        _StepLabel(label: '1. Prateleira', done: _shelfGroup != null),
         const SizedBox(height: AppSpacing.xs),
         _ShelfChipRow(
           groups: _shelfGroups,
@@ -1252,9 +1221,7 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
         // Etapa 2: Nível
         if (_shelfGroup != null) ...[
           const SizedBox(height: AppSpacing.md),
-          _StepLabel(
-              label: '2. Nível',
-              done: widget.selectedLabel != null),
+          _StepLabel(label: '2. Nível', done: widget.selectedLabel != null),
           const SizedBox(height: AppSpacing.xs),
           _buildLevels(cs, isDark),
         ],
@@ -1263,8 +1230,7 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
         if (widget.selectedLabel != null) ...[
           const SizedBox(height: AppSpacing.md),
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.success600.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppRadius.small),
@@ -1302,14 +1268,12 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
   }
 
   Widget _buildLevels(ColorScheme cs, bool isDark) {
-    final allBatches =
-        ref.watch(allAvailableBatchesProvider).valueOrNull ?? [];
+    final allBatches = ref.watch(allAvailableBatchesProvider).valueOrNull ?? [];
 
     if (_locsInGroup.isEmpty) {
       return Text(
         'Nenhum nível cadastrado para esta prateleira.',
-        style: TextStyle(
-            fontSize: 12, color: cs.onSurfaceVariant),
+        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
       );
     }
 
@@ -1333,19 +1297,15 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
         final isSelected = widget.selectedLabel == loc.label;
         final limit = loc.productsPerLevel;
         final count = limit != null
-            ? allBatches
-                .where((b) => b.shelfLocation == loc.label)
-                .length
+            ? allBatches.where((b) => b.shelfLocation == loc.label).length
             : null;
-        final isFull =
-            limit != null && count != null && count >= limit;
+        final isFull = limit != null && count != null && count >= limit;
 
         return GestureDetector(
           onTap: isFull ? null : () => _pickLocation(loc),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               gradient: isSelected
                   ? const LinearGradient(colors: [
@@ -1369,8 +1329,7 @@ class _LocationPickerState extends ConsumerState<_LocationPicker> {
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppColors.brandPrimary600
-                            .withValues(alpha: 0.3),
+                        color: AppColors.brandPrimary600.withValues(alpha: 0.3),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       )
@@ -1485,8 +1444,7 @@ class _ShelfChipRow extends StatelessWidget {
         children: groups.map((g) {
           final isSelected = g == selected;
           final color = _colorFor(g);
-          final levelCount =
-              locations.where((l) => l.groupKey == g).length;
+          final levelCount = locations.where((l) => l.groupKey == g).length;
           return GestureDetector(
             onTap: () => onTap(g),
             child: AnimatedContainer(
@@ -1585,8 +1543,7 @@ class _ShelfChipRow extends StatelessWidget {
 class _EmptyLocations extends StatelessWidget {
   final VoidCallback onManageLocations;
   final ColorScheme cs;
-  const _EmptyLocations(
-      {required this.onManageLocations, required this.cs});
+  const _EmptyLocations({required this.onManageLocations, required this.cs});
 
   @override
   Widget build(BuildContext context) {
@@ -1595,8 +1552,7 @@ class _EmptyLocations extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.warning600.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: AppColors.warning600.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.warning600.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -1613,8 +1569,7 @@ class _EmptyLocations extends StatelessWidget {
                 const SizedBox(height: 4),
                 TextButton.icon(
                   onPressed: onManageLocations,
-                  icon: const Icon(Icons.add_location_alt_outlined,
-                      size: 15),
+                  icon: const Icon(Icons.add_location_alt_outlined, size: 15),
                   label: const Text('Cadastrar prateleira'),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.brandPrimary600,

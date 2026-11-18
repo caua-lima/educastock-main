@@ -61,17 +61,25 @@ class ReportsRemoteDatasource {
     final withExpiry = available.where('noExpiry', isEqualTo: false);
 
     final counts = await Future.wait([
-      _firestore.collection('products').where('isActive', isEqualTo: true).count().get(),
+      _firestore
+          .collection('products')
+          .where('isActive', isEqualTo: true)
+          .count()
+          .get(),
       available.count().get(),
       withExpiry
           .where('expiryDate', isGreaterThanOrEqualTo: now.toIso8601String())
           .where('expiryDate', isLessThanOrEqualTo: in30Days.toIso8601String())
           .count()
           .get(),
-      withExpiry.where('expiryDate', isLessThan: now.toIso8601String()).count().get(),
+      withExpiry
+          .where('expiryDate', isLessThan: now.toIso8601String())
+          .count()
+          .get(),
       _firestore
           .collection('stock_movements')
-          .where('performedAt', isGreaterThanOrEqualTo: startOfMonth.toIso8601String())
+          .where('performedAt',
+              isGreaterThanOrEqualTo: startOfMonth.toIso8601String())
           .count()
           .get(),
     ]);
@@ -107,7 +115,8 @@ class ReportsRemoteDatasource {
             .get(),
     ]);
     final counts = <String, int>{
-      for (var i = 0; i < categories.length; i++) categories[i]: snaps[i].count ?? 0,
+      for (var i = 0; i < categories.length; i++)
+        categories[i]: snaps[i].count ?? 0,
     }..removeWhere((_, v) => v == 0);
     final total = counts.values.fold(0, (a, b) => a + b);
     return counts.entries
@@ -174,18 +183,48 @@ final movementsReportProvider = FutureProvider.autoDispose
 
 /// Entradas por mês nos últimos 6 meses, a partir das movimentações de entrada
 /// (ver `entradas_por_mes.dart`). Erro de consulta aparece como erro, não como zero.
-final entradasPorMesProvider = FutureProvider.autoDispose<Map<String, int>>((ref) async {
+final entradasPorMesProvider =
+    FutureProvider.autoDispose<Map<String, int>>((ref) async {
   keepReportCached(ref);
   final agora = DateTime.now();
   final hoje = DateTime(agora.year, agora.month, agora.day);
-  final movimentos = await ref.watch(
-      movementsReportProvider(DateTimeRange(start: inicioDaJanela(hoje), end: hoje)).future);
+  final movimentos = await ref.watch(movementsReportProvider(
+          DateTimeRange(start: inicioDaJanela(hoje), end: hoje))
+      .future);
   return entradasPorMes(movimentos, hoje);
 });
 
+/// Filtro dos relatórios de movimentação: período e categoria (null = todas).
+typedef FiltroMovimentos = ({DateTimeRange range, String? categoria});
+
+/// Movimentações do período, só da categoria escolhida (pelo produto de cada uma).
+final movimentosFiltradosProvider = FutureProvider.autoDispose
+    .family<List<StockMovement>, FiltroMovimentos>((ref, f) async {
+  final movements = await ref.watch(movementsReportProvider(f.range).future);
+  return filtrarPorCategoria(
+      movements, f.categoria, await _categoriaPorProduto(ref));
+});
+
+Future<Map<String, String>> _categoriaPorProduto(Ref ref) async {
+  final snap = await bancoDaSessao(ref).collection('products').get();
+  return {
+    for (final d in snap.docs)
+      d.id: (d.data()['category'] as String?) ?? 'outro'
+  };
+}
+
+/// Movimentações da categoria [categoria] (null devolve todas).
+List<StockMovement> filtrarPorCategoria(List<StockMovement> movements,
+    String? categoria, Map<String, String> categoriaDoProduto) {
+  if (categoria == null) return movements;
+  return movements
+      .where((m) => categoriaDoProduto[m.productId] == categoria)
+      .toList();
+}
+
 final movementsSummaryProvider = FutureProvider.autoDispose
-    .family<Map<String, int>, DateTimeRange>((ref, range) async {
-  final movements = await ref.read(movementsReportProvider(range).future);
+    .family<Map<String, int>, FiltroMovimentos>((ref, f) async {
+  final movements = await ref.watch(movimentosFiltradosProvider(f).future);
   final summary = <String, int>{};
   for (final m in movements) {
     final key = m.type.name;
@@ -195,8 +234,8 @@ final movementsSummaryProvider = FutureProvider.autoDispose
 });
 
 final lossesByReasonProvider = FutureProvider.autoDispose
-    .family<Map<String, int>, DateTimeRange>((ref, range) async {
-  final movements = await ref.read(movementsReportProvider(range).future);
+    .family<Map<String, int>, FiltroMovimentos>((ref, f) async {
+  final movements = await ref.watch(movimentosFiltradosProvider(f).future);
   final losses = movements.where(
     (m) =>
         m.type == MovementType.descarte ||

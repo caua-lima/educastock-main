@@ -39,8 +39,8 @@ class DashboardPage extends ConsumerWidget {
     final allBatches = ref.watch(allAvailableBatchesProvider);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-          statusBarColor: Colors.transparent),
+      value: SystemUiOverlayStyle.light
+          .copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
         body: ListView(
@@ -51,89 +51,94 @@ class DashboardPage extends ConsumerWidget {
             KeyedSubtree(
               key: _keyDashHeader,
               child: _DashboardHeader(
-              user: user,
-              allBatches: allBatches,
-              expiringCritical: expiringCritical,
-              expiringWarning: expiringWarning,
-              kpiKey: _keyDashKpis,
-              onSettingsTap: () => context.push(AppRoutes.settings),
-              onLotesTap: () => context.go(AppRoutes.productList),
-              onAlertsTap: () => context.go(AppRoutes.alerts),
-              onHelpTap: () => showCasaTutorial(
-                context: context,
-                steps: [
-                  TutorialStep(
-                    key: _keyDashKpis,
-                    title: 'Indicadores Principais (KPIs)',
-                    description: 'Os 3 cards coloridos no topo são o "painel de controle" do seu estoque. Mostram em tempo real: total de lotes ativos (azul), itens críticos que vencem em 7 dias (vermelho com badge) e itens em atenção que vencem em 30 dias (amarelo). Toque em qualquer um para ir direto à seção relacionada.',
-                    icon: Icons.dashboard_rounded,
-                    align: ContentAlign.bottom,
-                    hints: const [
-                      'Toque no card AZUL › ir para Estoque',
-                      'Toque no card VERMELHO/AMARELO › ir para Alertas',
-                      'Vermelho = AÇÃO IMEDIATA necessária',
-                      'Números atualizam automaticamente em tempo real',
-                    ],
-                  ),
-                  TutorialStep(
-                    key: _keyDashQuickActions,
-                    title: 'Ações Rápidas',
-                    description: 'Esta grade colorida é seu atalho para as 6 funções principais do app. Cada cartão tem ícone, título e subtítulo descritivo. Foram projetados para acesso com 1 toque — sem precisar navegar por menus.',
-                    icon: Icons.grid_view_rounded,
-                    align: ContentAlign.bottom,
-                    hints: const [
-                      'Escanear: entrada por código de barras (camera)',
-                      'Estoque: ver e editar produtos cadastrados',
-                      'Saída: distribuir produtos manualmente',
-                      'Receitas: distribuição por modelo (kits)',
-                      'Alertas: ver tudo que precisa de atenção',
-                      'Localizações: gerenciar prateleiras do depósito',
-                    ],
-                  ),
-                  TutorialStep(
-                    key: _keyDashMlRisk,
-                    title: 'Análise de Risco com IA',
-                    description: 'O EducaStock usa Inteligência Artificial (TFLite on-device) para classificar o risco de cada lote vencer sem ser distribuído. Analisa histórico de saídas, velocidade de consumo e dias até vencimento para sugerir prioridades de distribuição.',
-                    icon: Icons.psychology_rounded,
-                    align: ContentAlign.top,
-                    hints: const [
-                      'IA roda direto no celular (privacidade total)',
-                      'Alto risco: provavelmente vai vencer — distribua HOJE',
-                      'Médio: monitore nos próximos dias',
-                      'Baixo: situação controlada — relax',
-                      'Toque "Ver detalhes" para análise lote por lote',
-                    ],
-                  ),
-                  TutorialStep(
-                    key: _keyDashMlForecast,
-                    title: 'Previsão de Consumo (Prophet)',
-                    description: 'O modelo Prophet (Meta/Facebook) analisa o histórico real de saídas e prevê o consumo futuro de cada produto, sugerindo quantidades para reposição automaticamente. Detecta sazonalidade, eventos e tendências de aumento/queda.',
-                    icon: Icons.trending_up_rounded,
-                    align: ContentAlign.top,
-                    hints: const [
-                      'Prevê consumo dos próximos 30 dias',
-                      'Sugestão de compra = consumo × 1.2 - estoque atual',
-                      'Tendência crescendo? Aumente o pedido',
-                      'Caindo? Diminua para não desperdiçar',
-                      'Re-execute notebook Colab mensalmente',
-                    ],
-                  ),
-                  TutorialStep(
-                    key: _keyDashExpiring,
-                    title: 'Alertas Críticos da Semana',
-                    description: 'Lista visual dos produtos que vencem em até 7 dias. Cada cartão mostra produto, dias restantes e quantidade afetada. Tome ação IMEDIATA: distribua, doe ou descarte. Evita desperdício e garante segurança alimentar das crianças.',
-                    icon: Icons.warning_amber_rounded,
-                    align: ContentAlign.top,
-                    hints: const [
-                      'Vence em 1-3 dias? Distribua HOJE!',
-                      'Não consegue distribuir? Doe para outra ONG',
-                      'Vencido? Registre descarte em Saída › Vencimento',
-                      '"Ver todos" abre a lista completa de alertas',
-                    ],
-                  ),
-                ],
+                user: user,
+                allBatches: allBatches,
+                expiringCritical: expiringCritical,
+                expiringWarning: expiringWarning,
+                kpiKey: _keyDashKpis,
+                onSettingsTap: () => context.push(AppRoutes.settings),
+                onLotesTap: () => context.go(AppRoutes.productList),
+                onAlertsTap: () => context.go(AppRoutes.alerts),
+                onHelpTap: () => showCasaTutorial(
+                  context: context,
+                  steps: [
+                    TutorialStep(
+                      key: _keyDashKpis,
+                      title: 'Indicadores Principais (KPIs)',
+                      description:
+                          'Os 3 cards coloridos no topo são o "painel de controle" do seu estoque. Mostram em tempo real: total de lotes ativos (azul), itens críticos que vencem em 7 dias (vermelho com badge) e itens em atenção que vencem em 30 dias (amarelo). Toque em qualquer um para ir direto à seção relacionada.',
+                      icon: Icons.dashboard_rounded,
+                      align: ContentAlign.bottom,
+                      hints: const [
+                        'Toque no card AZUL › ir para Estoque',
+                        'Toque no card VERMELHO/AMARELO › ir para Alertas',
+                        'Vermelho = AÇÃO IMEDIATA necessária',
+                        'Números atualizam automaticamente em tempo real',
+                      ],
+                    ),
+                    TutorialStep(
+                      key: _keyDashQuickActions,
+                      title: 'Ações Rápidas',
+                      description:
+                          'Esta grade colorida é seu atalho para as 6 funções principais do app. Cada cartão tem ícone, título e subtítulo descritivo. Foram projetados para acesso com 1 toque — sem precisar navegar por menus.',
+                      icon: Icons.grid_view_rounded,
+                      align: ContentAlign.bottom,
+                      hints: const [
+                        'Escanear: entrada por código de barras (camera)',
+                        'Estoque: ver e editar produtos cadastrados',
+                        'Saída: distribuir produtos manualmente',
+                        'Receitas: distribuição por modelo (kits)',
+                        'Alertas: ver tudo que precisa de atenção',
+                        'Localizações: gerenciar prateleiras do depósito',
+                      ],
+                    ),
+                    TutorialStep(
+                      key: _keyDashMlRisk,
+                      title: 'Análise de Risco com IA',
+                      description:
+                          'O EducaStock usa Inteligência Artificial (TFLite on-device) para classificar o risco de cada lote vencer sem ser distribuído. Analisa histórico de saídas, velocidade de consumo e dias até vencimento para sugerir prioridades de distribuição.',
+                      icon: Icons.psychology_rounded,
+                      align: ContentAlign.top,
+                      hints: const [
+                        'IA roda direto no celular (privacidade total)',
+                        'Alto risco: provavelmente vai vencer — distribua HOJE',
+                        'Médio: monitore nos próximos dias',
+                        'Baixo: situação controlada — relax',
+                        'Toque "Ver detalhes" para análise lote por lote',
+                      ],
+                    ),
+                    TutorialStep(
+                      key: _keyDashMlForecast,
+                      title: 'Previsão de Consumo (Prophet)',
+                      description:
+                          'O modelo Prophet (Meta/Facebook) analisa o histórico real de saídas e prevê o consumo futuro de cada produto, sugerindo quantidades para reposição automaticamente. Detecta sazonalidade, eventos e tendências de aumento/queda.',
+                      icon: Icons.trending_up_rounded,
+                      align: ContentAlign.top,
+                      hints: const [
+                        'Prevê consumo dos próximos 30 dias',
+                        'Sugestão de compra = consumo × 1.2 - estoque atual',
+                        'Tendência crescendo? Aumente o pedido',
+                        'Caindo? Diminua para não desperdiçar',
+                        'Re-execute notebook Colab mensalmente',
+                      ],
+                    ),
+                    TutorialStep(
+                      key: _keyDashExpiring,
+                      title: 'Alertas Críticos da Semana',
+                      description:
+                          'Lista visual dos produtos que vencem em até 7 dias. Cada cartão mostra produto, dias restantes e quantidade afetada. Tome ação IMEDIATA: distribua, doe ou descarte. Evita desperdício e garante segurança alimentar das crianças.',
+                      icon: Icons.warning_amber_rounded,
+                      align: ContentAlign.top,
+                      hints: const [
+                        'Vence em 1-3 dias? Distribua HOJE!',
+                        'Não consegue distribuir? Doe para outra ONG',
+                        'Vencido? Registre descarte em Saída › Vencimento',
+                        '"Ver todos" abre a lista completa de alertas',
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
             ),
 
             if (allBatches.hasError && !allBatches.hasValue)
@@ -164,9 +169,13 @@ class DashboardPage extends ConsumerWidget {
                   // Altura pelo conteúdo real (ícone + nome em até 2 linhas na fonte
                   // em uso), não por proporção fixa: em 320 px ou fonte grande o
                   // quadrado não cabia e o nome era cortado.
-                  final largura = (constraints.maxWidth - (cross - 1) * AppSpacing.sm) / cross;
-                  final linhaNome = MediaQuery.textScalerOf(context).scale(13.5) * 1.25;
-                  final altura = (8 + 54 + 8 + linhaNome * 2 + 10).clamp(largura * 0.8, double.infinity);
+                  final largura =
+                      (constraints.maxWidth - (cross - 1) * AppSpacing.sm) /
+                          cross;
+                  final linhaNome =
+                      MediaQuery.textScalerOf(context).scale(13.5) * 1.25;
+                  final altura = (8 + 54 + 8 + linhaNome * 2 + 10)
+                      .clamp(largura * 0.8, double.infinity);
                   return GridView(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: cross,
@@ -202,16 +211,28 @@ class DashboardPage extends ConsumerWidget {
                       ),
                       // Saída só para quem grava no estoque (administrador e estoquista).
                       if (user?.canEdit ?? false)
-                      _AnimatedQuickAction(
-                        delayMs: 120,
-                        child: _QuickActionTile(
-                          icon: Icons.outbound_rounded,
-                          label: 'Saída',
-                          subtitle: 'Baixa de estoque',
-                          color: AppColors.danger600,
-                          onTap: () => context.push(AppRoutes.movement),
+                        _AnimatedQuickAction(
+                          delayMs: 120,
+                          child: _QuickActionTile(
+                            icon: Icons.outbound_rounded,
+                            label: 'Saída',
+                            subtitle: 'Baixa de estoque',
+                            color: AppColors.danger600,
+                            onTap: () => context.push(AppRoutes.movement),
+                          ),
                         ),
-                      ),
+                      // Publicar o que a ONG precisa: atalho para quem opera as doações.
+                      if (user?.canEdit ?? false)
+                        _AnimatedQuickAction(
+                          delayMs: 150,
+                          child: _QuickActionTile(
+                            icon: Icons.campaign_rounded,
+                            label: 'Necessidade',
+                            subtitle: 'Pedir aos doadores',
+                            color: const Color(0xFFB7791F),
+                            onTap: () => context.push(AppRoutes.opsNewNeed),
+                          ),
+                        ),
                       _AnimatedQuickAction(
                         delayMs: 180,
                         child: _QuickActionTile(
@@ -270,8 +291,8 @@ class DashboardPage extends ConsumerWidget {
                 data: (batches) {
                   if (batches.isEmpty) {
                     return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                       child: CasaSectionHeader(
                         title: 'Alertas Críticos',
                         count: 0,
@@ -363,8 +384,10 @@ class _DashboardHeader extends ConsumerWidget {
     final width = MediaQuery.of(context).size.width;
     final isCompact = width < 360;
     final alertCount = ref.watch(allAvailableBatchesProvider).when(
-          data: (list) =>
-              list.where((b) => !b.noExpiry && (b.isExpired || b.daysToExpiry <= 30)).length,
+          data: (list) => list
+              .where(
+                  (b) => !b.noExpiry && (b.isExpired || b.daysToExpiry <= 30))
+              .length,
           loading: () => 0,
           error: (_, __) => 0,
         );
@@ -375,8 +398,8 @@ class _DashboardHeader extends ConsumerWidget {
         data: (l) => '${l.length}', loading: () => '…', error: (_, __) => '—');
     final warnCount = expiringWarning.when(
         data: (l) => '${l.length}', loading: () => '…', error: (_, __) => '—');
-    final hasCritical =
-        expiringCritical.maybeWhen(data: (l) => l.isNotEmpty, orElse: () => false);
+    final hasCritical = expiringCritical.maybeWhen(
+        data: (l) => l.isNotEmpty, orElse: () => false);
 
     final normalizedName = user?.name?.trim() as String? ?? '';
     final initial = normalizedName.isEmpty
@@ -422,7 +445,8 @@ class _DashboardHeader extends ConsumerWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF38BDF8).withValues(alpha: 0.55),
+                          color:
+                              const Color(0xFF38BDF8).withValues(alpha: 0.55),
                           blurRadius: 18,
                           spreadRadius: 2,
                         ),
@@ -475,60 +499,62 @@ class _DashboardHeader extends ConsumerWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CasaAlertsBellButton(alertCount: alertCount, onDarkBg: true),
+                        CasaAlertsBellButton(
+                            alertCount: alertCount, onDarkBg: true),
                         const SizedBox(width: 6),
                         _HeaderMenu(
                           initial: initial,
                           size: avatarSize,
                           // Ajuda curta primeiro; o tutorial é oferecido nela.
-                          onHelp: () => abrirAjudaDaTela(context, iniciarTutorial: onHelpTap),
+                          onHelp: () => abrirAjudaDaTela(context,
+                              iniciarTutorial: onHelpTap),
                           onSettings: onSettingsTap,
                         ),
                       ],
                     )
                   else
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      buildHelpButton(
-                        context: context,
-                        onPressed: onHelpTap,
-                      ),
-                      CasaAlertsBellButton(
-                        alertCount: alertCount,
-                        onDarkBg: true,
-                      ),
-                      const CasaThemeToggleButton(),
-                      // Avatar + settings
-                      GestureDetector(
-                        onTap: onSettingsTap,
-                        child: Container(
-                          width: avatarSize,
-                          height: avatarSize,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.14),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              width: 1.5,
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        buildHelpButton(
+                          context: context,
+                          onPressed: onHelpTap,
+                        ),
+                        CasaAlertsBellButton(
+                          alertCount: alertCount,
+                          onDarkBg: true,
+                        ),
+                        const CasaThemeToggleButton(),
+                        // Avatar + settings
+                        GestureDetector(
+                          onTap: onSettingsTap,
+                          child: Container(
+                            width: avatarSize,
+                            height: avatarSize,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.14),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                width: 1.5,
+                              ),
                             ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              initial,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: isCompact ? 16 : 18,
+                            child: Center(
+                              child: Text(
+                                initial,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: isCompact ? 16 : 18,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               ),
 
@@ -590,13 +616,13 @@ class _DashboardHeader extends ConsumerWidget {
                         gradientColors: const [
                           Color(0xFFB7791F),
                           Color(0xFFD69E2E)
-                      ],
-                      onTap: onAlertsTap,
+                        ],
+                        onTap: onAlertsTap,
+                      ),
                     ),
-                  ),
-                 ],
-               ),
-             ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -831,8 +857,7 @@ class _QuickActionTileState extends State<_QuickActionTile> {
                             ),
                           ],
                         ),
-                        child: Icon(widget.icon,
-                            color: Colors.white, size: 28),
+                        child: Icon(widget.icon, color: Colors.white, size: 28),
                       ),
                       const SizedBox(height: 8),
                       // Label centralizada
@@ -896,7 +921,8 @@ class _AlertBatchTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
-    final unidade = ref.watch(unidadeDoProdutoProvider(batch.productId as String));
+    final unidade =
+        ref.watch(unidadeDoProdutoProvider(batch.productId as String));
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -1071,16 +1097,19 @@ class _MlRiskSection extends ConsumerWidget {
           data: (critical) {
             if (critical.isEmpty) return const SizedBox.shrink();
             return Column(
-              children: critical.take(2).map(
-                (p) => Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
-                  child: RiskInsightCard(
-                    prediction: p,
-                    onTap: () => context.push(AppRoutes.mlInsights),
-                  ),
-                ),
-              ).toList(),
+              children: critical
+                  .take(2)
+                  .map(
+                    (p) => Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                      child: RiskInsightCard(
+                        prediction: p,
+                        onTap: () => context.push(AppRoutes.mlInsights),
+                      ),
+                    ),
+                  )
+                  .toList(),
             );
           },
           loading: () => const SizedBox.shrink(),
@@ -1125,8 +1154,7 @@ class _RiskDistributionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
@@ -1310,8 +1338,8 @@ class _DashboardChartsSectionState
             decoration: BoxDecoration(
               color: cs.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.4)),
+              border:
+                  Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
             ),
             child: Column(
               children: [
@@ -1322,10 +1350,7 @@ class _DashboardChartsSectionState
                   dividerColor: Colors.transparent,
                   indicator: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF0F2444),
-                        Color(0xFF1D5FA8)
-                      ],
+                      colors: [Color(0xFF0F2444), Color(0xFF1D5FA8)],
                     ),
                     borderRadius: BorderRadius.circular(AppRadius.card - 2),
                   ),
@@ -1381,8 +1406,8 @@ class _CategoryPieChart extends ConsumerWidget {
     return categoryAsync.when(
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      error: (_, __) => const Center(
-          child: Icon(Icons.bar_chart_rounded, size: 40)),
+      error: (_, __) =>
+          const Center(child: Icon(Icons.bar_chart_rounded, size: 40)),
       data: (categories) {
         if (categories.isEmpty) {
           return const Center(child: Text('Sem dados'));
@@ -1404,8 +1429,7 @@ class _CategoryPieChart extends ConsumerWidget {
                         final cat = categories[i];
                         final color = _colors[i % _colors.length];
                         final pct = total > 0
-                            ? (cat.totalItems / total * 100)
-                                .toStringAsFixed(0)
+                            ? (cat.totalItems / total * 100).toStringAsFixed(0)
                             : '0';
                         return PieChartSectionData(
                           color: color,
@@ -1435,8 +1459,7 @@ class _CategoryPieChart extends ConsumerWidget {
                       final cat = categories[i];
                       final color = _colors[i % _colors.length];
                       return Padding(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Row(
                           children: [
                             Container(
@@ -1509,16 +1532,16 @@ class _MovementsLineChartState extends ConsumerState<_MovementsLineChart> {
           const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       error: (e, __) => Center(
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: LoadErrorNotice(
-              message: friendlyLoadError(e, context: 'as movimentações'),
-              onRetry: () => ref.invalidate(movementsReportProvider(range)),
-            ),
-          )),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: LoadErrorNotice(
+          message: friendlyLoadError(e, context: 'as movimentações'),
+          onRetry: () => ref.invalidate(movementsReportProvider(range)),
+        ),
+      )),
       data: (movements) {
         // Todos os 30 dias, somados por dia civil (antes só os dias 0, 5, 10… — A09).
-        final series = DailyMovementSeries.fromMovements(
-            movements, start: range.start, days: 30);
+        final series = DailyMovementSeries.fromMovements(movements,
+            start: range.start, days: 30);
         final entrySpots = [
           for (var d = 0; d < series.days; d++)
             FlSpot(d.toDouble(), series.entries[d].toDouble()),
@@ -1532,8 +1555,9 @@ class _MovementsLineChartState extends ConsumerState<_MovementsLineChart> {
           ...entrySpots.map((s) => s.y),
           ...exitSpots.map((s) => s.y),
         ];
-        final maxY =
-            allVals.isEmpty ? 10.0 : (allVals.reduce((a, b) => a > b ? a : b) + 2);
+        final maxY = allVals.isEmpty
+            ? 10.0
+            : (allVals.reduce((a, b) => a > b ? a : b) + 2);
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
@@ -1573,15 +1597,15 @@ class _MovementsLineChartState extends ConsumerState<_MovementsLineChart> {
                     borderData: FlBorderData(show: false),
                     titlesData: FlTitlesData(
                       leftTitles: const AxisTitles(
-                          sideTitles: SideTitles(
-                              showTitles: true, reservedSize: 28)),
+                          sideTitles:
+                              SideTitles(showTitles: true, reservedSize: 28)),
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
                           reservedSize: 22,
                           getTitlesWidget: (val, _) {
-                            final day = range.start
-                                .add(Duration(days: val.toInt()));
+                            final day =
+                                range.start.add(Duration(days: val.toInt()));
                             if (val % 10 != 0 && val != 29) {
                               return const SizedBox.shrink();
                             }
@@ -1606,8 +1630,7 @@ class _MovementsLineChartState extends ConsumerState<_MovementsLineChart> {
                         dotData: const FlDotData(show: false),
                         belowBarData: BarAreaData(
                           show: true,
-                          color:
-                              AppColors.success600.withValues(alpha: 0.08),
+                          color: AppColors.success600.withValues(alpha: 0.08),
                         ),
                       ),
                       LineChartBarData(
@@ -1618,8 +1641,7 @@ class _MovementsLineChartState extends ConsumerState<_MovementsLineChart> {
                         dotData: const FlDotData(show: false),
                         belowBarData: BarAreaData(
                           show: true,
-                          color:
-                              AppColors.danger600.withValues(alpha: 0.08),
+                          color: AppColors.danger600.withValues(alpha: 0.08),
                         ),
                       ),
                     ],
@@ -1649,8 +1671,8 @@ class _UrgencyBarChart extends ConsumerWidget {
     return allAsync.when(
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      error: (_, __) => const Center(
-          child: Icon(Icons.bar_chart_rounded, size: 40)),
+      error: (_, __) =>
+          const Center(child: Icon(Icons.bar_chart_rounded, size: 40)),
       data: (all) {
         final critCount =
             crit7.maybeWhen(data: (l) => l.length, orElse: () => 0);
@@ -1678,8 +1700,7 @@ class _UrgencyBarChart extends ConsumerWidget {
               barTouchData: BarTouchData(enabled: false),
               titlesData: FlTitlesData(
                 leftTitles: const AxisTitles(
-                    sideTitles:
-                        SideTitles(showTitles: true, reservedSize: 28)),
+                    sideTitles: SideTitles(showTitles: true, reservedSize: 28)),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -1694,10 +1715,10 @@ class _UrgencyBarChart extends ConsumerWidget {
                     },
                   ),
                 ),
-                topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                topTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
               gridData: FlGridData(
                 show: true,
@@ -1721,8 +1742,8 @@ class _UrgencyBarChart extends ConsumerWidget {
                       end: Alignment.topCenter,
                     ),
                     width: 36,
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(6)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(6)),
                   )
                 ]),
                 BarChartGroupData(x: 1, barRods: [
@@ -1734,8 +1755,8 @@ class _UrgencyBarChart extends ConsumerWidget {
                       end: Alignment.topCenter,
                     ),
                     width: 36,
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(6)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(6)),
                   )
                 ]),
                 BarChartGroupData(x: 2, barRods: [
@@ -1747,8 +1768,8 @@ class _UrgencyBarChart extends ConsumerWidget {
                       end: Alignment.topCenter,
                     ),
                     width: 36,
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(6)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(6)),
                   )
                 ]),
               ],
@@ -1774,8 +1795,7 @@ class _LegendDot extends StatelessWidget {
         Container(
             width: 10,
             height: 10,
-            decoration:
-                BoxDecoration(color: color, shape: BoxShape.circle)),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 4),
         Text(label,
             style: TextStyle(
@@ -1836,7 +1856,8 @@ class _HeaderMenu extends ConsumerWidget {
         PopupMenuItem(
           value: 'theme',
           child: ListTile(
-            leading: Icon(isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded),
+            leading:
+                Icon(isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded),
             title: Text(isDark ? 'Tema claro' : 'Tema escuro'),
             contentPadding: EdgeInsets.zero,
           ),
@@ -1848,12 +1869,14 @@ class _HeaderMenu extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.14),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
+          border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3), width: 1.5),
         ),
         child: Center(
           child: Text(
             initial,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
           ),
         ),
       ),

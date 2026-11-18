@@ -25,7 +25,7 @@ import 'barcode_image_analyzer_stub.dart'
 const _kScanBoxSize = 260.0;
 // 0.25 ≈ ~2.75× — zoom mais baixo facilita enquadrar o código e melhora detecção
 const _kInitialZoomMobile = 0.25;
-const _kZoomStep          = 0.1;
+const _kZoomStep = 0.1;
 // Máximo de tentativas ao escanear por foto
 const _kMaxPhotoAttempts = 3;
 // Tentativas automáticas de abrir a câmera (iOS Safari libera o stream com atraso)
@@ -36,7 +36,8 @@ class ScannerPage extends ConsumerStatefulWidget {
   /// Tempo máximo para a câmera abrir. Passado o limite, a tela explica e
   /// oferece Tentar novamente / Digitar código (em vez de "Abrindo…" para sempre).
   final Duration limiteCamera;
-  const ScannerPage({super.key, this.limiteCamera = const Duration(seconds: 30)});
+  const ScannerPage(
+      {super.key, this.limiteCamera = const Duration(seconds: 30)});
   @override
   ConsumerState<ScannerPage> createState() => _ScannerPageState();
 }
@@ -51,14 +52,14 @@ class ScannerPage extends ConsumerStatefulWidget {
 ///   (tentativa atrasada, troca de tela) não liga a câmera depois.
 class _ScannerPageState extends ConsumerState<ScannerPage>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-
   // Camera ─────────────────────────────────────────────────────────────────
   // Nativo (Android + iOS): noDuplicates — o SDK nativo gerencia deduplicação.
   // Web: DetectionSpeed.normal — o loop ZXing customizado tem guarda própria.
   // formats: limita aos formatos usados em produtos de ONG brasileira, o que
   // reduz o trabalho do ML Kit/Vision a cada quadro.
   final _camera = MobileScannerController(
-    detectionSpeed: kIsWeb ? DetectionSpeed.normal : DetectionSpeed.noDuplicates,
+    detectionSpeed:
+        kIsWeb ? DetectionSpeed.normal : DetectionSpeed.noDuplicates,
     returnImage: false,
     autoStart: false,
     formats: const [
@@ -75,38 +76,42 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
   );
 
   /// Um código está sendo confirmado/revisado: nenhuma outra leitura é aceita.
-  bool   _navigating    = false;
+  bool _navigating = false;
+
   /// Captura pausada por modal/teclado (digitação, ajuda).
-  bool   _pausadoPorModal = false;
+  bool _pausadoPorModal = false;
+
   /// App/aba em segundo plano.
-  bool   _emSegundoPlano = false;
-  int    _cicloCamera   = 0;
-  bool   _zoomSupported = true;
+  bool _emSegundoPlano = false;
+  int _cicloCamera = 0;
+  bool _zoomSupported = true;
   // Web: zoom digital 1.5× — o leitor recorta o quadro na mesma proporção.
-  double _zoom          = kIsWeb ? 1.5 : _kInitialZoomMobile;
-  bool   _detected      = false;
-  bool   _iniciandoCamera = false;
+  double _zoom = kIsWeb ? 1.5 : _kInitialZoomMobile;
+  bool _detected = false;
+  bool _iniciandoCamera = false;
 
   // ── Diagnóstico técnico (fora da interface comum) ─────────────────────
   // Visível só com --dart-define=SCANNER_DIAGNOSTICO=true ou após tocar e segurar o título.
   bool _diagnosticoLiberado = const bool.fromEnvironment('SCANNER_DIAGNOSTICO');
-  bool _showDebugLog      = false;
+  bool _showDebugLog = false;
   FalhaCamera? _falhaCamera;
   bool _scanningFromPhoto = false;
-  int  _photoAttempt      = 0;   // tentativa atual da varredura por foto
-  int  _frameCount        = 0;
+  int _photoAttempt = 0; // tentativa atual da varredura por foto
+  int _frameCount = 0;
   Timer? _heartbeat;
   Timer? _webScanTimer;
-  Timer? _debounce;              // evita duplicatas em DetectionSpeed.normal
+  Timer? _debounce; // evita duplicatas em DetectionSpeed.normal
   Timer? _flashDeteccao;
-  bool   _webScanBusy = false;  // evita scans web sobrepostos
+  Timer? _timerDicaLuz; // dica quando nada é lido por alguns segundos
+  bool _dicaLuz = false;
+  bool _webScanBusy = false; // evita scans web sobrepostos
   final List<_LogEntry> _logs = [];
 
   void _log(String msg, {bool isError = false}) {
     final now = DateTime.now();
-    final ts  = '${now.hour.toString().padLeft(2,'0')}:'
-                '${now.minute.toString().padLeft(2,'0')}:'
-                '${now.second.toString().padLeft(2,'0')}';
+    final ts = '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}:'
+        '${now.second.toString().padLeft(2, '0')}';
     // Sempre grava em memória, mas só dispara setState quando o painel está aberto.
     _logs.insert(0, _LogEntry(ts: ts, msg: msg, isError: isError));
     if (_logs.length > 40) _logs.removeLast();
@@ -121,11 +126,11 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
       final label = kIsWeb ? 'tentativas ZXing' : 'frames processados';
       if (kIsWeb) {
         final diag = callWebGetDiagnostics();
-        _log('Scanner: running=${state.isRunning} | $label=$_frameCount | diag=$diag');
+        _log(
+            'Scanner: running=${state.isRunning} | $label=$_frameCount | diag=$diag');
       } else {
-        final platform = defaultTargetPlatform == TargetPlatform.android
-            ? 'Android'
-            : 'iOS';
+        final platform =
+            defaultTargetPlatform == TargetPlatform.android ? 'Android' : 'iOS';
         _log('$platform: running=${state.isRunning} | $label=$_frameCount');
       }
       _frameCount = 0;
@@ -152,7 +157,10 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
       // Tempo limite no interop: um detector que nunca responde não prende
       // _webScanBusy (as próximas leituras continuariam ignoradas).
       final barcode = await callWebScanFrame(zoom: _zoom);
-      if (barcode != null && barcode.isNotEmpty && ciclo == _cicloCamera && _capturaAtiva) {
+      if (barcode != null &&
+          barcode.isNotEmpty &&
+          ciclo == _cicloCamera &&
+          _capturaAtiva) {
         _log('Leitor web detectou: $barcode');
         _aceitarCodigo(barcode, origem: OrigemCodigo.camera);
       }
@@ -165,7 +173,12 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
 
   /// Câmera deve estar lendo agora?
   bool get _capturaAtiva =>
-      mounted && !_navigating && !_pausadoPorModal && !_emSegundoPlano && _rotaNoTopo && !_saindo;
+      mounted &&
+      !_navigating &&
+      !_pausadoPorModal &&
+      !_emSegundoPlano &&
+      _rotaNoTopo &&
+      !_saindo;
 
   /// O scanner é a tela de cima? Com outra tela (ou folha) por cima, ou saindo, a
   /// câmera não lê: um código lido "por trás" abriria a confirmação sobre outra tela.
@@ -190,7 +203,7 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
 
   // Animação da linha de scan ──────────────────────────────────────────────
   late final AnimationController _lineCtrl;
-  late final Animation<double>   _lineAnim;
+  late final Animation<double> _lineAnim;
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
   @override
@@ -244,6 +257,8 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
     _heartbeat?.cancel();
     _webScanTimer?.cancel();
     _debounce?.cancel();
+    _timerDicaLuz?.cancel();
+    if (_dicaLuz && mounted) setState(() => _dicaLuz = false);
     if (_lineCtrl.isAnimating) _lineCtrl.stop();
     unawaited(_camera.stop().catchError((Object _) {}));
   }
@@ -266,7 +281,10 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
     if (kIsWeb) {
       final leitores = await callWebEnsureReaders();
       if (ciclo != _cicloCamera || !mounted) return;
-      if (leitores != 'ok') _log('Leitor ZXing: $leitores (segue com a detecção nativa, se houver)', isError: true);
+      if (leitores != 'ok') {
+        _log('Leitor ZXing: $leitores (segue com a detecção nativa, se houver)',
+            isError: true);
+      }
     }
 
     FalhaCamera? falha;
@@ -276,19 +294,26 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
       // Web: para o stream anterior antes de iniciar — sem isso o navegador
       // pode tentar abrir um segundo stream enquanto libera o primeiro.
       if (kIsWeb) {
-        try { await _camera.stop(); } catch (_) {}
-        await Future.delayed(Duration(milliseconds: tentativa == 0 ? 200 : 400 * tentativa + 400));
+        try {
+          await _camera.stop();
+        } catch (_) {}
+        await Future.delayed(Duration(
+            milliseconds: tentativa == 0 ? 200 : 400 * tentativa + 400));
         if (ciclo != _cicloCamera || !mounted) return;
       }
       try {
         await _camera.start().timeout(widget.limiteCamera);
       } on TimeoutException {
         falha = FalhaCamera.semResposta;
-        _log('A câmera não respondeu em ${widget.limiteCamera.inSeconds} s', isError: true);
+        _log('A câmera não respondeu em ${widget.limiteCamera.inSeconds} s',
+            isError: true);
       } on MobileScannerException catch (e) {
-        if (e.errorCode != MobileScannerErrorCode.controllerAlreadyInitialized) {
+        if (e.errorCode !=
+            MobileScannerErrorCode.controllerAlreadyInitialized) {
           falha = classificarFalhaCamera(e);
-          _log('Erro ao abrir câmera: ${e.errorCode.name} ${e.errorDetails?.message ?? ''}', isError: true);
+          _log(
+              'Erro ao abrir câmera: ${e.errorCode.name} ${e.errorDetails?.message ?? ''}',
+              isError: true);
         }
       } catch (e) {
         falha = classificarFalhaCamera(e);
@@ -304,6 +329,13 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
         _log('Câmera iniciada');
         if (!_lineCtrl.isAnimating) _lineCtrl.repeat(reverse: true);
         _startHeartbeat();
+        // Sem leitura em 8 s (pouca luz, reflexo, código pequeno): mostra o que fazer.
+        _timerDicaLuz?.cancel();
+        _timerDicaLuz = Timer(const Duration(seconds: 8), () {
+          if (mounted && _camera.value.isRunning && !_navigating) {
+            setState(() => _dicaLuz = true);
+          }
+        });
         if (kIsWeb) _startWebScanLoop();
         if (!kIsWeb && _zoomSupported) {
           try {
@@ -335,6 +367,7 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
     _webScanTimer?.cancel();
     _debounce?.cancel();
     _flashDeteccao?.cancel();
+    _timerDicaLuz?.cancel();
     _lineCtrl.dispose();
     _camera.dispose();
     super.dispose();
@@ -343,7 +376,8 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
   // ── Detecção contínua ────────────────────────────────────────────────────
   void _onDetect(BarcodeCapture capture) {
     _frameCount++;
-    if (_showDebugLog && (capture.barcodes.isNotEmpty || _frameCount % 10 == 0)) {
+    if (_showDebugLog &&
+        (capture.barcodes.isNotEmpty || _frameCount % 10 == 0)) {
       final dbgRaw = capture.barcodes.firstOrNull?.rawValue;
       _log('Frame #$_frameCount | barcodes: ${capture.barcodes.length}'
           '${dbgRaw != null ? " | valor: $dbgRaw" : ""}');
@@ -361,7 +395,8 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
   }
 
   // ── Caminho único de aceitação do código ─────────────────────────────────
-  Future<void> _aceitarCodigo(String bruto, {required OrigemCodigo origem}) async {
+  Future<void> _aceitarCodigo(String bruto,
+      {required OrigemCodigo origem}) async {
     if (_navigating || !mounted) return;
     final codigo = normalizarCodigo(bruto);
     final problema = validarCodigo(codigo);
@@ -398,16 +433,20 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
   /// procurar um produto com esse código.
   Future<bool> _abrirDoacaoPeloProtocolo(String protocolo) async {
     if (!canOperateDonations(ref.read(currentUserProvider))) {
-      _avisar('Este é o QR Code de uma doação ($protocolo). Só administrador e estoquista '
+      _avisar(
+          'Este é o QR Code de uma doação ($protocolo). Só administrador e estoquista '
           'abrem doações.');
       return false;
     }
     String? id;
     try {
-      id = await ref.read(donationOpsRepositoryProvider).findIdByProtocol(protocolo);
+      id = await ref
+          .read(donationOpsRepositoryProvider)
+          .findIdByProtocol(protocolo);
     } catch (e) {
       _log('Erro ao buscar a doação $protocolo: $e', isError: true);
-      _avisar('Não foi possível buscar a doação agora. Verifique a internet e tente de novo.');
+      _avisar(
+          'Não foi possível buscar a doação agora. Verifique a internet e tente de novo.');
       return false;
     }
     if (!mounted) return false;
@@ -432,7 +471,9 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
     }
     // Histórico: uma vez por código aceito. A consulta externa começa na
     // própria revisão (depois do cadastro local) — aqui só navegamos.
-    unawaited(ref.read(scanHistoryRepositoryProvider).record(codigo, source: origem.fonteHistorico));
+    unawaited(ref
+        .read(scanHistoryRepositoryProvider)
+        .record(codigo, source: origem.fonteHistorico));
     await context.push(rotaRevisao(codigo));
     if (!mounted) return;
     _log('Voltou da revisão — retomando a câmera');
@@ -476,11 +517,14 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
           _avisar('A câmera não está ativa. Reabrindo…');
           _retomarCaptura();
         case 'no_detector':
-          _avisar('O leitor de códigos ainda não está disponível. Verifique a internet ou digite o código.');
+          _avisar(
+              'O leitor de códigos ainda não está disponível. Verifique a internet ou digite o código.');
         case 'timeout':
-          _avisar('A leitura da foto demorou demais. Tente de novo ou digite o código.');
+          _avisar(
+              'A leitura da foto demorou demais. Tente de novo ou digite o código.');
         default:
-          _avisar('Nenhum código encontrado na foto. Aproxime, centralize e tente de novo — ou digite o código.');
+          _avisar(
+              'Nenhum código encontrado na foto. Aproxime, centralize e tente de novo — ou digite o código.');
       }
       return;
     }
@@ -495,10 +539,15 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
 
     for (int attempt = 1; attempt <= _kMaxPhotoAttempts; attempt++) {
       if (!mounted || _navigating) break;
-      setState(() { _scanningFromPhoto = true; _photoAttempt = attempt; });
+      setState(() {
+        _scanningFromPhoto = true;
+        _photoAttempt = attempt;
+      });
 
       if (attempt > 1) {
-        _avisar('Tentativa $attempt de $_kMaxPhotoAttempts — aproxime e centralize o código', erro: false);
+        _avisar(
+            'Tentativa $attempt de $_kMaxPhotoAttempts — aproxime e centralize o código',
+            erro: false);
         await Future.delayed(const Duration(milliseconds: 1000));
         if (!mounted) break;
       }
@@ -524,14 +573,18 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
           achado = raw;
           break;
         }
-        _log('Tentativa $attempt: nenhum código', isError: attempt == _kMaxPhotoAttempts);
+        _log('Tentativa $attempt: nenhum código',
+            isError: attempt == _kMaxPhotoAttempts);
       } catch (e) {
         _log('Erro do leitor na tentativa $attempt: $e', isError: true);
       }
     }
 
     if (!mounted) return;
-    setState(() { _scanningFromPhoto = false; _photoAttempt = 0; });
+    setState(() {
+      _scanningFromPhoto = false;
+      _photoAttempt = 0;
+    });
     _pausadoPorModal = false;
     if (achado != null) {
       _aceitarCodigo(achado, origem: OrigemCodigo.foto);
@@ -551,7 +604,8 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
     _pararCamera();
     XFile? arquivo;
     try {
-      arquivo = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 95);
+      arquivo = await ImagePicker()
+          .pickImage(source: ImageSource.gallery, imageQuality: 95);
     } catch (e) {
       _log('Erro ao escolher imagem: $e', isError: true);
     }
@@ -578,7 +632,8 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
       _aceitarCodigo(achado, origem: OrigemCodigo.foto);
       return;
     }
-    _avisar('Nenhum código encontrado nessa imagem. Use uma foto nítida, com o código inteiro '
+    _avisar(
+        'Nenhum código encontrado nessa imagem. Use uma foto nítida, com o código inteiro '
         'e reto — ou digite o código.');
     _retomarCaptura();
   }
@@ -597,139 +652,145 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
         return SafeArea(
           top: false,
           child: Container(
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-          child: SingleChildScrollView(
-           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40, height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: cs.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Row(
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.success600.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: cs.outlineVariant,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                    child: const Icon(Icons.check_circle_rounded,
-                        color: AppColors.success600, size: 26),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Semantics(
-                          header: true,
-                          child: Text('Código detectado',
-                              style: tt.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700)),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.success600.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
                         ),
-                        Text('Confira antes de continuar',
-                            style: tt.bodyMedium
-                                ?.copyWith(color: cs.onSurfaceVariant)),
+                        child: const Icon(Icons.check_circle_rounded,
+                            color: AppColors.success600, size: 26),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Semantics(
+                              header: true,
+                              child: Text('Código detectado',
+                                  style: tt.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w700)),
+                            ),
+                            Text('Confira antes de continuar',
+                                style: tt.bodyMedium
+                                    ?.copyWith(color: cs.onSurfaceVariant)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(14),
+                      border:
+                          Border.all(color: cs.outline.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.qr_code_rounded,
+                            color: cs.primary, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: SelectableText(
+                            barcode,
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.5,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(14),
-                  border:
-                      Border.all(color: cs.outline.withValues(alpha: 0.25)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.qr_code_rounded,
-                        color: cs.primary, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: SelectableText(
-                        barcode,
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.5,
-                          color: cs.onSurface,
+                  if (ehEndereco) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline_rounded,
+                            size: 18, color: cs.onSurfaceVariant),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Este QR contém um endereço da internet. Ele não será aberto: o texto é usado só como código do produto.',
+                            style: tt.bodySmall
+                                ?.copyWith(color: cs.onSurfaceVariant),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: const Text('Ler outro código'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              if (ehEndereco) ...[
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline_rounded, size: 18, color: cs.onSurfaceVariant),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Este QR contém um endereço da internet. Ele não será aberto: o texto é usado só como código do produto.',
-                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      FilledButton.icon(
+                        autofocus: true,
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                        label: const Text('Continuar com este código'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.brandPrimary600,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(48, 48),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                alignment: WrapAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text('Ler outro código'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
-                  FilledButton.icon(
-                    autofocus: true,
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                    label: const Text('Continuar com este código'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.brandPrimary600,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(48, 48),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-          ),
+            ),
           ),
         );
       },
@@ -792,37 +853,44 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
     showCasaHelpModal(
       context: context,
       pageTitle: 'Escanear produto',
-      pageDescription: 'Leia o código de barras ou QR da embalagem para ver o produto, os lotes e dar entrada.',
+      pageDescription:
+          'Leia o código de barras ou QR da embalagem para ver o produto, os lotes e dar entrada.',
       headerIcon: Icons.qr_code_scanner_rounded,
       tips: const [
         HelpTip(
           icon: Icons.center_focus_strong_rounded,
           title: 'Enquadre o código',
-          description: 'Deixe o código inteiro dentro do quadrado, bem iluminado. Use + e − para aproximar.',
+          description:
+              'Deixe o código inteiro dentro do quadrado, bem iluminado. Use + e − para aproximar.',
         ),
         HelpTip(
           icon: Icons.keyboard_rounded,
           title: 'Digitar o código',
-          description: 'Funciona sem câmera e sem internet: o produto já cadastrado aparece na revisão.',
+          description:
+              'Funciona sem câmera e sem internet: o produto já cadastrado aparece na revisão.',
         ),
         HelpTip(
           icon: Icons.photo_camera_rounded,
           title: 'Ler por foto',
-          description: 'O botão redondo tira uma foto e procura o código nela — útil com reflexo ou código pequeno.',
+          description:
+              'O botão redondo tira uma foto e procura o código nela — útil com reflexo ou código pequeno.',
         ),
       ],
       faq: const [
         HelpFaq(
           pergunta: 'A câmera não abre. O que faço?',
-          resposta: 'A tela mostra o motivo (permissão, câmera em uso ou ausente). Corrija e toque em Tentar novamente — ou digite o código.',
+          resposta:
+              'A tela mostra o motivo (permissão, câmera em uso ou ausente). Corrija e toque em Tentar novamente — ou digite o código.',
         ),
         HelpFaq(
           pergunta: 'Li o código errado.',
-          resposta: 'Na confirmação, toque em "Ler outro código". Nada é gravado antes de você confirmar.',
+          resposta:
+              'Na confirmação, toque em "Ler outro código". Nada é gravado antes de você confirmar.',
         ),
         HelpFaq(
           pergunta: 'E se o produto não estiver em nenhuma base?',
-          resposta: 'Na revisão você pode cadastrá-lo manualmente; se a internet falhar, a revisão diz isso e oferece Tentar novamente.',
+          resposta:
+              'Na revisão você pode cadastrá-lo manualmente; se a internet falhar, a revisão diz isso e oferece Tentar novamente.',
         ),
       ],
     ).whenComplete(() {
@@ -835,15 +903,15 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final mq       = MediaQuery.of(context);
-    final sw       = mq.size.width;
-    final sh       = mq.size.height;
-    final boxSize  = _kScanBoxSize.clamp(160.0, (sw < sh ? sw : sh) * 0.7);
-    final boxLeft  = (sw - boxSize) / 2;
-    final boxTop   = (sh - boxSize) / 2;
-    final scanWin  = Rect.fromLTWH(boxLeft, boxTop, boxSize, boxSize);
-    final topPad   = mq.padding.top;
-    final botPad   = mq.padding.bottom;
+    final mq = MediaQuery.of(context);
+    final sw = mq.size.width;
+    final sh = mq.size.height;
+    final boxSize = _kScanBoxSize.clamp(160.0, (sw < sh ? sw : sh) * 0.7);
+    final boxLeft = (sw - boxSize) / 2;
+    final boxTop = (sh - boxSize) / 2;
+    final scanWin = Rect.fromLTWH(boxLeft, boxTop, boxSize, boxSize);
+    final topPad = mq.padding.top;
+    final botPad = mq.padding.bottom;
 
     return PopScope(
       // Saindo do scanner (voltar): desliga a câmera já, sem esperar a animação.
@@ -853,284 +921,329 @@ class _ScannerPageState extends ConsumerState<ScannerPage>
         _pararCamera();
       },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: Colors.transparent,
-      ),
-      // A câmera fica sempre em fundo escuro (melhor para enquadrar), em
-      // qualquer tema; os textos sobre ela são claros.
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        extendBody: true,
-        extendBodyBehindAppBar: true,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-
-            // ── Câmera ───────────────────────────────────────────────────
-            // Na WEB: ClipRect + Transform.scale para zoom digital (Safari iOS
-            // não tem zoom de câmera). O leitor recorta o quadro na mesma
-            // proporção, então o que aparece é o que é lido.
-            ExcludeSemantics(
-              child: kIsWeb
-                  ? ClipRect(
-                      child: Transform.scale(
-                        scale: _zoom,
-                        alignment: Alignment.center,
-                        child: MobileScanner(
-                          controller: _camera,
-                          onDetect: _onDetect,
+        value: SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent,
+        ),
+        // A câmera fica sempre em fundo escuro (melhor para enquadrar), em
+        // qualquer tema; os textos sobre ela são claros.
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          extendBody: true,
+          extendBodyBehindAppBar: true,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              // ── Câmera ───────────────────────────────────────────────────
+              // Na WEB: ClipRect + Transform.scale para zoom digital (Safari iOS
+              // não tem zoom de câmera). O leitor recorta o quadro na mesma
+              // proporção, então o que aparece é o que é lido.
+              ExcludeSemantics(
+                child: kIsWeb
+                    ? ClipRect(
+                        child: Transform.scale(
+                          scale: _zoom,
+                          alignment: Alignment.center,
+                          child: MobileScanner(
+                            controller: _camera,
+                            onDetect: _onDetect,
+                          ),
                         ),
+                      )
+                    : MobileScanner(
+                        controller: _camera,
+                        onDetect: _onDetect,
                       ),
-                    )
-                  : MobileScanner(
-                      controller: _camera,
-                      onDetect: _onDetect,
-                    ),
-            ),
+              ),
 
-            // ── Overlay escuro + cantos + linha de scan ──────────────────
-            ExcludeSemantics(
-              child: RepaintBoundary(
-                child: AnimatedBuilder(
-                  animation: _lineAnim,
-                  builder: (_, __) => CustomPaint(
-                    size: Size(sw, sh),
-                    painter: _ScanOverlayPainter(
-                      scanWindow: scanWin,
-                      lineProgress: _lineAnim.value,
-                      detected: _detected,
+              // ── Overlay escuro + cantos + linha de scan ──────────────────
+              ExcludeSemantics(
+                child: RepaintBoundary(
+                  child: AnimatedBuilder(
+                    animation: _lineAnim,
+                    builder: (_, __) => CustomPaint(
+                      size: Size(sw, sh),
+                      painter: _ScanOverlayPainter(
+                        scanWindow: scanWin,
+                        lineProgress: _lineAnim.value,
+                        detected: _detected,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
 
-            // ── Barra de controles superior ──────────────────────────────
-            Positioned(
-              top: topPad + 6,
-              left: 8,
-              right: 8,
-              child: ValueListenableBuilder<MobileScannerState>(
-                valueListenable: _camera,
-                builder: (_, estado, __) {
-                  final temLanterna = !kIsWeb &&
-                      estado.isRunning &&
-                      estado.torchState != TorchState.unavailable;
-                  final variasCameras = (estado.availableCameras ?? 2) > 1;
-                  return Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    runSpacing: 6,
-                    children: [
-                      _FabBtn(
-                        icon: Icons.arrow_back_rounded,
-                        tooltip: 'Voltar',
-                        onTap: () => context.pop(),
-                      ),
-                      Wrap(
-                        spacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          if (_zoomSupported && estado.isRunning) ...[
-                            _FabBtn(
-                              icon: Icons.remove_rounded,
-                              tooltip: 'Afastar (zoom −)',
-                              onTap: () => _adjustZoom(-_kZoomStep),
-                            ),
-                            Semantics(
-                              label: 'Zoom $_zoomLabel',
-                              child: ExcludeSemantics(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 7),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black54,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    _zoomLabel,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
+              // ── Barra de controles superior ──────────────────────────────
+              Positioned(
+                top: topPad + 6,
+                left: 8,
+                right: 8,
+                child: ValueListenableBuilder<MobileScannerState>(
+                  valueListenable: _camera,
+                  builder: (_, estado, __) {
+                    final temLanterna = !kIsWeb &&
+                        estado.isRunning &&
+                        estado.torchState != TorchState.unavailable;
+                    final variasCameras = (estado.availableCameras ?? 2) > 1;
+                    return Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      runSpacing: 6,
+                      children: [
+                        _FabBtn(
+                          icon: Icons.arrow_back_rounded,
+                          tooltip: 'Voltar',
+                          onTap: () => context.pop(),
+                        ),
+                        Wrap(
+                          spacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (_zoomSupported && estado.isRunning) ...[
+                              _FabBtn(
+                                icon: Icons.remove_rounded,
+                                tooltip: 'Afastar (zoom −)',
+                                onTap: () => _adjustZoom(-_kZoomStep),
+                              ),
+                              Semantics(
+                                label: 'Zoom $_zoomLabel',
+                                child: ExcludeSemantics(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      _zoomLabel,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
+                              _FabBtn(
+                                icon: Icons.add_rounded,
+                                tooltip: 'Aproximar (zoom +)',
+                                onTap: () => _adjustZoom(_kZoomStep),
+                              ),
+                            ],
+                            if (temLanterna)
+                              _FabBtn(
+                                icon: estado.torchState == TorchState.on
+                                    ? Icons.flashlight_on_rounded
+                                    : Icons.flashlight_off_rounded,
+                                tooltip: estado.torchState == TorchState.on
+                                    ? 'Desligar lanterna'
+                                    : 'Ligar lanterna',
+                                onTap: _camera.toggleTorch,
+                              ),
+                            if (estado.isRunning && variasCameras)
+                              _FabBtn(
+                                icon: Icons.flip_camera_ios_outlined,
+                                tooltip: 'Trocar câmera',
+                                onTap: () async {
+                                  await _camera.switchCamera();
+                                  if (!kIsWeb) {
+                                    try {
+                                      await _camera.setZoomScale(_zoom);
+                                    } catch (_) {}
+                                  }
+                                },
+                              ),
                             _FabBtn(
-                              icon: Icons.add_rounded,
-                              tooltip: 'Aproximar (zoom +)',
-                              onTap: () => _adjustZoom(_kZoomStep),
+                              icon: Icons.help_outline_rounded,
+                              tooltip: 'Ajuda do scanner',
+                              onTap: _abrirAjuda,
                             ),
                           ],
-                          if (temLanterna)
-                            _FabBtn(
-                              icon: estado.torchState == TorchState.on
-                                  ? Icons.flashlight_on_rounded
-                                  : Icons.flashlight_off_rounded,
-                              tooltip: estado.torchState == TorchState.on
-                                  ? 'Desligar lanterna'
-                                  : 'Ligar lanterna',
-                              onTap: _camera.toggleTorch,
-                            ),
-                          if (estado.isRunning && variasCameras)
-                            _FabBtn(
-                              icon: Icons.flip_camera_ios_outlined,
-                              tooltip: 'Trocar câmera',
-                              onTap: () async {
-                                await _camera.switchCamera();
-                                if (!kIsWeb) {
-                                  try { await _camera.setZoomScale(_zoom); } catch (_) {}
-                                }
-                              },
-                            ),
-                          _FabBtn(
-                            icon: Icons.help_outline_rounded,
-                            tooltip: 'Ajuda do scanner',
-                            onTap: _abrirAjuda,
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-
-            // ── Título / instrução (acima do quadrado) ────────────────────
-            if (_falhaCamera == null)
-              Positioned(
-                top: (boxTop - 70).clamp(topPad + 64, double.infinity),
-                left: 24,
-                right: 24,
-                child: GestureDetector(
-                  // Diagnóstico técnico: tocar e segurar o título.
-                  onLongPress: () => setState(() => _diagnosticoLiberado = true),
-                  child: Column(
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: const Text(
-                          'Escanear produto',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            shadows: [Shadow(blurRadius: 8)],
-                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _iniciandoCamera ? 'Abrindo a câmera…' : 'Aponte o código para a área marcada',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          shadows: [Shadow(blurRadius: 6)],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // ── Instrução embaixo do quadrado ────────────────────────────
-            if (_falhaCamera == null)
-              Positioned(
-                top: boxTop + boxSize + 16,
-                left: 16,
-                right: 16,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'EAN/UPC · Code 128 · Code 39 · ITF · QR · Data Matrix',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
-              ),
-
-            // ── Ações inferiores: digitar e ler por foto ────────────────
-            Positioned(
-              bottom: botPad + 20,
-              left: 16,
-              right: 16,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (_diagnosticoLiberado) ...[
-                    _FabBtn(
-                      icon: Icons.bug_report_rounded,
-                      tooltip: _showDebugLog ? 'Ocultar diagnóstico' : 'Mostrar diagnóstico técnico',
-                      onTap: () => setState(() => _showDebugLog = !_showDebugLog),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-                  _FabBtn(
-                    icon: Icons.photo_library_rounded,
-                    tooltip: 'Ler o código de uma imagem',
-                    onTap: _lerImagemEscolhida,
-                  ),
-                  const SizedBox(width: 20),
-                  _BotaoFoto(
-                    ocupado: _scanningFromPhoto,
-                    tentativa: _photoAttempt,
-                    habilitado: _falhaCamera == null || !kIsWeb,
-                    onTap: _scanFromPhoto,
-                  ),
-                  const SizedBox(width: 20),
-                  _FabBtn(
-                    icon: Icons.keyboard_rounded,
-                    tooltip: 'Digitar o código',
-                    onTap: _showManualInput,
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Câmera indisponível: motivo + Tentar novamente + Digitar ──
-            if (_falhaCamera != null)
-              Positioned(
-                top: topPad + 72,
-                left: 16,
-                right: 16,
-                child: _AvisoCamera(
-                  falha: _falhaCamera!,
-                  onTentarNovamente: () {
-                    setState(() => _falhaCamera = null);
-                    _retomarCaptura();
+                      ],
+                    );
                   },
-                  onDigitar: _showManualInput,
-                  onImagem: _lerImagemEscolhida,
                 ),
               ),
 
-            // ── Painel de log visual ─────────────────────────────────────
-            if (_showDebugLog)
+              // ── Título / instrução (acima do quadrado) ────────────────────
+              if (_falhaCamera == null)
+                Positioned(
+                  top: (boxTop - 70).clamp(topPad + 64, double.infinity),
+                  left: 24,
+                  right: 24,
+                  child: GestureDetector(
+                    // Diagnóstico técnico: tocar e segurar o título.
+                    onLongPress: () =>
+                        setState(() => _diagnosticoLiberado = true),
+                    child: Column(
+                      children: [
+                        Semantics(
+                          header: true,
+                          child: const Text(
+                            'Escanear produto',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              shadows: [Shadow(blurRadius: 8)],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _iniciandoCamera
+                              ? 'Abrindo a câmera…'
+                              : 'Aponte o código para a área marcada',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            shadows: [Shadow(blurRadius: 6)],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // ── Instrução embaixo do quadrado ────────────────────────────
+              if (_falhaCamera == null)
+                Positioned(
+                  top: boxTop + boxSize + 16,
+                  left: 16,
+                  right: 16,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: _dicaLuz
+                          ? ValueListenableBuilder<MobileScannerState>(
+                              valueListenable: _camera,
+                              builder: (_, estado, __) {
+                                final temLanterna = !kIsWeb &&
+                                    estado.torchState != TorchState.unavailable;
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      'Não está lendo? Procure mais luz, afaste um pouco o celular '
+                                      'ou use a foto (botão redondo) ou "Digitar o código".',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                    if (temLanterna) ...[
+                                      const SizedBox(height: 6),
+                                      FilledButton.icon(
+                                        onPressed: _camera.toggleTorch,
+                                        icon: Icon(
+                                            estado.torchState == TorchState.on
+                                                ? Icons.flashlight_off_rounded
+                                                : Icons.flashlight_on_rounded),
+                                        label: Text(
+                                            estado.torchState == TorchState.on
+                                                ? 'Desligar lanterna'
+                                                : 'Ligar lanterna'),
+                                        style: FilledButton.styleFrom(
+                                            minimumSize: const Size(0, 44)),
+                                      ),
+                                    ],
+                                  ],
+                                );
+                              },
+                            )
+                          : const Text(
+                              'EAN/UPC · Code 128 · Code 39 · ITF · QR · Data Matrix',
+                              textAlign: TextAlign.center,
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                    ),
+                  ),
+                ),
+
+              // ── Ações inferiores: digitar e ler por foto ────────────────
               Positioned(
-                bottom: botPad + 120,
-                left: 12,
-                right: 12,
-                child: _DebugLogPanel(
-                  logs: _logs,
-                  onClear: () => setState(() => _logs.clear()),
+                bottom: botPad + 20,
+                left: 16,
+                right: 16,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (_diagnosticoLiberado) ...[
+                      _FabBtn(
+                        icon: Icons.bug_report_rounded,
+                        tooltip: _showDebugLog
+                            ? 'Ocultar diagnóstico'
+                            : 'Mostrar diagnóstico técnico',
+                        onTap: () =>
+                            setState(() => _showDebugLog = !_showDebugLog),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    _FabBtn(
+                      icon: Icons.photo_library_rounded,
+                      tooltip: 'Ler o código de uma imagem',
+                      onTap: _lerImagemEscolhida,
+                    ),
+                    const SizedBox(width: 20),
+                    _BotaoFoto(
+                      ocupado: _scanningFromPhoto,
+                      tentativa: _photoAttempt,
+                      habilitado: _falhaCamera == null || !kIsWeb,
+                      onTap: _scanFromPhoto,
+                    ),
+                    const SizedBox(width: 20),
+                    _FabBtn(
+                      icon: Icons.keyboard_rounded,
+                      tooltip: 'Digitar o código',
+                      onTap: _showManualInput,
+                    ),
+                  ],
                 ),
               ),
 
-          ],
+              // ── Câmera indisponível: motivo + Tentar novamente + Digitar ──
+              if (_falhaCamera != null)
+                Positioned(
+                  top: topPad + 72,
+                  left: 16,
+                  right: 16,
+                  child: _AvisoCamera(
+                    falha: _falhaCamera!,
+                    onTentarNovamente: () {
+                      setState(() => _falhaCamera = null);
+                      _retomarCaptura();
+                    },
+                    onDigitar: _showManualInput,
+                    onImagem: _lerImagemEscolhida,
+                  ),
+                ),
+
+              // ── Painel de log visual ─────────────────────────────────────
+              if (_showDebugLog)
+                Positioned(
+                  bottom: botPad + 120,
+                  left: 12,
+                  right: 12,
+                  child: _DebugLogPanel(
+                    logs: _logs,
+                    onClear: () => setState(() => _logs.clear()),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -1171,7 +1284,8 @@ class _CodigoManualSheetState extends State<_CodigoManualSheet> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Material(
         color: cs.surface,
         clipBehavior: Clip.antiAlias,
@@ -1188,7 +1302,8 @@ class _CodigoManualSheetState extends State<_CodigoManualSheet> {
               children: [
                 Center(
                   child: Container(
-                    width: 40, height: 4,
+                    width: 40,
+                    height: 4,
                     margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
                         color: cs.outlineVariant,
@@ -1198,10 +1313,12 @@ class _CodigoManualSheetState extends State<_CodigoManualSheet> {
                 Semantics(
                   header: true,
                   child: Text('Digitar o código',
-                      style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                      style: tt.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(height: 4),
-                Text('Funciona sem câmera e sem internet: primeiro procuramos no cadastro.',
+                Text(
+                    'Funciona sem câmera e sem internet: primeiro procuramos no cadastro.',
                     style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
                 const SizedBox(height: 16),
                 TextField(
@@ -1209,16 +1326,19 @@ class _CodigoManualSheetState extends State<_CodigoManualSheet> {
                   autofocus: true,
                   autocorrect: false,
                   enableSuggestions: false,
-                  keyboardType: _soNumeros ? TextInputType.number : TextInputType.text,
+                  keyboardType:
+                      _soNumeros ? TextInputType.number : TextInputType.text,
                   textInputAction: TextInputAction.search,
                   onSubmitted: (_) => _enviar(),
                   onChanged: (_) {
                     if (_erro != null) setState(() => _erro = null);
                   },
                   decoration: InputDecoration(
-                    hintText: _soNumeros ? 'Ex.: 7891234567890' : 'Ex.: ABC-123/45',
+                    hintText:
+                        _soNumeros ? 'Ex.: 7891234567890' : 'Ex.: ABC-123/45',
                     prefixIcon: const Icon(Icons.qr_code_rounded),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     labelText: 'Código de barras',
                     errorText: _erro,
                     errorMaxLines: 3,
@@ -1241,7 +1361,8 @@ class _CodigoManualSheetState extends State<_CodigoManualSheet> {
                       backgroundColor: AppColors.brandPrimary600,
                       foregroundColor: Colors.white,
                       minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                     child: const Text('Buscar produto'),
                   ),
@@ -1288,16 +1409,19 @@ class _AvisoCamera extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.videocam_off_rounded, color: Color(0xFFFFB4A8), size: 22),
+                const Icon(Icons.videocam_off_rounded,
+                    color: Color(0xFFFFB4A8), size: 22),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(falha.titulo,
-                      style: tt.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                      style: tt.titleMedium?.copyWith(
+                          color: Colors.white, fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(falha.explicacao, style: tt.bodyMedium?.copyWith(color: Colors.white)),
+            Text(falha.explicacao,
+                style: tt.bodyMedium?.copyWith(color: Colors.white)),
             const SizedBox(height: 14),
             Wrap(
               spacing: 10,
@@ -1315,8 +1439,10 @@ class _AvisoCamera extends StatelessWidget {
                 ),
                 OutlinedButton.icon(
                   onPressed: onImagem,
-                  icon: const Icon(Icons.photo_library_rounded, size: 18, color: Colors.white),
-                  label: const Text('Ler de uma imagem', style: TextStyle(color: Colors.white)),
+                  icon: const Icon(Icons.photo_library_rounded,
+                      size: 18, color: Colors.white),
+                  label: const Text('Ler de uma imagem',
+                      style: TextStyle(color: Colors.white)),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.white70),
                     minimumSize: const Size(48, 48),
@@ -1324,8 +1450,10 @@ class _AvisoCamera extends StatelessWidget {
                 ),
                 OutlinedButton.icon(
                   onPressed: onTentarNovamente,
-                  icon: const Icon(Icons.refresh_rounded, size: 18, color: Colors.white),
-                  label: const Text('Tentar novamente', style: TextStyle(color: Colors.white)),
+                  icon: const Icon(Icons.refresh_rounded,
+                      size: 18, color: Colors.white),
+                  label: const Text('Tentar novamente',
+                      style: TextStyle(color: Colors.white)),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.white70),
                     minimumSize: const Size(48, 48),
@@ -1346,7 +1474,11 @@ class _BotaoFoto extends StatelessWidget {
   final int tentativa;
   final bool habilitado;
   final VoidCallback onTap;
-  const _BotaoFoto({required this.ocupado, required this.tentativa, required this.habilitado, required this.onTap});
+  const _BotaoFoto(
+      {required this.ocupado,
+      required this.tentativa,
+      required this.habilitado,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1368,11 +1500,15 @@ class _BotaoFoto extends StatelessWidget {
                 const SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5, color: Colors.white),
                 ),
                 if (tentativa > 0)
                   Text('$tentativa/$_kMaxPhotoAttempts',
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700)),
               ],
             ),
           ),
@@ -1395,7 +1531,8 @@ class _BotaoFoto extends StatelessWidget {
             child: const SizedBox(
               width: 72,
               height: 72,
-              child: Icon(Icons.photo_camera_rounded, color: Colors.black87, size: 32),
+              child: Icon(Icons.photo_camera_rounded,
+                  color: Colors.black87, size: 32),
             ),
           ),
         ),
@@ -1408,7 +1545,7 @@ class _BotaoFoto extends StatelessWidget {
 class _LogEntry {
   final String ts;
   final String msg;
-  final bool   isError;
+  final bool isError;
   const _LogEntry({required this.ts, required this.msg, this.isError = false});
 }
 
@@ -1449,7 +1586,8 @@ class _DebugLogPanel extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: onClear,
-                  child: const Text('Limpar', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  child: const Text('Limpar',
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
                 ),
               ],
             ),
@@ -1517,7 +1655,8 @@ class _FabBtn extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
-  const _FabBtn({required this.icon, required this.tooltip, required this.onTap});
+  const _FabBtn(
+      {required this.icon, required this.tooltip, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1547,9 +1686,9 @@ class _FabBtn extends StatelessWidget {
 
 // ── Overlay CustomPainter ─────────────────────────────────────────────────────
 class _ScanOverlayPainter extends CustomPainter {
-  final Rect   scanWindow;
+  final Rect scanWindow;
   final double lineProgress;
-  final bool   detected;
+  final bool detected;
 
   const _ScanOverlayPainter({
     required this.scanWindow,
@@ -1561,20 +1700,19 @@ class _ScanOverlayPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // Sombra ao redor do quadrado
     final shadow = Paint()..color = Colors.black.withValues(alpha: 0.68);
-    final path   = Path()
+    final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addRRect(RRect.fromRectAndRadius(
-          scanWindow, const Radius.circular(14)))
+      ..addRRect(RRect.fromRectAndRadius(scanWindow, const Radius.circular(14)))
       ..fillType = PathFillType.evenOdd;
     canvas.drawPath(path, shadow);
 
     // Cantos: branco ao detectar, verde normal
     final cornerColor = detected ? Colors.white : Colors.greenAccent;
     final corner = Paint()
-      ..color      = cornerColor
+      ..color = cornerColor
       ..strokeWidth = detected ? 5.0 : 3.5
-      ..style       = PaintingStyle.stroke
-      ..strokeCap   = StrokeCap.round;
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
     const cl = 30.0;
     final tl = scanWindow.topLeft;
     final tr = scanWindow.topRight;
@@ -1605,5 +1743,7 @@ class _ScanOverlayPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ScanOverlayPainter old) =>
-      old.lineProgress != lineProgress || old.detected != detected || old.scanWindow != scanWindow;
+      old.lineProgress != lineProgress ||
+      old.detected != detected ||
+      old.scanWindow != scanWindow;
 }
