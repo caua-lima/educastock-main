@@ -44,8 +44,9 @@ class ClassificadorIntencoes {
   ResultadoIntencao classificar(String texto) {
     final atributos = atributosDe(texto);
     final palavras = palavrasDe(texto);
-    if (atributos.isEmpty)
+    if (atributos.isEmpty) {
       return const ResultadoIntencao('desconhecida', 0, 0, null);
+    }
 
     // Log-probabilidade de cada intenção (prioris iguais: as intenções têm o mesmo peso).
     final v = _vocabulario.length.toDouble();

@@ -27,12 +27,13 @@ String respostaLocal(String pergunta,
 }) {
   final contexto = ContextoResposta(ong: ong, maisPrecisados: maisPrecisados);
   final r = classificadorAssistente.classificar(pergunta);
-  if (!r.confiavel)
+  if (!r.confiavel) {
     return (
       resultado: r,
       resposta: respostaNaoEntendi(contexto),
       entendeu: false
     );
+  }
   return (
     resultado: r,
     resposta: _porId[r.intencao]!.responder(contexto),

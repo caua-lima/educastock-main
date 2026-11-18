@@ -165,8 +165,9 @@ class AuthNotifier extends Notifier<AsyncValue<AppUser?>> {
     required String newPassword,
   }) async {
     // Na visão de outro perfil a conta é a do administrador: nunca trocar a senha dela.
-    if (ref.read(visaoPerfilProvider) != null)
+    if (ref.read(visaoPerfilProvider) != null) {
       throw const AcaoBloqueadaNaVisao();
+    }
     final ds = ref.read(authDatasourceProvider);
     await ds.changePassword(
       currentPassword: currentPassword,

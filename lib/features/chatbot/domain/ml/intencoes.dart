@@ -34,8 +34,9 @@ String _horarioEntrega(ContextoResposta c) {
   final janela =
       'Cada doação tem uma janela de dias para a entrega, que aparece no passo "Entrega" '
       'e na tela da doação, na aba "Doações".';
-  if (o.horarioEntregas.isNotEmpty)
+  if (o.horarioEntregas.isNotEmpty) {
     return 'As doações são recebidas ${o.horarioEntregas}. $janela';
+  }
   if (o.horarioFuncionamento.isNotEmpty) {
     return '$janela A Casa da Criança funciona ${o.horarioFuncionamento}.';
   }
@@ -205,8 +206,9 @@ final List<Intencao> kIntencoes = [
     final partes = <String>[];
     if (o.chavePix.isNotEmpty) partes.add('PIX: ${o.chavePix}');
     if (o.contaBancaria.isNotEmpty) partes.add('conta: ${o.contaBancaria}');
-    if (partes.isEmpty)
+    if (partes.isEmpty) {
       return 'Para doar em dinheiro, ${o.ondePerguntar}: a equipe passa os dados.';
+    }
     return 'Dá sim! ${partes.join('. ')}. Em caso de dúvida, ${o.ondePerguntar}.';
   }),
   Intencao('pix', [
@@ -219,8 +221,9 @@ final List<Intencao> kIntencoes = [
     'doar por pix',
   ], (c) {
     final o = c.ong;
-    if (o.chavePix.isNotEmpty)
+    if (o.chavePix.isNotEmpty) {
       return 'A chave PIX da Casa da Criança é ${o.chavePix}. Obrigado pela ajuda!';
+    }
     return 'A Casa da Criança não informou uma chave PIX. Você pode doar pela conta bancária'
         '${o.contaBancaria.isNotEmpty ? ' (${o.contaBancaria})' : ''} ou ${o.ondePerguntar}.';
   }),

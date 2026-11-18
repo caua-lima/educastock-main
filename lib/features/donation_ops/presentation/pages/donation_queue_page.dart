@@ -347,9 +347,10 @@ class _NeedsTab extends ConsumerWidget {
     if (ok != true || !context.mounted) return;
     try {
       await ref.read(donationNeedsDatasourceProvider).encerrarNecessidade(n.id);
-      if (context.mounted)
+      if (context.mounted) {
         showCasaSnackbar(context,
             message: '"${n.title}" encerrada.', isSuccess: true);
+      }
     } catch (_) {
       if (context.mounted) {
         showCasaSnackbar(context,
