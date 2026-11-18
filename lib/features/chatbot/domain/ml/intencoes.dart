@@ -22,7 +22,7 @@ String _horario(ContextoResposta c) {
   if (o.horarioFuncionamento.isNotEmpty) {
     return 'A Casa da Criança funciona ${o.horarioFuncionamento}.'
         '${o.horarioEntregas.isNotEmpty ? ' Doações são recebidas ${o.horarioEntregas}.' : ''}'
-        ' Se puder, ${o.ondePerguntar} antes de ir.';
+        ' Em feriados o horário pode mudar: se puder, ${o.ondePerguntar} antes de ir.';
   }
   return 'O horário de funcionamento ainda não foi informado pela Casa da Criança. '
       'Antes de ir até lá, ${o.ondePerguntar}. Para entregar uma doação, siga a janela de dias '

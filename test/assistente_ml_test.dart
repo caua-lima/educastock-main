@@ -91,13 +91,16 @@ void main() {
   });
 
   test('horário: usa o que o administrador cadastrou, senão manda ligar', () {
-    expect(
-        respostaLocal('que horas abre?'), contains('ainda não foi informado'));
-    expect(respostaLocal('que horas abre?'), contains('(19) 3863-0229'));
-    const ong =
-        InfoOng(horarioFuncionamento: 'de segunda a sexta, das 7h às 17h');
-    expect(
-        respostaLocal('que horas abre?', ong: ong), contains('das 7h às 17h'));
+    // Padrão: o horário público da Casa da Criança.
+    expect(respostaLocal('que horas abre?'), contains('das 7h às 16h30'));
+    expect(respostaLocal('que horas abre?'), contains('fechada aos sábados e domingos'));
+    // Sem horário cadastrado: não inventa e manda ligar.
+    const semHorario = InfoOng(horarioFuncionamento: '');
+    expect(respostaLocal('que horas abre?', ong: semHorario), contains('ainda não foi informado'));
+    expect(respostaLocal('que horas abre?', ong: semHorario), contains('(19) 3863-0229'));
+    // Cadastrado pelo administrador: usa o novo.
+    const ong = InfoOng(horarioFuncionamento: 'de segunda a sexta, das 8h às 18h');
+    expect(respostaLocal('que horas abre?', ong: ong), contains('das 8h às 18h'));
   });
 
   test('PIX e dinheiro: só os dados cadastrados', () {

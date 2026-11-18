@@ -24,7 +24,8 @@ class InfoOng {
     this.whatsapp = '',
     this.email = '',
     this.redeSocial = '@celencinacaldassarkis',
-    this.horarioFuncionamento = '',
+    this.horarioFuncionamento =
+        'de segunda a quarta, das 7h às 17h, e às quintas e sextas, das 7h às 16h30 (fechada aos sábados e domingos)',
     this.horarioEntregas = '',
     this.chavePix = '',
     this.contaBancaria =

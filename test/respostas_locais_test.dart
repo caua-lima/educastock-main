@@ -48,7 +48,7 @@ void main() {
   test('dados da Casa da Criança: endereço, contato, horário, dinheiro e história', () {
     expect(respostaLocal('Onde fica a Casa da Criança?'), contains('Rua Sílvio Galizoni, 238'));
     expect(respostaLocal('qual o telefone de vocês?'), contains('(19) 3863-0229'));
-    expect(respostaLocal('Qual o horário de funcionamento?'), contains('ainda não foi informado'));
+    expect(respostaLocal('Qual o horário de funcionamento?'), contains('das 7h às 16h30'));
     expect(respostaLocal('Posso doar em dinheiro?'), contains('agência 0171-6'));
     expect(respostaLocal('Qual a chave pix?'), contains('não informou uma chave PIX'));
     expect(respostaLocal('Qual a história da Casa?'), contains('1945'));
