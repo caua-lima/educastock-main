@@ -170,7 +170,8 @@ class ClassificadorIntencoes {
     'quando',
     'onde',
     'posso',
-    'pode', 'que'
+    'pode',
+    'que'
   };
 
   static String normalizar(String texto) {
@@ -183,10 +184,10 @@ class ClassificadorIntencoes {
     }
     return b
         .toString()
-        .replaceAll('😍', ' amei ')
-        .replaceAll('❤', ' amei ')
-        .replaceAll('🙏', ' obrigado ')
-        .replaceAll('👍', ' ok ')
+        .replaceAll('\u{1F60D}', ' amei ')
+        .replaceAll('\u{2764}', ' amei ')
+        .replaceAll('\u{1F64F}', ' obrigado ')
+        .replaceAll('\u{1F44D}', ' ok ')
         .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ');
   }
 

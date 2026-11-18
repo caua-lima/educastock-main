@@ -54,6 +54,16 @@ const _naoVistas = <(String, String)>[
   ('Vou te passar o número do meu cartão', 'dados_sensiveis'),
   ('Qual time vai ganhar o campeonato?', 'fora_escopo'),
   ('tchau, até amanhã', 'despedida'),
+  ('Vocês aceitam comida já aberta?', 'nao_aceitos'),
+  ('Posso doar remédios?', 'nao_aceitos'),
+  ('Dá para doar arroz e feijão na mesma doação?', 'varios_itens'),
+  ('Por que o app não deixa eu fazer mais uma doação?', 'varios_itens'),
+  ('Quanto tempo vocês levam para aprovar?', 'prazo_avaliacao'),
+  ('Recusaram minha doação, por quê?', 'recusada'),
+  ('Como faço para receber avisos da doação?', 'notificacoes'),
+  ('Como foi usada a doação que eu fiz?', 'impacto'),
+  ('Para que serve o EducaStock?', 'sobre_app'),
+  ('Tô falando com um robô?', 'bot'),
 ];
 
 void main() {

@@ -285,7 +285,10 @@ final List<Intencao> kIntencoes = [
         'vocês aceitam roupa usada',
         'aceita brinquedo',
         'posso doar móveis',
-    'o que dá pra doar', 'que itens posso doar', 'o que eu posso levar de doação', 'que coisas vocês recebem',
+        'o que dá pra doar',
+        'que itens posso doar',
+        'o que eu posso levar de doação',
+        'que coisas vocês recebem',
       ],
       (c) =>
           'A Casa da Criança aceita alimentos, bebidas, produtos de limpeza, higiene pessoal, '
@@ -536,6 +539,133 @@ final List<Intencao> kIntencoes = [
       (c) =>
           'Por segurança, não peço nem recebo senhas, cartões ou documentos. Para doar, basta usar '
           'o formulário "Quero doar".'),
+  Intencao(
+      'nao_aceitos',
+      [
+        'o que vocês não aceitam',
+        'aceitam produto aberto',
+        'posso doar comida estragada',
+        'o que não posso doar',
+        'aceitam remédio',
+        'posso doar item quebrado',
+        'aceitam roupa rasgada',
+        'aceitam comida feita em casa',
+        'o que é recusado',
+        'tem algo que não pode doar',
+        'vocês recebem medicamento',
+        'doação de remédio pode',
+        'aceitam vitaminas e medicamentos',
+      ],
+      (c) =>
+          'Não doe itens vencidos, estragados, abertos ou quebrados. Itens perecíveis precisam de validade. '
+          'Remédios, comida feita em casa e outros casos especiais precisam ser combinados antes: '
+          '${c.ong.ondePerguntar}. Na dúvida, ofereça pelo app: a equipe avalia antes de aprovar.'),
+  Intencao(
+      'varios_itens',
+      [
+        'posso doar vários itens de uma vez',
+        'dá para colocar mais de um item',
+        'como adiciono outro item',
+        'quantos itens posso doar',
+        'limite de itens por doação',
+        'quantas doações posso fazer',
+        'posso ter mais de uma doação aberta',
+        'por que não consigo fazer outra doação',
+        'limite de doações',
+        'posso juntar produtos diferentes numa doação',
+        'mais de um produto na mesma doação',
+        'colocar leite e açúcar juntos',
+      ],
+      (c) =>
+          'Pode sim: no formulário, toque em "Adicionar à lista" e depois em "Adicionar outro item" '
+          '(até 20 itens por doação). Cada doador pode ter até 3 doações abertas ao mesmo tempo; quando '
+          'uma é recebida ou cancelada, abre espaço para outra. A equipe pode ajustar esses limites.'),
+  Intencao(
+      'prazo_avaliacao',
+      [
+        'quanto tempo demora para aprovar',
+        'quando minha doação será aprovada',
+        'demora quanto a análise',
+        'em quanto tempo respondem',
+        'já faz dias e não aprovaram',
+        'quanto tempo leva a avaliação',
+      ],
+      (c) =>
+          'A equipe avalia as doações pela ordem de chegada; não há um prazo fixo informado. Você '
+          'acompanha o status na aba "Doações" e, se ligar as notificações no Perfil, recebe um aviso '
+          'quando for aprovada. Se tiver pressa, ${c.ong.ondePerguntar}.'),
+  Intencao(
+      'recusada',
+      [
+        'minha doação foi recusada',
+        'por que recusaram minha doação',
+        'doação recusada o que faço',
+        'qual o motivo da recusa',
+        'não aprovaram minha doação',
+        'minha doação foi negada',
+      ],
+      (c) =>
+          'Quando a equipe recusa uma doação, o motivo aparece na tela dela, na aba "Doações". '
+          'Normalmente é algo que não está sendo necessário agora ou com validade curta. Você pode '
+          'registrar uma nova doação com os itens de "Precisa" ou ${c.ong.ondePerguntar}.'),
+  Intencao(
+      'notificacoes',
+      [
+        'vou receber aviso',
+        'como ativo as notificações',
+        'não recebo notificações',
+        'me avisam quando aprovar',
+        'desligar notificações',
+        'recebo email da doação',
+        'quero ser avisado',
+        'como recebo alertas sobre minha doação',
+        'avisos no celular',
+      ],
+      (c) =>
+          'Em "Perfil", ligue "Receber notificações": você recebe um aviso quando a doação for '
+          'aprovada ou recebida. O status também fica sempre na aba "Doações".'),
+  Intencao(
+      'impacto',
+      [
+        'para onde vai minha doação',
+        'como minha doação foi usada',
+        'quero saber o impacto da minha doação',
+        'a doação chegou às crianças',
+        'onde usaram os itens que doei',
+        'relatório de impacto',
+      ],
+      (c) =>
+          'Depois do recebimento, a equipe registra o destino da doação. Na tela da doação aparece o '
+          '"Relatório de impacto" com o setor e a mensagem da equipe, e você pode baixar o recibo em PDF.'),
+  Intencao(
+      'sobre_app',
+      [
+        'o que é o educastock',
+        'para que serve esse aplicativo',
+        'o que dá pra fazer no app',
+        'como funciona o aplicativo',
+        'quem fez esse app',
+        'o que é esse portal',
+      ],
+      (c) =>
+          'O EducaStock é o sistema de estoque e doações da Casa da Criança. No Portal do Doador você '
+          'vê o que a ONG precisa, registra doações, acompanha o status, mostra o QR Code na entrega e '
+          'recebe o recibo e o impacto da doação.'),
+  Intencao(
+      'bot',
+      [
+        'você é um robô',
+        'você é humano',
+        'estou falando com uma pessoa',
+        'você é uma ia',
+        'quem é você',
+        'você é inteligente',
+        'é um bot',
+      ],
+      (c) =>
+          'Sou o assistente virtual da Casa da Criança: um modelo de Machine Learning que roda no '
+          'próprio aplicativo. Respondo as dúvidas mais comuns sobre doações; para falar com uma pessoa, '
+          '${c.ong.ondePerguntar}.'),
   Intencao(
       'fora_escopo',
       [
