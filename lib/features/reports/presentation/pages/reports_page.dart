@@ -24,6 +24,8 @@ import '../../../ml/presentation/widgets/forecast_widgets.dart';
 import '../../../settings/presentation/controllers/system_settings_provider.dart';
 
 import '../controllers/reports_provider.dart';
+import '../../../products/domain/entities/product.dart';
+import '../../../products/presentation/controllers/products_provider.dart';
 import '../../../stock/domain/entities/stock_movement.dart';
 
 // ─── Gradient shared with ModernProfileAppBar ────────────────────────────
@@ -248,8 +250,8 @@ class _ReportsAppBar extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final alertCount = ref.watch(allAvailableBatchesProvider).when(
           data: (list) => list
-              .where((b) =>
-                  !b.noExpiry && (b.isExpired || b.daysToExpiry <= 30))
+              .where(
+                  (b) => !b.noExpiry && (b.isExpired || b.daysToExpiry <= 30))
               .length,
           loading: () => 0,
           error: (_, __) => 0,
@@ -269,7 +271,8 @@ class _ReportsAppBar extends ConsumerWidget {
               ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 64),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg, vertical: 6),
                   child: Row(
                     children: [
                       // ── Ícone com glow estilo dashboard ──
@@ -309,8 +312,7 @@ class _ReportsAppBar extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(2),
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  Colors.white.withValues(alpha: 0.6),
+                              color: Colors.white.withValues(alpha: 0.6),
                               blurRadius: 8,
                             ),
                           ],
@@ -458,7 +460,8 @@ class ReportsPage extends ConsumerWidget {
           _ReportsAppBar(),
           // Em monitores ultrawide o conteúdo fica centralizado (largura máxima), em vez de
           // esticar os gráficos por toda a tela.
-          Expanded(child: TabBarView(
+          Expanded(
+              child: TabBarView(
             children: [
               ResponsiveBody(maxWidth: 1280, child: _ChartsTab()),
               ResponsiveBody(maxWidth: 1280, child: _MlRiskTab()),
@@ -503,12 +506,18 @@ class _ReportScheduleSheetState extends ConsumerState<_ReportScheduleSheet> {
     final parts = s.split(':');
     if (parts.length < 2) return const TimeOfDay(hour: 8, minute: 0);
     return TimeOfDay(
-        hour: int.tryParse(parts[0]) ?? 8,
-        minute: int.tryParse(parts[1]) ?? 0);
+        hour: int.tryParse(parts[0]) ?? 8, minute: int.tryParse(parts[1]) ?? 0);
   }
 
   static const _dayLabels = [
-    '', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'
+    '',
+    'Segunda',
+    'Terça',
+    'Quarta',
+    'Quinta',
+    'Sexta',
+    'Sábado',
+    'Domingo'
   ];
 
   Future<void> _save() async {
@@ -561,8 +570,8 @@ class _ReportScheduleSheetState extends ConsumerState<_ReportScheduleSheet> {
       child: Container(
         decoration: BoxDecoration(
           color: cs.surfaceContainerLow,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(AppRadius.modal)),
+          borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.modal)),
         ),
         padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xl),
@@ -633,8 +642,8 @@ class _ReportScheduleSheetState extends ConsumerState<_ReportScheduleSheet> {
               const SizedBox(height: AppSpacing.md),
               // Day of week
               Text('Dia da semana',
-                  style: AppTypography.labelMedium
-                      .copyWith(color: cs.onSurface)),
+                  style:
+                      AppTypography.labelMedium.copyWith(color: cs.onSurface)),
               const SizedBox(height: AppSpacing.sm),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -643,18 +652,14 @@ class _ReportScheduleSheetState extends ConsumerState<_ReportScheduleSheet> {
                     final day = i + 1;
                     final selected = _dayOfWeek == day;
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(right: AppSpacing.xs),
+                      padding: const EdgeInsets.only(right: AppSpacing.xs),
                       child: ChoiceChip(
                         label: Text(_dayLabels[day].substring(0, 3)),
                         selected: selected,
-                        onSelected: (_) =>
-                            setState(() => _dayOfWeek = day),
+                        onSelected: (_) => setState(() => _dayOfWeek = day),
                         selectedColor: AppColors.brandPrimary600,
                         labelStyle: AppTypography.labelSmall.copyWith(
-                          color: selected
-                              ? Colors.white
-                              : cs.onSurfaceVariant,
+                          color: selected ? Colors.white : cs.onSurfaceVariant,
                         ),
                       ),
                     );
@@ -664,8 +669,8 @@ class _ReportScheduleSheetState extends ConsumerState<_ReportScheduleSheet> {
               const SizedBox(height: AppSpacing.md),
               // Time
               Text('Horário de envio',
-                  style: AppTypography.labelMedium
-                      .copyWith(color: cs.onSurface)),
+                  style:
+                      AppTypography.labelMedium.copyWith(color: cs.onSurface)),
               const SizedBox(height: AppSpacing.sm),
               InkWell(
                 onTap: () async {
@@ -755,6 +760,43 @@ class _ReportScheduleSheetState extends ConsumerState<_ReportScheduleSheet> {
   }
 }
 
+const _todas = '__todas__';
+
+/// Pergunta de qual categoria é o relatório de estoque. Devolve [_todas], o nome da
+/// categoria ou null (cancelou).
+Future<String?> escolherCategoriaParaExportar(
+    BuildContext context, WidgetRef ref) {
+  final rotulos = ref.read(categoryLabelMapProvider);
+  return showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) => SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+            child: Text('Exportar o estoque de qual categoria?',
+                style: AppTypography.headingSmall),
+          ),
+          ListTile(
+            leading: const Icon(Icons.select_all_rounded),
+            title: const Text('Todas as categorias'),
+            onTap: () => Navigator.pop(ctx, _todas),
+          ),
+          for (final c in ProductCategory.values)
+            ListTile(
+              leading: const Icon(Icons.category_outlined),
+              title: Text(rotulos[c.name] ?? c.name),
+              onTap: () => Navigator.pop(ctx, c.name),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
 // ─── Tab 1: Gráficos ─────────────────────────────────────────────────────
 
 class _ChartsTab extends ConsumerWidget {
@@ -793,18 +835,18 @@ class _ChartsTab extends ConsumerWidget {
       ),
       data: (batches) {
         final totalItems = batches.fold<int>(0, (s, b) => s + b.quantity);
-        final totalValue =
-            batches.fold<double>(0, (s, b) => s + (b.unitPrice ?? 0) * b.quantity);
+        final totalValue = batches.fold<double>(
+            0, (s, b) => s + (b.unitPrice ?? 0) * b.quantity);
         final expired = batches.where((b) => b.isExpired).length;
 
         final Map<String, int> catCount = {};
         for (final b in batches) {
           catCount[b.productName] = (catCount[b.productName] ?? 0) + b.quantity;
         }
-        final topProducts =
-            (catCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value)))
-                .take(5)
-                .toList();
+        final topProducts = (catCount.entries.toList()
+              ..sort((a, b) => b.value.compareTo(a.value)))
+            .take(5)
+            .toList();
 
         final Map<String, int> originCount = {};
         for (final b in batches) {
@@ -857,10 +899,31 @@ class _ChartsTab extends ConsumerWidget {
           children: [
             // ─── Botão de tutorial
             _TabActionsRow(
-              onExport: () => showExportSheet(
-                context,
-                loader: () async => ReportTables.stock(batches),
-              ),
+              onExport: () async {
+                // Exporta tudo ou só uma categoria (prestação de contas por área).
+                final categoria =
+                    await escolherCategoriaParaExportar(context, ref);
+                if (categoria == null || !context.mounted) return;
+                final rotulo = categoria == _todas
+                    ? null
+                    : (ref.read(categoryLabelMapProvider)[categoria] ??
+                        categoria);
+                showExportSheet(
+                  context,
+                  loader: () async {
+                    final produtos = await ref.read(productsProvider.future);
+                    final cat = {
+                      for (final p in produtos) p.id: p.category.name
+                    };
+                    final lotes = categoria == _todas
+                        ? batches
+                        : batches
+                            .where((b) => cat[b.productId] == categoria)
+                            .toList();
+                    return ReportTables.stock(lotes, categoria: rotulo);
+                  },
+                );
+              },
               helpButton: buildHelpButton(
                 context: context,
                 onPressed: () => showCasaTutorial(
@@ -907,13 +970,15 @@ class _ChartsTab extends ConsumerWidget {
                 ),
                 // Erro aparece com recuperação — nunca como zero.
                 error: (e, _) => LoadErrorNotice(
-                  message: 'Não foi possível carregar as entradas por mês. ${friendlyLoadError(e)}',
+                  message:
+                      'Não foi possível carregar as entradas por mês. ${friendlyLoadError(e)}',
                   onRetry: () => invalidateReportCaches(ref),
                 ),
               ),
             ),
             const _ChartNote(
-              text: 'Soma das movimentações de ENTRADA registradas em cada mês. Ajustes de inventário, saídas e descartes não contam; lotes antigos sem entrada registrada não aparecem. Toque nos pontos para ver o valor.',
+              text:
+                  'Soma das movimentações de ENTRADA registradas em cada mês. Ajustes de inventário, saídas e descartes não contam; lotes antigos sem entrada registrada não aparecem. Toque nos pontos para ver o valor.',
             ),
             const SizedBox(height: AppSpacing.xl),
 
@@ -931,7 +996,8 @@ class _ChartsTab extends ConsumerWidget {
                   buckets: expiryBuckets, isDark: isDark, cs: cs),
             ),
             const _ChartNote(
-              text: 'Vermelho = vencidos ou críticos (≤7d). Laranja = atenção (8–30d). Verde = seguros (>30d).',
+              text:
+                  'Vermelho = vencidos ou críticos (≤7d). Laranja = atenção (8–30d). Verde = seguros (>30d).',
             ),
             const SizedBox(height: AppSpacing.xl),
 
@@ -954,7 +1020,8 @@ class _ChartsTab extends ConsumerWidget {
                 ),
               ),
               const _ChartNote(
-                text: 'Passe o mouse ou toque numa fatia para destacar o percentual dela.',
+                text:
+                    'Passe o mouse ou toque numa fatia para destacar o percentual dela.',
               ),
               const SizedBox(height: AppSpacing.xl),
             ],
@@ -975,7 +1042,8 @@ class _ChartsTab extends ConsumerWidget {
                 cs: cs,
               ),
               const _ChartNote(
-                text: 'Cada barra mostra quanto o produto representa do estoque total.',
+                text:
+                    'Cada barra mostra quanto o produto representa do estoque total.',
               ),
               const SizedBox(height: AppSpacing.xl),
             ],
@@ -995,7 +1063,8 @@ class _ChartsTab extends ConsumerWidget {
                 cs: cs,
               ),
               const _ChartNote(
-                text: 'Calculado pelo preço unitário de cada lote. Lotes sem preço ficam de fora.',
+                text:
+                    'Calculado pelo preço unitário de cada lote. Lotes sem preço ficam de fora.',
               ),
               const SizedBox(height: AppSpacing.xl),
             ],
@@ -1007,25 +1076,29 @@ class _ChartsTab extends ConsumerWidget {
                   icon: Icons.show_chart_rounded,
                   color: AppColors.brandPrimary600,
                   title: 'Tendência mensal',
-                  body: 'Passe o mouse ou toque nos pontos do gráfico para ver o volume exato de entradas. Picos indicam meses com muitas doações.',
+                  body:
+                      'Passe o mouse ou toque nos pontos do gráfico para ver o volume exato de entradas. Picos indicam meses com muitas doações.',
                 ),
                 _TipItem(
                   icon: Icons.bar_chart_rounded,
                   color: AppColors.warning600,
                   title: 'Validade por Faixa',
-                  body: 'Barras vermelhas = lotes vencidos ou críticos. Priorize a distribuição imediata desses itens.',
+                  body:
+                      'Barras vermelhas = lotes vencidos ou críticos. Priorize a distribuição imediata desses itens.',
                 ),
                 _TipItem(
                   icon: Icons.pie_chart_rounded,
                   color: AppColors.secondaryBlue600,
                   title: 'De onde vêm os lotes',
-                  body: 'Mostra de onde vem o estoque. Se "Doação" dominar, vale fortalecer as parcerias; se "Compra" for alta, revise o orçamento.',
+                  body:
+                      'Mostra de onde vem o estoque. Se "Doação" dominar, vale fortalecer as parcerias; se "Compra" for alta, revise o orçamento.',
                 ),
                 _TipItem(
                   icon: Icons.inventory_2_rounded,
                   color: AppColors.success600,
                   title: 'Produtos com mais estoque',
-                  body: 'Bons candidatos para as próximas distribuições. Compare com a previsão de consumo para evitar desperdício.',
+                  body:
+                      'Bons candidatos para as próximas distribuições. Compare com a previsão de consumo para evitar desperdício.',
                 ),
               ],
               isDark: isDark,
@@ -1141,7 +1214,8 @@ class _MlRiskTab extends ConsumerWidget {
           error: (_, __) => const SizedBox.shrink(),
         ),
         const _ChartNote(
-          text: 'Visão geral da saúde do estoque por IA. Toque nas fatias para ver os percentuais.',
+          text:
+              'Visão geral da saúde do estoque por IA. Toque nas fatias para ver os percentuais.',
         ),
         const SizedBox(height: AppSpacing.md),
 
@@ -1154,8 +1228,11 @@ class _MlRiskTab extends ConsumerWidget {
             color: AppColors.secondaryBlue600,
           ),
           const SizedBox(height: AppSpacing.sm),
-          _MlConfidenceDistChart(predictions: sortedPredictions, cs: cs, isDark: isDark),
-          const _ChartNote(text: 'Barras mais altas indicam que o modelo está mais certo da classificação.'),
+          _MlConfidenceDistChart(
+              predictions: sortedPredictions, cs: cs, isDark: isDark),
+          const _ChartNote(
+              text:
+                  'Barras mais altas indicam que o modelo está mais certo da classificação.'),
           const SizedBox(height: AppSpacing.md),
         ],
         if (criticals.isNotEmpty) ...[
@@ -1233,7 +1310,6 @@ class _MlRiskTab extends ConsumerWidget {
             cs: cs,
           ),
         const SizedBox(height: AppSpacing.md),
-
       ],
     );
   }
@@ -1284,7 +1360,8 @@ class _RiskActionSheet extends StatelessWidget {
     final fg = _fg;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: BoxDecoration(
           color: cs.surfaceContainerLow,
@@ -1299,7 +1376,8 @@ class _RiskActionSheet extends StatelessWidget {
           children: [
             Center(
               child: Container(
-                width: 36, height: 4,
+                width: 36,
+                height: 4,
                 margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 decoration: BoxDecoration(
                     color: cs.outlineVariant,
@@ -1317,7 +1395,8 @@ class _RiskActionSheet extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    width: 44, height: 44,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: fg.withValues(alpha: isDark ? 0.22 : 0.14),
                       borderRadius: BorderRadius.circular(AppRadius.small),
@@ -1332,8 +1411,7 @@ class _RiskActionSheet extends StatelessWidget {
                         Text(
                           prediction.productName,
                           style: AppTypography.labelLarge.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface),
+                              fontWeight: FontWeight.w700, color: cs.onSurface),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1449,7 +1527,8 @@ class _ActionTile extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 36, height: 36,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(AppRadius.small),
@@ -1468,8 +1547,8 @@ class _ActionTile extends StatelessWidget {
                   ),
                   Text(
                     description,
-                    style: AppTypography.bodySmall.copyWith(
-                        color: cs.onSurfaceVariant, fontSize: 11),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: cs.onSurfaceVariant, fontSize: 11),
                   ),
                 ],
               ),
@@ -1504,9 +1583,7 @@ class _MlScoreBanner extends StatelessWidget {
     final total = criticalCount + warningCount + safeCount;
     if (total == 0) return const SizedBox.shrink();
 
-    final safetyScore = total == 0
-        ? 100
-        : ((safeCount / total) * 100).round();
+    final safetyScore = total == 0 ? 100 : ((safeCount / total) * 100).round();
     final Color bannerColor;
     final IconData bannerIcon;
     final String bannerMsg;
@@ -1523,7 +1600,8 @@ class _MlScoreBanner extends StatelessWidget {
     } else {
       bannerColor = AppColors.warning600;
       bannerIcon = Icons.warning_amber_rounded;
-      bannerMsg = '$warningCount lote${warningCount > 1 ? 's' : ''} em atenção — monitore de perto';
+      bannerMsg =
+          '$warningCount lote${warningCount > 1 ? 's' : ''} em atenção — monitore de perto';
     }
 
     return Container(
@@ -1607,6 +1685,7 @@ class _MovementsTab extends ConsumerStatefulWidget {
 class _MovementsTabState extends ConsumerState<_MovementsTab> {
   int _days = 30;
   DateTimeRange? _customRange;
+  String? _categoria; // ProductCategory.name; null = todas
   Set<MovementType> _typeFilter = {};
   bool _showAll = false;
 
@@ -1662,9 +1741,11 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final summaryAsync = ref.watch(movementsSummaryProvider(_range));
-    final movementsAsync = ref.watch(movementsReportProvider(_range));
-    final lossesAsync = ref.watch(lossesByReasonProvider(_range));
+    final FiltroMovimentos filtro = (range: _range, categoria: _categoria);
+    final summaryAsync = ref.watch(movementsSummaryProvider(filtro));
+    final movementsAsync = ref.watch(movimentosFiltradosProvider(filtro));
+    final lossesAsync = ref.watch(lossesByReasonProvider(filtro));
+    final rotulos = ref.watch(categoryLabelMapProvider);
 
     final dateFmt = DateFormat('dd/MM/yy');
     final rangeLabel =
@@ -1680,8 +1761,14 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
             context,
             loader: () async {
               final range = _range;
-              final list = await ref.read(movementsReportProvider(range).future);
-              return ReportTables.movements(list, from: range.start, to: range.end);
+              final list = await ref.read(movimentosFiltradosProvider(
+                  (range: range, categoria: _categoria)).future);
+              return ReportTables.movements(list,
+                  from: range.start,
+                  to: range.end,
+                  categoria: _categoria == null
+                      ? null
+                      : (rotulos[_categoria] ?? _categoria));
             },
           ),
           helpButton: buildHelpButton(
@@ -1703,6 +1790,36 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
           onCustomRange: _pickCustomRange,
           cs: cs,
           isDark: isDark,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        // ─── Filtro por categoria: vale para números, gráficos, lista e exportação.
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Icon(Icons.category_outlined,
+                    size: 18, color: cs.onSurfaceVariant),
+              ),
+              for (final c in <String?>[
+                null,
+                ...ProductCategory.values.map((c) => c.name)
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(
+                        c == null ? 'Todas as categorias' : (rotulos[c] ?? c)),
+                    selected: _categoria == c,
+                    onSelected: (_) => setState(() {
+                      _categoria = c;
+                      _showAll = false;
+                    }),
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
 
@@ -1739,7 +1856,8 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
           },
         ),
         const _ChartNote(
-          text: 'Verde = entradas. Vermelho = saídas e descartes. Toque nas barras para ver o valor.',
+          text:
+              'Verde = entradas. Vermelho = saídas e descartes. Toque nas barras para ver o valor.',
         ),
         const SizedBox(height: AppSpacing.xl),
 
@@ -1794,9 +1912,7 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
           data: (movements) {
             final filtered = _typeFilter.isEmpty
                 ? movements
-                : movements
-                    .where((m) => _typeFilter.contains(m.type))
-                    .toList();
+                : movements.where((m) => _typeFilter.contains(m.type)).toList();
 
             if (filtered.isEmpty) {
               return CasaEmptyState(
@@ -1808,8 +1924,7 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
               );
             }
 
-            final shown =
-                _showAll ? filtered : filtered.take(20).toList();
+            final shown = _showAll ? filtered : filtered.take(20).toList();
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -1826,14 +1941,13 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
                   OutlinedButton.icon(
                     onPressed: () => setState(() => _showAll = true),
                     icon: const Icon(Icons.expand_more_rounded),
-                    label: Text(
-                        'Ver mais ${filtered.length - 20} movimentações'),
+                    label:
+                        Text('Ver mais ${filtered.length - 20} movimentações'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.brandPrimary600,
-                      side: const BorderSide(
-                          color: AppColors.brandPrimary600),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.sm),
+                      side: const BorderSide(color: AppColors.brandPrimary600),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     ),
                   ),
                 ],
@@ -1850,25 +1964,29 @@ class _MovementsTabState extends ConsumerState<_MovementsTab> {
               icon: Icons.show_chart_rounded,
               color: AppColors.brandPrimary600,
               title: 'Entradas × Saídas',
-              body: 'Barras verdes = entradas no estoque. Barras vermelhas = saídas e descartes. Selecione períodos diferentes para comparar meses.',
+              body:
+                  'Barras verdes = entradas no estoque. Barras vermelhas = saídas e descartes. Selecione períodos diferentes para comparar meses.',
             ),
             _TipItem(
               icon: Icons.pie_chart_outline_rounded,
               color: AppColors.danger600,
               title: 'Perdas por Motivo',
-              body: 'Identifique os motivos de perda mais frequentes. Se "vencimento" dominar, use a IA de Risco para antecipar-se.',
+              body:
+                  'Identifique os motivos de perda mais frequentes. Se "vencimento" dominar, use a IA de Risco para antecipar-se.',
             ),
             _TipItem(
               icon: Icons.filter_list_rounded,
               color: AppColors.secondaryBlue600,
               title: 'Filtros de Tipo',
-              body: 'Use os chips de filtro para ver apenas Entradas, Saídas ou Descartes. Combine com o seletor de período para análises precisas.',
+              body:
+                  'Use os chips de filtro para ver apenas Entradas, Saídas ou Descartes. Combine com o seletor de período para análises precisas.',
             ),
             _TipItem(
               icon: Icons.date_range_rounded,
               color: AppColors.success600,
               title: 'Período personalizado',
-              body: 'Toque em "Personalizado" para selecionar qualquer intervalo de datas. Ideal para auditorias mensais ou trimestrais.',
+              body:
+                  'Toque em "Personalizado" para selecionar qualquer intervalo de datas. Ideal para auditorias mensais ou trimestrais.',
             ),
           ],
           isDark: isDark,
@@ -1923,8 +2041,7 @@ class _MovementsPeriodHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.date_range_rounded,
-                  color: cs.primary, size: 18),
+              Icon(Icons.date_range_rounded, color: cs.primary, size: 18),
               const SizedBox(width: AppSpacing.xs),
               Flexible(
                 child: Text(
@@ -1950,11 +2067,8 @@ class _MovementsPeriodHeader extends StatelessWidget {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.small),
-                        color: selected
-                            ? cs.primary
-                            : cs.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.small),
+                        color: selected ? cs.primary : cs.surface,
                         border: Border.all(
                           color: selected
                               ? cs.primary
@@ -1965,8 +2079,7 @@ class _MovementsPeriodHeader extends StatelessWidget {
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () => onPeriodSelected(p),
-                          borderRadius: BorderRadius.circular(
-                              AppRadius.small),
+                          borderRadius: BorderRadius.circular(AppRadius.small),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.md,
@@ -1979,9 +2092,7 @@ class _MovementsPeriodHeader extends StatelessWidget {
                                 fontWeight: selected
                                     ? FontWeight.w700
                                     : FontWeight.w600,
-                                color: selected
-                                    ? cs.onPrimary
-                                    : cs.onSurface,
+                                color: selected ? cs.onPrimary : cs.onSurface,
                               ),
                             ),
                           ),
@@ -1994,12 +2105,10 @@ class _MovementsPeriodHeader extends StatelessWidget {
                   padding: const EdgeInsets.only(left: AppSpacing.sm),
                   child: Material(
                     color: cs.tertiary.withValues(alpha: 0.12),
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.small),
+                    borderRadius: BorderRadius.circular(AppRadius.small),
                     child: InkWell(
                       onTap: onCustomRange,
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.small),
+                      borderRadius: BorderRadius.circular(AppRadius.small),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
@@ -2045,7 +2154,8 @@ class _MovementsSummaryGrid extends StatelessWidget {
   final Map<String, int> summary;
   final ColorScheme cs;
 
-  const _MovementsSummaryGrid({super.key, required this.summary, required this.cs});
+  const _MovementsSummaryGrid(
+      {super.key, required this.summary, required this.cs});
 
   @override
   Widget build(BuildContext context) {
@@ -2137,54 +2247,57 @@ class _MovementsSummaryGrid extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         // Cards individuais
-        LayoutBuilder(builder: (context, box) => GridView(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: box.maxWidth >= 900 ? 5 : 3,
-            crossAxisSpacing: AppSpacing.sm,
-            mainAxisSpacing: AppSpacing.sm,
-            mainAxisExtent: MediaQuery.textScalerOf(context).scale(96).clamp(96.0, 200.0),
-          ),
-          children: [
-            _MovKpiCard(
-                icon: Icons.add_circle_outline_rounded,
-                label: 'Entradas',
-                value: entrada,
-                color: AppColors.success600,
-                cs: cs),
-            _MovKpiCard(
-                icon: Icons.outbound_rounded,
-                label: 'Saídas',
-                value: saida,
-                color: AppColors.brandPrimary600,
-                cs: cs),
-            _MovKpiCard(
-                icon: Icons.delete_outline_rounded,
-                label: 'Descartes',
-                value: descarte,
-                color: AppColors.danger600,
-                cs: cs),
-            _MovKpiCard(
-                icon: Icons.trending_up_rounded,
-                label: 'Ajuste +',
-                value: ajustPos,
-                color: AppColors.secondarySky500,
-                cs: cs),
-            _MovKpiCard(
-                icon: Icons.trending_down_rounded,
-                label: 'Ajuste −',
-                value: ajustNeg,
-                color: AppColors.warning600,
-                cs: cs),
-            _MovKpiCard(
-                icon: Icons.swap_horiz_rounded,
-                label: 'Total',
-                value: entrada + saida + ajustPos + ajustNeg + descarte,
-                color: AppColors.brandPrimary600,
-                cs: cs),
-          ],
-        )),
+        LayoutBuilder(
+            builder: (context, box) => GridView(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: box.maxWidth >= 900 ? 5 : 3,
+                    crossAxisSpacing: AppSpacing.sm,
+                    mainAxisSpacing: AppSpacing.sm,
+                    mainAxisExtent: MediaQuery.textScalerOf(context)
+                        .scale(96)
+                        .clamp(96.0, 200.0),
+                  ),
+                  children: [
+                    _MovKpiCard(
+                        icon: Icons.add_circle_outline_rounded,
+                        label: 'Entradas',
+                        value: entrada,
+                        color: AppColors.success600,
+                        cs: cs),
+                    _MovKpiCard(
+                        icon: Icons.outbound_rounded,
+                        label: 'Saídas',
+                        value: saida,
+                        color: AppColors.brandPrimary600,
+                        cs: cs),
+                    _MovKpiCard(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'Descartes',
+                        value: descarte,
+                        color: AppColors.danger600,
+                        cs: cs),
+                    _MovKpiCard(
+                        icon: Icons.trending_up_rounded,
+                        label: 'Ajuste +',
+                        value: ajustPos,
+                        color: AppColors.secondarySky500,
+                        cs: cs),
+                    _MovKpiCard(
+                        icon: Icons.trending_down_rounded,
+                        label: 'Ajuste −',
+                        value: ajustNeg,
+                        color: AppColors.warning600,
+                        cs: cs),
+                    _MovKpiCard(
+                        icon: Icons.swap_horiz_rounded,
+                        label: 'Total',
+                        value: entrada + saida + ajustPos + ajustNeg + descarte,
+                        color: AppColors.brandPrimary600,
+                        cs: cs),
+                  ],
+                )),
       ],
     );
   }
@@ -2214,8 +2327,7 @@ class _MovKpiCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: color.withValues(alpha: 0.2)),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 4)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4)
         ],
       ),
       child: Column(
@@ -2284,9 +2396,11 @@ List<_MovDayData> _groupByDay(
     if (result.containsKey(key)) {
       final curr = result[key]!;
       if (m.isInbound) {
-        result[key] = _MovDayData(key, curr.inbound + m.quantity, curr.outbound);
+        result[key] =
+            _MovDayData(key, curr.inbound + m.quantity, curr.outbound);
       } else {
-        result[key] = _MovDayData(key, curr.inbound, curr.outbound + m.quantity);
+        result[key] =
+            _MovDayData(key, curr.inbound, curr.outbound + m.quantity);
       }
     }
   }
@@ -2332,9 +2446,11 @@ List<_MovDayData> _groupByMonth(
     if (result.containsKey(key)) {
       final curr = result[key]!;
       if (m.isInbound) {
-        result[key] = _MovDayData(key, curr.inbound + m.quantity, curr.outbound);
+        result[key] =
+            _MovDayData(key, curr.inbound + m.quantity, curr.outbound);
       } else {
-        result[key] = _MovDayData(key, curr.inbound, curr.outbound + m.quantity);
+        result[key] =
+            _MovDayData(key, curr.inbound, curr.outbound + m.quantity);
       }
     }
   }
@@ -2361,21 +2477,18 @@ class _MovementsBarChart extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surfaceContainerLow,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border:
-              Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.bar_chart_rounded,
-                  size: 36,
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+                  size: 36, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Sem movimentações no período',
-                style: TextStyle(
-                    color: cs.onSurfaceVariant, fontSize: 13),
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
               ),
             ],
           ),
@@ -2396,8 +2509,7 @@ class _MovementsBarChart extends StatelessWidget {
               end: Alignment.bottomCenter,
             ),
             width: data.length > 12 ? 8 : 12,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(4)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
           BarChartRodData(
             toY: e.value.outbound.toDouble(),
@@ -2407,8 +2519,7 @@ class _MovementsBarChart extends StatelessWidget {
               end: Alignment.bottomCenter,
             ),
             width: data.length > 12 ? 8 : 12,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(4)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
           ),
         ],
       );
@@ -2421,11 +2532,9 @@ class _MovementsBarChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border:
-            Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -2434,8 +2543,7 @@ class _MovementsBarChart extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              _LegendDot(
-                  color: AppColors.success600, label: 'Entradas'),
+              _LegendDot(color: AppColors.success600, label: 'Entradas'),
               SizedBox(width: AppSpacing.lg),
               _LegendDot(color: AppColors.danger600, label: 'Saídas'),
             ],
@@ -2597,11 +2705,9 @@ class _LossesBreakdown extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border:
-            Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -2621,8 +2727,8 @@ class _LossesBreakdown extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: BoxDecoration(
-                          color: color, shape: BoxShape.circle),
+                      decoration:
+                          BoxDecoration(color: color, shape: BoxShape.circle),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
@@ -2649,8 +2755,8 @@ class _LossesBreakdown extends StatelessWidget {
                       child: Text(
                         '${(pct * 100).toStringAsFixed(0)}%',
                         textAlign: TextAlign.right,
-                        style: TextStyle(
-                            fontSize: 11, color: cs.onSurfaceVariant),
+                        style:
+                            TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                       ),
                     ),
                   ],
@@ -2661,8 +2767,7 @@ class _LossesBreakdown extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: pct.clamp(0.0, 1.0),
                     minHeight: 6,
-                    backgroundColor:
-                        cs.outlineVariant.withValues(alpha: 0.25),
+                    backgroundColor: cs.outlineVariant.withValues(alpha: 0.25),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),
@@ -2733,16 +2838,14 @@ class _TypeFilterChips extends StatelessWidget {
               label: const Text('Todos'),
               selected: selectedTypes.isEmpty,
               onSelected: (_) => onChanged({}),
-              selectedColor:
-                  AppColors.brandPrimary600.withValues(alpha: 0.15),
+              selectedColor: AppColors.brandPrimary600.withValues(alpha: 0.15),
               checkmarkColor: AppColors.brandPrimary600,
               labelStyle: TextStyle(
                 color: selectedTypes.isEmpty
                     ? AppColors.brandPrimary600
                     : cs.onSurfaceVariant,
-                fontWeight: selectedTypes.isEmpty
-                    ? FontWeight.w700
-                    : FontWeight.w500,
+                fontWeight:
+                    selectedTypes.isEmpty ? FontWeight.w700 : FontWeight.w500,
                 fontSize: 12,
               ),
             ),
@@ -2753,9 +2856,7 @@ class _TypeFilterChips extends StatelessWidget {
               padding: const EdgeInsets.only(right: AppSpacing.xs),
               child: FilterChip(
                 avatar: Icon(t.$3,
-                    size: 14,
-                    color:
-                        selected ? t.$4 : cs.onSurfaceVariant),
+                    size: 14, color: selected ? t.$4 : cs.onSurfaceVariant),
                 label: Text(t.$2),
                 selected: selected,
                 onSelected: (val) {
@@ -2771,11 +2872,8 @@ class _TypeFilterChips extends StatelessWidget {
                 checkmarkColor: t.$4,
                 showCheckmark: false,
                 labelStyle: TextStyle(
-                  color:
-                      selected ? t.$4 : cs.onSurfaceVariant,
-                  fontWeight: selected
-                      ? FontWeight.w700
-                      : FontWeight.w500,
+                  color: selected ? t.$4 : cs.onSurfaceVariant,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   fontSize: 12,
                 ),
               ),
@@ -2825,11 +2923,9 @@ class _MovementsListView extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border:
-            Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -2913,8 +3009,7 @@ class _MovementsListView extends StatelessWidget {
                             '${dateFmt.format(m.performedAt)} · ${m.performedByName}',
                             style: TextStyle(
                               fontSize: 10,
-                              color: cs.onSurfaceVariant
-                                  .withValues(alpha: 0.7),
+                              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -2926,10 +3021,9 @@ class _MovementsListView extends StatelessWidget {
                           horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.1),
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(
-                            color: color.withValues(alpha: 0.25)),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border:
+                            Border.all(color: color.withValues(alpha: 0.25)),
                       ),
                       child: Text(
                         '${m.isInbound ? '+' : '-'}${m.quantity}',
@@ -2950,8 +3044,6 @@ class _MovementsListView extends StatelessWidget {
     );
   }
 }
-
-
 
 // ─── Section Header moderno ──────────────────────────────────────────────
 
@@ -3038,8 +3130,7 @@ class _SectionHeader extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: color.withValues(alpha: 0.4)),
+                        border: Border.all(color: color.withValues(alpha: 0.4)),
                       ),
                       child: Text(
                         badge!,
@@ -3127,11 +3218,9 @@ class _TopProductsChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       child: Column(
@@ -3139,9 +3228,7 @@ class _TopProductsChart extends StatelessWidget {
         children: [
           ...products.asMap().entries.map((e) {
             final color = _colors[e.key % _colors.length];
-            final pct = totalItems == 0
-                ? 0.0
-                : e.value.value / totalItems;
+            final pct = totalItems == 0 ? 0.0 : e.value.value / totalItems;
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: Column(
@@ -3153,8 +3240,8 @@ class _TopProductsChart extends StatelessWidget {
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: BoxDecoration(
-                            color: color, shape: BoxShape.circle),
+                        decoration:
+                            BoxDecoration(color: color, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -3177,8 +3264,8 @@ class _TopProductsChart extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         '${(pct * 100).toStringAsFixed(0)}%',
-                        style: AppTypography.labelSmall.copyWith(
-                            color: cs.onSurfaceVariant, fontSize: 10),
+                        style: AppTypography.labelSmall
+                            .copyWith(color: cs.onSurfaceVariant, fontSize: 10),
                       ),
                     ],
                   ),
@@ -3255,12 +3342,24 @@ class _MlRiskDonutChartState extends State<_MlRiskDonutChart> {
     if (total == 0) return const SizedBox.shrink();
 
     final items = [
-      (widget.vermelhoCount, AppColors.danger600, 'Crítico',
-          Icons.warning_rounded),
-      (widget.amareloCount, AppColors.warning600, 'Atenção',
-          Icons.schedule_rounded),
-      (widget.verdeCount, AppColors.success600, 'Seguro',
-          Icons.check_circle_rounded),
+      (
+        widget.vermelhoCount,
+        AppColors.danger600,
+        'Crítico',
+        Icons.warning_rounded
+      ),
+      (
+        widget.amareloCount,
+        AppColors.warning600,
+        'Atenção',
+        Icons.schedule_rounded
+      ),
+      (
+        widget.verdeCount,
+        AppColors.success600,
+        'Seguro',
+        Icons.check_circle_rounded
+      ),
     ];
 
     final sections = items.asMap().entries.map((e) {
@@ -3276,8 +3375,7 @@ class _MlRiskDonutChartState extends State<_MlRiskDonutChart> {
         titleStyle: const TextStyle(
             fontSize: 12, color: Colors.white, fontWeight: FontWeight.w800),
         borderSide: isTouched
-            ? BorderSide(
-                color: Colors.white.withValues(alpha: 0.5), width: 2)
+            ? BorderSide(color: Colors.white.withValues(alpha: 0.5), width: 2)
             : BorderSide.none,
       );
     }).toList();
@@ -3287,11 +3385,9 @@ class _MlRiskDonutChartState extends State<_MlRiskDonutChart> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       child: Row(
@@ -3316,8 +3412,7 @@ class _MlRiskDonutChartState extends State<_MlRiskDonutChart> {
                             _touched = -1;
                             return;
                           }
-                          _touched =
-                              resp.touchedSection!.touchedSectionIndex;
+                          _touched = resp.touchedSection!.touchedSectionIndex;
                         });
                       },
                     ),
@@ -3354,8 +3449,7 @@ class _MlRiskDonutChartState extends State<_MlRiskDonutChart> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: items.map((item) {
-                final pct =
-                    total == 0 ? 0.0 : item.$1 / total * 100;
+                final pct = total == 0 ? 0.0 : item.$1 / total * 100;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: Column(
@@ -3402,8 +3496,7 @@ class _MlRiskDonutChartState extends State<_MlRiskDonutChart> {
                           minHeight: 5,
                           backgroundColor:
                               cs.outlineVariant.withValues(alpha: 0.25),
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(item.$2),
+                          valueColor: AlwaysStoppedAnimation<Color>(item.$2),
                         ),
                       ),
                     ],
@@ -3439,8 +3532,7 @@ class _MlNonCriticalSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
       ),
       // Wrap: os selos descem para a linha de baixo quando não cabem (tela estreita ou
       // fonte ampliada), em vez de estourar.
@@ -3553,8 +3645,8 @@ class _ModernStatsBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currFmt = NumberFormat.currency(
-        locale: 'pt_BR', symbol: 'R\$', decimalDigits: 0);
+    final currFmt =
+        NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$', decimalDigits: 0);
     final healthColor = healthScore >= 80
         ? AppColors.success600
         : healthScore >= 50
@@ -3594,56 +3686,57 @@ class _ModernStatsBanner extends StatelessWidget {
             children: [
               // ─── Health ring
               Tooltip(
-               message: kExplicacaoIndiceSaude,
-               child: Semantics(
-                label: 'Índice de saúde do estoque: $healthScore de 100, $healthLabel',
-                excludeSemantics: true,
-                child: SizedBox(
-                width: 88,
-                height: 88,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 88,
-                      height: 88,
-                      child: CircularProgressIndicator(
-                        value: healthScore / 100,
-                        strokeWidth: 8,
-                        backgroundColor:
-                            cs.outlineVariant.withValues(alpha: 0.3),
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(healthColor),
-                        strokeCap: StrokeCap.round,
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
+                message: kExplicacaoIndiceSaude,
+                child: Semantics(
+                  label:
+                      'Índice de saúde do estoque: $healthScore de 100, $healthLabel',
+                  excludeSemantics: true,
+                  child: SizedBox(
+                    width: 88,
+                    height: 88,
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        // Índice de 0 a 100 (não é porcentagem do estoque).
-                        Text(
-                          '$healthScore/100',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: healthColor,
-                            height: 1,
+                        SizedBox(
+                          width: 88,
+                          height: 88,
+                          child: CircularProgressIndicator(
+                            value: healthScore / 100,
+                            strokeWidth: 8,
+                            backgroundColor:
+                                cs.outlineVariant.withValues(alpha: 0.3),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(healthColor),
+                            strokeCap: StrokeCap.round,
                           ),
                         ),
-                        Text(
-                          healthLabel,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: cs.onSurfaceVariant,
-                          ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Índice de 0 a 100 (não é porcentagem do estoque).
+                            Text(
+                              '$healthScore/100',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: healthColor,
+                                height: 1,
+                              ),
+                            ),
+                            Text(
+                              healthLabel,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-               ),
               ),
               const SizedBox(width: AppSpacing.md),
               // ─── 3 key stats
@@ -3690,7 +3783,8 @@ class _ModernStatsBanner extends StatelessWidget {
                 icon: Icons.warning_rounded,
                 label: 'Críticos',
                 value: criticals,
-                color: criticals > 0 ? AppColors.danger600 : AppColors.success600,
+                color:
+                    criticals > 0 ? AppColors.danger600 : AppColors.success600,
                 isDark: isDark,
                 cs: cs,
                 onTap: criticalBatches.isEmpty
@@ -3710,7 +3804,8 @@ class _ModernStatsBanner extends StatelessWidget {
                 icon: Icons.schedule_rounded,
                 label: 'Atenção (30d)',
                 value: warnings,
-                color: warnings > 0 ? AppColors.warning600 : AppColors.success600,
+                color:
+                    warnings > 0 ? AppColors.warning600 : AppColors.success600,
                 isDark: isDark,
                 cs: cs,
                 onTap: warningBatches.isEmpty
@@ -3818,47 +3913,47 @@ class _AlertChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.14 : 0.08),
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border:
-            Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.2)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 12, color: color),
-              const SizedBox(width: 3),
-              Text(
-                '$value',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                  height: 1,
+        padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.14 : 0.08),
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border:
+              Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.2)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 12, color: color),
+                const SizedBox(width: 3),
+                Text(
+                  '$value',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                    height: 1,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: AppTypography.labelSmall.copyWith(
-              color: cs.onSurfaceVariant,
-              fontSize: 9,
+              ],
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-          ),
-        ],
-      ),
-    ),  // closes Container
-    );  // closes GestureDetector
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: AppTypography.labelSmall.copyWith(
+                color: cs.onSurfaceVariant,
+                fontSize: 9,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+            ),
+          ],
+        ),
+      ), // closes Container
+    ); // closes GestureDetector
   }
 }
 
@@ -3881,8 +3976,7 @@ class _ValueBarChart extends StatelessWidget {
     for (final b in batches) {
       if ((b.unitPrice ?? 0) > 0) {
         valueByProduct[b.productName] =
-            (valueByProduct[b.productName] ?? 0) +
-                (b.unitPrice! * b.quantity);
+            (valueByProduct[b.productName] ?? 0) + (b.unitPrice! * b.quantity);
       }
     }
     if (valueByProduct.isEmpty) {
@@ -3896,8 +3990,7 @@ class _ValueBarChart extends StatelessWidget {
         child: Center(
           child: Text(
             'Nenhum produto com preço cadastrado',
-            style: AppTypography.bodySmall
-                .copyWith(color: cs.onSurfaceVariant),
+            style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant),
           ),
         ),
       );
@@ -3915,16 +4008,15 @@ class _ValueBarChart extends StatelessWidget {
       AppColors.warning600,
       AppColors.danger600,
     ];
-    final currFmt = NumberFormat.currency(
-        locale: 'pt_BR', symbol: 'R\$', decimalDigits: 0);
+    final currFmt =
+        NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$', decimalDigits: 0);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border:
-            Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -3946,8 +4038,7 @@ class _ValueBarChart extends StatelessWidget {
                       height: 8,
                       decoration: BoxDecoration(
                         color: color,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.pill),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -3979,10 +4070,8 @@ class _ValueBarChart extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: pct.clamp(0.0, 1.0),
                     minHeight: 7,
-                    backgroundColor:
-                        cs.outlineVariant.withValues(alpha: 0.2),
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(color),
+                    backgroundColor: cs.outlineVariant.withValues(alpha: 0.2),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),
               ],
@@ -4052,7 +4141,8 @@ class _TabTipCardState extends State<_TabTipCard> {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: AppColors.secondaryBlue600.withValues(alpha: isDark ? 0.10 : 0.06),
+          color: AppColors.secondaryBlue600
+              .withValues(alpha: isDark ? 0.10 : 0.06),
           borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(
               color: AppColors.secondaryBlue600.withValues(alpha: 0.22)),
@@ -4083,7 +4173,8 @@ class _TabTipCardState extends State<_TabTipCard> {
   Widget _buildExpanded(ColorScheme cs, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.secondaryBlue600.withValues(alpha: isDark ? 0.08 : 0.04),
+        color:
+            AppColors.secondaryBlue600.withValues(alpha: isDark ? 0.08 : 0.04),
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
             color: AppColors.secondaryBlue600.withValues(alpha: 0.22)),
@@ -4130,8 +4221,8 @@ class _TabTipCardState extends State<_TabTipCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.md,
+                      AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -4139,10 +4230,9 @@ class _TabTipCardState extends State<_TabTipCard> {
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: tip.color.withValues(
-                              alpha: isDark ? 0.18 : 0.10),
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.small),
+                          color:
+                              tip.color.withValues(alpha: isDark ? 0.18 : 0.10),
+                          borderRadius: BorderRadius.circular(AppRadius.small),
                         ),
                         child: Icon(tip.icon, size: 15, color: tip.color),
                       ),
@@ -4218,7 +4308,8 @@ class _MlRiskActionsRow extends ConsumerWidget {
           child: _ActionChip(
             icon: Icons.local_shipping_rounded,
             label: 'Distribuir Críticos',
-            color: criticalCount > 0 ? AppColors.danger600 : AppColors.neutral500,
+            color:
+                criticalCount > 0 ? AppColors.danger600 : AppColors.neutral500,
             onTap: criticalCount > 0
                 ? () => context.push(AppRoutes.movement)
                 : null,
@@ -4323,12 +4414,11 @@ class _ActionChip extends StatelessWidget {
                   top: -6,
                   right: -6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 5, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: effectiveColor,
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.pill),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: Text(
                       badge!,
@@ -4365,9 +4455,12 @@ class _MlConfidenceDistChart extends StatelessWidget {
   Widget build(BuildContext context) {
     // Buckets: <40%, 40-60%, 60-80%, 80-100%
     final bucketLabels = ['<40%', '40–60%', '60–80%', '>80%'];
-    final vermelhos = predictions.where((p) => p.level == RiskLevel.vermelho).toList();
-    final amarelos = predictions.where((p) => p.level == RiskLevel.amarelo).toList();
-    final verdes = predictions.where((p) => p.level == RiskLevel.verde).toList();
+    final vermelhos =
+        predictions.where((p) => p.level == RiskLevel.vermelho).toList();
+    final amarelos =
+        predictions.where((p) => p.level == RiskLevel.amarelo).toList();
+    final verdes =
+        predictions.where((p) => p.level == RiskLevel.verde).toList();
 
     List<int> bucketsFor(List<RiskPrediction> list) {
       final b = [0, 0, 0, 0];
@@ -4390,9 +4483,9 @@ class _MlConfidenceDistChart extends StatelessWidget {
     final bA = bucketsFor(amarelos);
     final bG = bucketsFor(verdes);
 
-    final maxY = [
-      ...bV, ...bA, ...bG
-    ].fold<int>(0, (acc, v) => v > acc ? v : acc).toDouble();
+    final maxY = [...bV, ...bA, ...bG]
+        .fold<int>(0, (acc, v) => v > acc ? v : acc)
+        .toDouble();
     if (maxY == 0) return const SizedBox.shrink();
 
     return Container(
@@ -4447,8 +4540,8 @@ class _MlConfidenceDistChart extends StatelessWidget {
                       reservedSize: 22,
                       getTitlesWidget: (v, _) => Text(
                         '${v.toInt()}',
-                        style: AppTypography.labelSmall.copyWith(
-                            fontSize: 9, color: cs.onSurfaceVariant),
+                        style: AppTypography.labelSmall
+                            .copyWith(fontSize: 9, color: cs.onSurfaceVariant),
                       ),
                     ),
                   ),
@@ -4502,12 +4595,9 @@ class _MlConfidenceDistChart extends StatelessWidget {
             spacing: AppSpacing.md,
             runSpacing: AppSpacing.xs,
             children: [
-              _LegendDot(
-                  color: AppColors.danger600, label: 'Crítico'),
-              _LegendDot(
-                  color: AppColors.warning600, label: 'Atenção'),
-              _LegendDot(
-                  color: AppColors.success600, label: 'Seguro'),
+              _LegendDot(color: AppColors.danger600, label: 'Crítico'),
+              _LegendDot(color: AppColors.warning600, label: 'Atenção'),
+              _LegendDot(color: AppColors.success600, label: 'Seguro'),
             ],
           ),
         ],
@@ -4584,8 +4674,8 @@ class _ForecastReportTab extends ConsumerWidget {
                 color: AppColors.warning600,
                 onTap: needsReplenishment.isEmpty
                     ? null
-                    : () => _exportReplenishmentCsv(
-                        context, needsReplenishment),
+                    : () =>
+                        _exportReplenishmentCsv(context, needsReplenishment),
                 badge: replenishCount > 0 ? '$replenishCount' : null,
               ),
             ),
@@ -4597,10 +4687,12 @@ class _ForecastReportTab extends ConsumerWidget {
                 color: AppColors.secondaryBlue600,
                 onTap: hasForecast
                     ? () => showCasaSnackbar(context,
-                        message: 'As previsões vêm do modelo Prophet, treinado no notebook de ML do projeto (Google Colab).',
+                        message:
+                            'As previsões vêm do modelo Prophet, treinado no notebook de ML do projeto (Google Colab).',
                         isSuccess: true)
                     : () => showCasaSnackbar(context,
-                        message: 'Ainda não há previsões: a equipe técnica gera pelo notebook de ML do projeto (Google Colab).',
+                        message:
+                            'Ainda não há previsões: a equipe técnica gera pelo notebook de ML do projeto (Google Colab).',
                         isSuccess: false),
               ),
             ),
@@ -4650,7 +4742,8 @@ class _ForecastReportTab extends ConsumerWidget {
             isDark: isDark,
           ),
           const _ChartNote(
-            text: 'Barras azuis = estoque atual. Barras verdes = previsão mensal. Abaixo da linha = precisa repor.',
+            text:
+                'Barras azuis = estoque atual. Barras verdes = previsão mensal. Abaixo da linha = precisa repor.',
           ),
           const SizedBox(height: AppSpacing.md),
 
@@ -4664,7 +4757,8 @@ class _ForecastReportTab extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           _ForecastTrendDonut(forecasts: forecasts, cs: cs, isDark: isDark),
           const _ChartNote(
-            text: 'Crescente = consumo aumentando. Decrescente = consumo caindo.',
+            text:
+                'Crescente = consumo aumentando. Decrescente = consumo caindo.',
           ),
           const SizedBox(height: AppSpacing.md),
 
@@ -4706,8 +4800,8 @@ class _ForecastReportTab extends ConsumerWidget {
                     icon: const Icon(Icons.open_in_new_rounded, size: 14),
                     label: Text(
                       'Ver todos os ${needsReplenishment.length} produtos',
-                      style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.brandPrimary600),
+                      style: AppTypography.labelSmall
+                          .copyWith(color: AppColors.brandPrimary600),
                     ),
                   ),
                 ),
@@ -4723,25 +4817,29 @@ class _ForecastReportTab extends ConsumerWidget {
               icon: Icons.science_rounded,
               color: AppColors.brandPrimary600,
               title: 'Como gerar previsões',
-              body: 'Abra o arquivo scripts/ml/consumption_forecast.ipynb no Google Colab. Siga os passos para conectar ao Firestore e treinar o modelo Prophet.',
+              body:
+                  'Abra o arquivo scripts/ml/consumption_forecast.ipynb no Google Colab. Siga os passos para conectar ao Firestore e treinar o modelo Prophet.',
             ),
             _TipItem(
               icon: Icons.trending_up_rounded,
               color: AppColors.secondaryBlue600,
               title: 'Entendendo as Tendências',
-              body: 'Crescente = consumo está aumentando — antecipe-se com mais estoque. Decrescente = consumo caindo — cuidado com excesso e vencimento.',
+              body:
+                  'Crescente = consumo está aumentando — antecipe-se com mais estoque. Decrescente = consumo caindo — cuidado com excesso e vencimento.',
             ),
             _TipItem(
               icon: Icons.bar_chart_rounded,
               color: AppColors.warning600,
               title: 'Cobertura de Estoque',
-              body: 'A barra azul mostra o estoque atual; a verde mostra o quanto deve ser consumido em 30 dias. Se azul < verde, precisa repor.',
+              body:
+                  'A barra azul mostra o estoque atual; a verde mostra o quanto deve ser consumido em 30 dias. Se azul < verde, precisa repor.',
             ),
             _TipItem(
               icon: Icons.add_shopping_cart_rounded,
               color: AppColors.success600,
               title: 'Gerar pedido de compra',
-              body: 'Toque em "Gerar Pedido" para exportar um CSV com todos os produtos que precisam de reposição, incluindo a quantidade sugerida.',
+              body:
+                  'Toque em "Gerar Pedido" para exportar um CSV com todos os produtos que precisam de reposição, incluindo a quantidade sugerida.',
             ),
           ],
           isDark: isDark,
@@ -4888,26 +4986,29 @@ class _ForecastKpiGrid extends StatelessWidget {
       ),
     ];
 
-    return LayoutBuilder(builder: (context, box) => GridView(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: box.maxWidth >= 700 ? 4 : 2,
-        mainAxisSpacing: AppSpacing.sm,
-        crossAxisSpacing: AppSpacing.sm,
-        mainAxisExtent: MediaQuery.textScalerOf(context).scale(76).clamp(76.0, 160.0),
-      ),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: tiles
-          .map((t) => _ForecastKpiTile(
-                icon: t.$1,
-                color: t.$2,
-                label: t.$3,
-                value: t.$4,
-                cs: cs,
-                isDark: isDark,
-              ))
-          .toList(),
-    ));
+    return LayoutBuilder(
+        builder: (context, box) => GridView(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: box.maxWidth >= 700 ? 4 : 2,
+                mainAxisSpacing: AppSpacing.sm,
+                crossAxisSpacing: AppSpacing.sm,
+                mainAxisExtent: MediaQuery.textScalerOf(context)
+                    .scale(76)
+                    .clamp(76.0, 160.0),
+              ),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: tiles
+                  .map((t) => _ForecastKpiTile(
+                        icon: t.$1,
+                        color: t.$2,
+                        label: t.$3,
+                        value: t.$4,
+                        cs: cs,
+                        isDark: isDark,
+                      ))
+                  .toList(),
+            ));
   }
 }
 
@@ -5036,8 +5137,7 @@ class _ForecastSourceBanner extends StatelessWidget {
                     children: [
                       Container(
                           height: 20,
-                          color: AppColors.neutral500
-                              .withValues(alpha: 0.2)),
+                          color: AppColors.neutral500.withValues(alpha: 0.2)),
                       FractionallySizedBox(
                         widthFactor: prophetPct.clamp(0.0, 1.0),
                         child: Container(
@@ -5072,8 +5172,7 @@ class _ForecastSourceBanner extends StatelessWidget {
                           AppColors.brandPrimary600,
                           AppColors.secondaryBlue600,
                         ]),
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.pill),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                       )),
                   const SizedBox(width: 4),
                   Text(
@@ -5091,16 +5190,14 @@ class _ForecastSourceBanner extends StatelessWidget {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: AppColors.neutral500
-                            .withValues(alpha: 0.5),
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.pill),
+                        color: AppColors.neutral500.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                       )),
                   const SizedBox(width: 4),
                   Text(
                     'Média Móvel: $movAvgCount',
-                    style: AppTypography.labelSmall.copyWith(
-                        color: cs.onSurfaceVariant, fontSize: 11),
+                    style: AppTypography.labelSmall
+                        .copyWith(color: cs.onSurfaceVariant, fontSize: 11),
                   ),
                 ],
               ),
@@ -5140,8 +5237,7 @@ class _ForecastCoverageChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border:
-            Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -5156,7 +5252,9 @@ class _ForecastCoverageChart extends StatelessWidget {
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipItem: (group, gi, rod, ri) {
                       final f = items[gi];
-                      final label = ri == 0 ? 'Atual: ${f.currentStock}' : 'Previsão: ${f.forecastMonthly.toStringAsFixed(0)}';
+                      final label = ri == 0
+                          ? 'Atual: ${f.currentStock}'
+                          : 'Previsão: ${f.forecastMonthly.toStringAsFixed(0)}';
                       return BarTooltipItem(
                         '${f.productName}\n$label',
                         const TextStyle(
@@ -5177,9 +5275,8 @@ class _ForecastCoverageChart extends StatelessWidget {
                           return const SizedBox.shrink();
                         }
                         final name = items[idx].productName;
-                        final short = name.length > 6
-                            ? name.substring(0, 6)
-                            : name;
+                        final short =
+                            name.length > 6 ? name.substring(0, 6) : name;
                         return Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
@@ -5199,9 +5296,8 @@ class _ForecastCoverageChart extends StatelessWidget {
                       reservedSize: 28,
                       getTitlesWidget: (v, _) => Text(
                         '${v.toInt()}',
-                        style: AppTypography.labelSmall.copyWith(
-                            fontSize: 9,
-                            color: cs.onSurfaceVariant),
+                        style: AppTypography.labelSmall
+                            .copyWith(fontSize: 9, color: cs.onSurfaceVariant),
                       ),
                     ),
                   ),
@@ -5239,8 +5335,7 @@ class _ForecastCoverageChart extends StatelessWidget {
                       ),
                       BarChartRodData(
                         toY: f.forecastMonthly,
-                        color: AppColors.success600
-                            .withValues(alpha: 0.6),
+                        color: AppColors.success600.withValues(alpha: 0.6),
                         width: 12,
                         borderRadius: BorderRadius.circular(3),
                       ),
@@ -5259,8 +5354,7 @@ class _ForecastCoverageChart extends StatelessWidget {
             runSpacing: AppSpacing.xs,
             children: [
               _LegendDot(
-                  color: AppColors.secondaryBlue600,
-                  label: 'Estoque Atual'),
+                  color: AppColors.secondaryBlue600, label: 'Estoque Atual'),
               _LegendDot(
                   color: AppColors.success600.withValues(alpha: 0.6),
                   label: 'Previsão 30d'),
@@ -5297,8 +5391,7 @@ class _ForecastTrendDonutState extends State<_ForecastTrendDonut> {
     final cs = widget.cs;
     final increasing =
         widget.forecasts.where((f) => f.trend == 'increasing').length;
-    final stable =
-        widget.forecasts.where((f) => f.trend == 'stable').length;
+    final stable = widget.forecasts.where((f) => f.trend == 'stable').length;
     final decreasing =
         widget.forecasts.where((f) => f.trend == 'decreasing').length;
     final total = increasing + stable + decreasing;
@@ -5308,7 +5401,12 @@ class _ForecastTrendDonutState extends State<_ForecastTrendDonut> {
     final items = [
       (increasing, AppColors.danger600, 'Crescente', Icons.trending_up_rounded),
       (stable, AppColors.neutral500, 'Estável', Icons.trending_flat_rounded),
-      (decreasing, AppColors.success600, 'Decrescente', Icons.trending_down_rounded),
+      (
+        decreasing,
+        AppColors.success600,
+        'Decrescente',
+        Icons.trending_down_rounded
+      ),
     ];
 
     final sections = items.asMap().entries.map((e) {
@@ -5322,12 +5420,9 @@ class _ForecastTrendDonutState extends State<_ForecastTrendDonut> {
         title: isTouched ? '${pct.toStringAsFixed(0)}%' : '',
         radius: isTouched ? 52 : 42,
         titleStyle: const TextStyle(
-            fontSize: 12,
-            color: Colors.white,
-            fontWeight: FontWeight.w800),
+            fontSize: 12, color: Colors.white, fontWeight: FontWeight.w800),
         borderSide: isTouched
-            ? BorderSide(
-                color: Colors.white.withValues(alpha: 0.5), width: 2)
+            ? BorderSide(color: Colors.white.withValues(alpha: 0.5), width: 2)
             : BorderSide.none,
       );
     }).toList();
@@ -5337,8 +5432,7 @@ class _ForecastTrendDonutState extends State<_ForecastTrendDonut> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
@@ -5362,8 +5456,7 @@ class _ForecastTrendDonutState extends State<_ForecastTrendDonut> {
                             _touched = -1;
                             return;
                           }
-                          _touched = resp
-                              .touchedSection!.touchedSectionIndex;
+                          _touched = resp.touchedSection!.touchedSectionIndex;
                         });
                       },
                     ),
@@ -5399,8 +5492,7 @@ class _ForecastTrendDonutState extends State<_ForecastTrendDonut> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: items.map((item) {
-                final pct =
-                    total == 0 ? 0.0 : item.$1 / total * 100;
+                final pct = total == 0 ? 0.0 : item.$1 / total * 100;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: Column(
@@ -5447,8 +5539,7 @@ class _ForecastTrendDonutState extends State<_ForecastTrendDonut> {
                           minHeight: 5,
                           backgroundColor:
                               cs.outlineVariant.withValues(alpha: 0.25),
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(item.$2),
+                          valueColor: AlwaysStoppedAnimation<Color>(item.$2),
                         ),
                       ),
                     ],
@@ -5495,138 +5586,129 @@ class _ForecastReplenishCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: urgencyColor.withValues(
-                alpha: isDark ? 0.3 : 0.2)),
-      ),
-      child: Row(
-        children: [
-          // Lateral color strip
-          Container(
-            width: 4,
-            height: 68,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  urgencyColor,
-                  urgencyColor.withValues(alpha: 0.5)
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(
+              color: urgencyColor.withValues(alpha: isDark ? 0.3 : 0.2)),
+        ),
+        child: Row(
+          children: [
+            // Lateral color strip
+            Container(
+              width: 4,
+              height: 68,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [urgencyColor, urgencyColor.withValues(alpha: 0.5)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(AppRadius.card)),
               ),
-              borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(AppRadius.card)),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          // Badge
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: urgencyColor.withValues(
-                  alpha: isDark ? 0.18 : 0.1),
-              borderRadius: BorderRadius.circular(AppRadius.small),
-            ),
-            child: Center(
-              child: Text(
-                '+${forecast.suggestedReplenishment}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: urgencyColor,
+            const SizedBox(width: AppSpacing.sm),
+            // Badge
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: urgencyColor.withValues(alpha: isDark ? 0.18 : 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.small),
+              ),
+              child: Center(
+                child: Text(
+                  '+${forecast.suggestedReplenishment}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: urgencyColor,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          // Content
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  vertical: AppSpacing.sm),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          forecast.productName,
-                          style: AppTypography.labelMedium.copyWith(
-                            color: cs.onSurface,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: urgencyColor.withValues(
-                              alpha: isDark ? 0.18 : 0.1),
-                          borderRadius: BorderRadius.circular(
-                              AppRadius.pill),
-                        ),
-                        child: Text(
-                          urgencyLabel,
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: urgencyColor,
+            const SizedBox(width: AppSpacing.sm),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            forecast.productName,
+                            style: AppTypography.labelMedium.copyWith(
+                              color: cs.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    daysLeft < 999
-                        ? 'Estoque para ~$daysLeft dias · Previsão 30d: ${forecast.forecastMonthly.toStringAsFixed(0)} un.'
-                        : 'Previsão mensal: ${forecast.forecastMonthly.toStringAsFixed(0)} un. · Sem saídas registradas',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: cs.onSurfaceVariant,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: urgencyColor.withValues(
+                                alpha: isDark ? 0.18 : 0.1),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                          child: Text(
+                            urgencyLabel,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: urgencyColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: [
-                      SourceBadge(forecast: forecast),
-                      TrendChip(
-                        trend: forecast.trend,
-                        trendPercent: forecast.trendPercent,
+                    const SizedBox(height: 2),
+                    Text(
+                      daysLeft < 999
+                          ? 'Estoque para ~$daysLeft dias · Previsão 30d: ${forecast.forecastMonthly.toStringAsFixed(0)} un.'
+                          : 'Previsão mensal: ${forecast.forecastMonthly.toStringAsFixed(0)} un. · Sem saídas registradas',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: cs.onSurfaceVariant,
                       ),
-                    ],
-                  ),
-                ],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: [
+                        SourceBadge(forecast: forecast),
+                        TrendChip(
+                          trend: forecast.trend,
+                          trendPercent: forecast.trendPercent,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.sm),
-            child: Icon(
-              Icons.chevron_right_rounded,
-              size: 16,
-              color: cs.onSurfaceVariant,
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: cs.onSurfaceVariant,
+              ),
             ),
-          ),
-        ],
-      ),
-    ),  // closes Container
-    );  // closes GestureDetector
+          ],
+        ),
+      ), // closes Container
+    ); // closes GestureDetector
   }
 }
-
-
 
 // ─── Forecast Action Sheet ────────────────────────────────────────────────
 
@@ -5671,7 +5753,8 @@ class _ForecastActionSheet extends StatelessWidget {
           children: [
             Center(
               child: Container(
-                width: 36, height: 4,
+                width: 36,
+                height: 4,
                 margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 decoration: BoxDecoration(
                     color: cs.outlineVariant,
@@ -5684,8 +5767,7 @@ class _ForecastActionSheet extends StatelessWidget {
               decoration: BoxDecoration(
                 color: urgencyColor.withValues(alpha: isDark ? 0.14 : 0.08),
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                border:
-                    Border.all(color: urgencyColor.withValues(alpha: 0.25)),
+                border: Border.all(color: urgencyColor.withValues(alpha: 0.25)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -5696,8 +5778,7 @@ class _ForecastActionSheet extends StatelessWidget {
                         child: Text(
                           forecast.productName,
                           style: AppTypography.labelLarge.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface),
+                              fontWeight: FontWeight.w700, color: cs.onSurface),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -5815,7 +5896,8 @@ class _ForecastStatChip extends StatelessWidget {
   }
 }
 
-Future<void> _exportSingleForecastCsv(BuildContext context, ConsumptionForecast f) {
+Future<void> _exportSingleForecastCsv(
+    BuildContext context, ConsumptionForecast f) {
   return showExportSheet(
     context,
     loader: () async => _forecastTable([f], 'Pedido: ${f.productName}'),
@@ -5828,7 +5910,8 @@ ReportTable _forecastTable(List<ConsumptionForecast> forecasts, String title) {
     subtitle: 'Previsão de consumo e sugestão de reposição',
     summary: {
       'Produtos': '${forecasts.length}',
-      'Unidades sugeridas': '${forecasts.fold<int>(0, (s, f) => s + f.suggestedReplenishment)}',
+      'Unidades sugeridas':
+          '${forecasts.fold<int>(0, (s, f) => s + f.suggestedReplenishment)}',
     },
     headers: const [
       'Produto',
@@ -5877,18 +5960,19 @@ class _MonthlyTrendChart extends StatelessWidget {
         decoration: BoxDecoration(
           color: cs.surfaceContainerLow,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.35)),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         ),
         child: Center(
           child: Text('Sem entradas nos últimos 6 meses',
-              style: AppTypography.bodySmall
-                  .copyWith(color: cs.onSurfaceVariant)),
+              style:
+                  AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant)),
         ),
       );
     }
 
-    final spots = values.asMap().entries
+    final spots = values
+        .asMap()
+        .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value))
         .toList();
 
@@ -5899,11 +5983,9 @@ class _MonthlyTrendChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       child: LineChart(
@@ -5955,19 +6037,20 @@ class _MonthlyTrendChart extends StatelessWidget {
                 reservedSize: 36,
                 interval: math.max(1, (maxVal / 4).ceilToDouble()),
                 getTitlesWidget: (v, _) {
-                  if (v == 0 || v != v.roundToDouble()) return const SizedBox.shrink();
+                  if (v == 0 || v != v.roundToDouble()) {
+                    return const SizedBox.shrink();
+                  }
                   return Text(
                     v.round().toString(),
-                    style: TextStyle(
-                        fontSize: 11, color: cs.onSurfaceVariant),
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                   );
                 },
               ),
             ),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
@@ -5998,8 +6081,7 @@ class _MonthlyTrendChart extends StatelessWidget {
               barWidth: 3,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (s, pct, bar, idx) =>
-                    FlDotCirclePainter(
+                getDotPainter: (s, pct, bar, idx) => FlDotCirclePainter(
                   radius: 4.5,
                   color: AppColors.brandPrimary600,
                   strokeColor: cs.surface,
@@ -6056,8 +6138,7 @@ class _ExpiryBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final keys = buckets.keys.toList();
-    final maxVal =
-        buckets.values.fold(0, (a, b) => math.max(a, b)).toDouble();
+    final maxVal = buckets.values.fold(0, (a, b) => math.max(a, b)).toDouble();
     if (maxVal == 0) {
       return const SizedBox(
         height: 120,
@@ -6096,11 +6177,9 @@ class _ExpiryBarChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       child: BarChart(
@@ -6146,16 +6225,15 @@ class _ExpiryBarChart extends StatelessWidget {
                   if (v == 0) return const SizedBox.shrink();
                   return Text(
                     v.toInt().toString(),
-                    style: TextStyle(
-                        fontSize: 9, color: cs.onSurfaceVariant),
+                    style: TextStyle(fontSize: 9, color: cs.onSurfaceVariant),
                   );
                 },
               ),
             ),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           barTouchData: BarTouchData(
             touchTooltipData: BarTouchTooltipData(
@@ -6240,7 +6318,8 @@ class _BatchListSheet extends StatelessWidget {
                   children: [
                     Center(
                       child: Container(
-                        width: 36, height: 4,
+                        width: 36,
+                        height: 4,
                         margin: const EdgeInsets.only(bottom: AppSpacing.md),
                         decoration: BoxDecoration(
                             color: cs.outlineVariant,
@@ -6280,8 +6359,7 @@ class _BatchListSheet extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    Divider(
-                        color: cs.outlineVariant.withValues(alpha: 0.3)),
+                    Divider(color: cs.outlineVariant.withValues(alpha: 0.3)),
                   ],
                 ),
               ),
@@ -6297,9 +6375,8 @@ class _BatchListSheet extends StatelessWidget {
                   itemBuilder: (_, i) {
                     final b = batches[i];
                     final days = b.noExpiry ? null : b.daysToExpiry;
-                    final daysText = b.noExpiry
-                        ? 'Sem validade'
-                        : textoValidadeCurto(days!);
+                    final daysText =
+                        b.noExpiry ? 'Sem validade' : textoValidadeCurto(days!);
                     final daysColor = b.isExpired
                         ? AppColors.danger600
                         : days != null && days <= 7
@@ -6313,7 +6390,8 @@ class _BatchListSheet extends StatelessWidget {
                       child: Row(
                         children: [
                           Container(
-                            width: 8, height: 8,
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
                                 color: daysColor, shape: BoxShape.circle),
                           ),
@@ -6334,8 +6412,7 @@ class _BatchListSheet extends StatelessWidget {
                                   '${b.quantity} un.'
                                   '${b.expiryDate != null ? ' · ${dateFmt.format(b.expiryDate!)}' : ''}',
                                   style: AppTypography.bodySmall.copyWith(
-                                      color: cs.onSurfaceVariant,
-                                      fontSize: 11),
+                                      color: cs.onSurfaceVariant, fontSize: 11),
                                 ),
                               ],
                             ),
@@ -6411,8 +6488,7 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
         titleStyle: const TextStyle(
             fontSize: 12, color: Colors.white, fontWeight: FontWeight.w800),
         borderSide: isTouched
-            ? BorderSide(
-                color: Colors.white.withValues(alpha: 0.5), width: 2)
+            ? BorderSide(color: Colors.white.withValues(alpha: 0.5), width: 2)
             : BorderSide.none,
       );
     }).toList();
@@ -6422,11 +6498,9 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       child: Row(
@@ -6448,8 +6522,7 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
                         _touched = -1;
                         return;
                       }
-                      _touched =
-                          resp.touchedSection!.touchedSectionIndex;
+                      _touched = resp.touchedSection!.touchedSectionIndex;
                     });
                   },
                 ),
@@ -6463,58 +6536,56 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360),
-              child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: entries.asMap().entries.map((e) {
-                final color = _pieColors[e.key % _pieColors.length];
-                final label = widget.labelMap[e.value.key] ?? e.value.key;
-                final pct = total == 0
-                    ? 0.0
-                    : e.value.value / total * 100;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                            color: color, shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 6),
-                      // Nome e números: os números descem para a linha de baixo
-                      // quando não cabem (320 px / fonte grande).
-                      Expanded(
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 2,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              label,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: cs.onSurface,
-                                  fontWeight: FontWeight.w600),
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: entries.asMap().entries.map((e) {
+                    final color = _pieColors[e.key % _pieColors.length];
+                    final label = widget.labelMap[e.value.key] ?? e.value.key;
+                    final pct = total == 0 ? 0.0 : e.value.value / total * 100;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                                color: color, shape: BoxShape.circle),
+                          ),
+                          const SizedBox(width: 6),
+                          // Nome e números: os números descem para a linha de baixo
+                          // quando não cabem (320 px / fonte grande).
+                          Expanded(
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 2,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  label,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: cs.onSurface,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                Text(
+                                  '${e.value.value} lotes · ${pct.toStringAsFixed(0)}%',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: cs.onSurfaceVariant,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ],
                             ),
-                            Text(
-                              '${e.value.value} lotes · ${pct.toStringAsFixed(0)}%',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: cs.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-            ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
           ),
         ],
@@ -6526,4 +6597,3 @@ class _CategoryPieChartState extends State<_CategoryPieChart> {
 // ─── Insights automáticos ─────────────────────────────────────────────────
 
 // ─── Lista de próximos a vencer (agrupada por urgência) ───────────────────
-

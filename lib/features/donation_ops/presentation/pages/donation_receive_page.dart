@@ -26,7 +26,8 @@ class DonationReceivePage extends ConsumerStatefulWidget {
   const DonationReceivePage({super.key, required this.donationId});
 
   @override
-  ConsumerState<DonationReceivePage> createState() => _DonationReceivePageState();
+  ConsumerState<DonationReceivePage> createState() =>
+      _DonationReceivePageState();
 }
 
 class _ItemState {
@@ -91,13 +92,20 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
       ? e.message
       : 'Não foi possível concluir. Verifique a conexão e tente de novo.';
 
-  Future<void> _pickDate({required DateTime initial, required ValueChanged<DateTime> onPicked, DateTime? first}) async {
+  Future<void> _pickDate(
+      {required DateTime initial,
+      required ValueChanged<DateTime> onPicked,
+      DateTime? first}) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: first ?? DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
       locale: const Locale('pt', 'BR'),
+      initialEntryMode: DatePickerEntryMode.input,
+      fieldHintText: 'dd/mm/aaaa',
+      errorFormatText: 'Digite a data no formato dd/mm/aaaa',
+      errorInvalidText: 'Data fora do intervalo permitido',
     );
     if (picked != null) onPicked(picked);
   }
@@ -109,13 +117,16 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
 
     if (concluded && (sector == null || message.isEmpty)) {
       showCasaSnackbar(context,
-          message: 'Escolha o setor de destino e escreva a mensagem de impacto.', isError: true);
+          message:
+              'Escolha o setor de destino e escreva a mensagem de impacto.',
+          isError: true);
       return;
     }
     if (!concluded && (sector == null) != message.isEmpty) {
       showCasaSnackbar(
         context,
-        message: 'Para registrar o impacto agora, preencha o setor e a mensagem. Ou deixe os dois em branco e faça depois.',
+        message:
+            'Para registrar o impacto agora, preencha o setor e a mensagem. Ou deixe os dois em branco e faça depois.',
         isError: true,
       );
       return;
@@ -125,7 +136,8 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
     try {
       final actions = ref.read(donationOpsActionsProvider.notifier);
       if (concluded) {
-        await actions.saveImpact(donation: d, sector: sector!, message: message, usedAt: _usedAt);
+        await actions.saveImpact(
+            donation: d, sector: sector!, message: message, usedAt: _usedAt);
       } else {
         await actions.receive(
           donation: d,
@@ -153,7 +165,9 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
       );
       _back();
     } catch (e) {
-      if (mounted) showCasaSnackbar(context, message: _errorText(e), isError: true);
+      if (mounted) {
+        showCasaSnackbar(context, message: _errorText(e), isError: true);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -177,13 +191,18 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
             child: donation.when(
               loading: () => ListView(
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                children: const [CasaCardSkeleton(), SizedBox(height: AppSpacing.md), CasaCardSkeleton()],
+                children: const [
+                  CasaCardSkeleton(),
+                  SizedBox(height: AppSpacing.md),
+                  CasaCardSkeleton()
+                ],
               ),
               error: (_, __) => CasaEmptyState(
                 icon: Icons.cloud_off_rounded,
                 title: 'Não foi possível carregar a doação',
                 ctaLabel: 'Tentar de novo',
-                onCta: () => ref.invalidate(donationByIdProvider(widget.donationId)),
+                onCta: () =>
+                    ref.invalidate(donationByIdProvider(widget.donationId)),
               ),
               data: (d) {
                 if (d == null) {
@@ -200,10 +219,14 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
                     title: d.status == DonationStatus.pendente
                         ? 'Esta doação ainda precisa ser aprovada'
                         : 'Esta doação está "${d.status.label}"',
-                    description: 'O recebimento só vale para doações aprovadas.',
-                    ctaLabel: d.status == DonationStatus.pendente ? 'Avaliar doação' : null,
+                    description:
+                        'O recebimento só vale para doações aprovadas.',
+                    ctaLabel: d.status == DonationStatus.pendente
+                        ? 'Avaliar doação'
+                        : null,
                     onCta: d.status == DonationStatus.pendente
-                        ? () => context.pushReplacement(AppRoutes.opsDonationPath(d.id))
+                        ? () => context
+                            .pushReplacement(AppRoutes.opsDonationPath(d.id))
                         : null,
                   );
                 }
@@ -232,11 +255,13 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
                 decoration: BoxDecoration(
                   color: AppColors.success600.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(color: AppColors.success600.withValues(alpha: 0.25)),
+                  border: Border.all(
+                      color: AppColors.success600.withValues(alpha: 0.25)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.volunteer_activism_rounded, color: AppColors.success600),
+                    const Icon(Icons.volunteer_activism_rounded,
+                        color: AppColors.success600),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
@@ -253,29 +278,38 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
               const SizedBox(height: AppSpacing.lg),
               if (receiving) ...[
                 Text('1. Conferir os itens',
-                    style: AppTypography.headingSmall.copyWith(color: cs.onSurface)),
+                    style: AppTypography.headingSmall
+                        .copyWith(color: cs.onSurface)),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Ajuste a quantidade que realmente chegou. Se for diferente do prometido, explique no campo de nota.',
-                  style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant),
+                  style: AppTypography.bodySmall
+                      .copyWith(color: cs.onSurfaceVariant),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                for (var i = 0; i < d.items.length; i++) _itemCard(context, d.items[i], _items[i], fmt),
+                for (var i = 0; i < d.items.length; i++)
+                  _itemCard(context, d.items[i], _items[i], fmt),
                 const SizedBox(height: AppSpacing.lg),
               ] else
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                   child: Text(
                     'Itens já recebidos e lançados no estoque. Falta registrar para onde foram.',
-                    style: AppTypography.bodyMedium.copyWith(color: cs.onSurfaceVariant),
+                    style: AppTypography.bodyMedium
+                        .copyWith(color: cs.onSurfaceVariant),
                   ),
                 ),
-              Text(receiving ? '2. Destino e impacto (opcional agora)' : 'Destino e impacto',
-                  style: AppTypography.headingSmall.copyWith(color: cs.onSurface)),
+              Text(
+                  receiving
+                      ? '2. Destino e impacto (opcional agora)'
+                      : 'Destino e impacto',
+                  style:
+                      AppTypography.headingSmall.copyWith(color: cs.onSurface)),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'A mensagem abaixo é enviada ao aplicativo do doador, junto do relatório de impacto.',
-                style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant),
+                style: AppTypography.bodySmall
+                    .copyWith(color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: AppSpacing.md),
               DropdownButtonFormField<String>(
@@ -283,10 +317,12 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
                 isExpanded: true,
                 decoration: InputDecoration(
                   labelText: 'Setor de destino',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.input)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.input)),
                 ),
                 items: [
-                  for (final s in kDonationSectors) DropdownMenuItem(value: s, child: Text(s)),
+                  for (final s in kDonationSectors)
+                    DropdownMenuItem(value: s, child: Text(s)),
                 ],
                 onChanged: (value) => setState(() {
                   _sector = value;
@@ -303,7 +339,8 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
                 decoration: InputDecoration(
                   labelText: 'Mensagem de impacto',
                   alignLabelWithHint: true,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.input)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.input)),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -327,10 +364,14 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
           ),
           decoration: BoxDecoration(
             color: cs.surfaceContainerLow,
-            border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5))),
+            border: Border(
+                top: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.5))),
           ),
           child: CasaButton(
-            label: receiving ? 'Confirmar recebimento' : 'Salvar e notificar o doador',
+            label: receiving
+                ? 'Confirmar recebimento'
+                : 'Salvar e notificar o doador',
             icon: receiving ? Icons.move_to_inbox_rounded : Icons.send_rounded,
             isLoading: _busy,
             onPressed: _busy ? null : () => _submit(d),
@@ -340,7 +381,8 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
     );
   }
 
-  Widget _itemCard(BuildContext context, DonationItem item, _ItemState state, DateFormat fmt) {
+  Widget _itemCard(BuildContext context, DonationItem item, _ItemState state,
+      DateFormat fmt) {
     final cs = Theme.of(context).colorScheme;
     final diverges = state.qty != item.quantity;
 
@@ -362,7 +404,8 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
           Text(item.description,
               style: AppTypography.headingSmall.copyWith(color: cs.onSurface)),
           Text('Prometido: ${item.quantity} ${item.unit}',
-              style: AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant)),
+              style:
+                  AppTypography.bodySmall.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: AppSpacing.md),
           QuantityStepper(
             value: state.qty,
@@ -374,7 +417,8 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
               onPressed: () => _pickDate(
-                initial: state.expiry ?? DateTime.now().add(const Duration(days: 30)),
+                initial: state.expiry ??
+                    DateTime.now().add(const Duration(days: 30)),
                 first: DateTime.now().subtract(const Duration(days: 1)),
                 onPicked: (date) => setState(() => state.expiry = date),
               ),
@@ -392,7 +436,8 @@ class _DonationReceivePageState extends ConsumerState<DonationReceivePage> {
               maxLength: 200,
               decoration: InputDecoration(
                 labelText: 'Nota da divergência (obrigatória)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.input)),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.input)),
               ),
             ),
           ],
