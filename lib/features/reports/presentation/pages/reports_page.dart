@@ -1154,14 +1154,14 @@ class _MlRiskTab extends ConsumerWidget {
         // ─── Classifier badge
         _SectionHeader(
           title: 'Análise de Risco',
-          subtitle: classifierSrc == 'tflite'
-              ? 'Modelo TFLite on-device ativo'
-              : 'Classificação por regras inteligentes',
-          icon: classifierSrc == 'tflite'
+          subtitle: classifierSrc == 'random_forest'
+              ? 'Modelo Random Forest (treinado no Colab)'
+              : 'Classificação por regras (plano B, sem o modelo)',
+          icon: classifierSrc == 'random_forest'
               ? Icons.memory_rounded
               : Icons.rule_rounded,
           color: AppColors.brandPrimary600,
-          badge: classifierSrc == 'tflite' ? 'TFLite' : 'Regras',
+          badge: classifierSrc == 'random_forest' ? 'Random Forest' : 'Regras',
         ),
         const SizedBox(height: AppSpacing.md),
 

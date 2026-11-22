@@ -685,6 +685,15 @@ class _ErrorScaffold extends StatelessWidget {
             Text(message,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: cs.onSurface)),
+            const SizedBox(height: AppSpacing.lg),
+            // Sem isto a tela ficava sem saída (não tem barra com "voltar").
+            FilledButton.icon(
+              onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(AppRoutes.productList),
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: const Text('Voltar'),
+            ),
           ],
         ),
       ),

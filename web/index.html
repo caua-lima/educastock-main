@@ -33,6 +33,18 @@
   <title>EducaStock</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Abertura mais rápida: o navegador já conecta aos servidores e começa a baixar o app e
+       o SDK do Firebase enquanto lê a página, em vez de esperar o Flutter pedir cada um. -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com">
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+  <link rel="preconnect" href="https://securetoken.googleapis.com">
+  <link rel="preload" href="main.dart.js" as="script">
+  <!-- Mesma versão que o firebase_core_web importa (11.9.1); se mudar, só deixa de ajudar. -->
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js">
+
   <!--
     Garante que o app ocupe exatamente a viewport visível, sem offsets que
     desalinham o hit-test no iOS PWA standalone. Usa 100dvh (dynamic viewport
@@ -946,35 +958,24 @@
     // ─────────────────────────────────────────────────────────────────────────
   }
 
-  // Inicia o Flutter (o ZXing carrega à parte, sem bloquear o app). Antes, confere com o
-  // servidor as fontes de ícones: um navegador que abriu uma versão anterior pode ter
-  // guardado a fonte antiga (o site mandava guardá-la por 24 h) e os ícones novos
-  // apareceriam vazios. A conferência é rápida (304 quando nada mudou) e tem limite de
-  // tempo para nunca atrasar a abertura.
+  // Inicia o Flutter na hora (o ZXing carrega à parte, sem bloquear o app). Em paralelo,
+  // confere com o servidor as fontes de ícones: um navegador que abriu uma versão antiga
+  // pode ter guardado a fonte antiga (o site mandava guardá-la por 24 h). A conferência
+  // termina bem antes de o Flutter pedir as fontes (ele só pede depois de baixar e iniciar
+  // o main.dart.js), então não precisa mais segurar a abertura esperando por ela.
   (function () {
-    var aberto = false;
-    function abrirFlutter() {
-      if (aberto) return;
-      aberto = true;
-      var s = document.createElement('script');
-      s.src = 'flutter_bootstrap.js';
-      document.body.appendChild(s);
-    }
+    var s = document.createElement('script');
+    s.src = 'flutter_bootstrap.js';
+    document.body.appendChild(s);
     try {
-      var arquivos = [
+      [
         'assets/FontManifest.json',
         'assets/fonts/MaterialIcons-Regular.otf',
         'assets/packages/cupertino_icons/assets/CupertinoIcons.ttf'
-      ];
-      Promise.all(arquivos.map(function (a) {
-        return fetch(a, { cache: 'no-cache' })
-          .then(function (r) { return r.arrayBuffer(); })
-          .catch(function () {});
-      })).then(abrirFlutter, abrirFlutter);
-      setTimeout(abrirFlutter, 2500);
-    } catch (_) {
-      abrirFlutter();
-    }
+      ].forEach(function (a) {
+        fetch(a, { cache: 'no-cache' }).catch(function () {});
+      });
+    } catch (_) {}
   })();
 
   // ZXing sob demanda: só quando o scanner abre (antes era baixado em toda abertura do app).

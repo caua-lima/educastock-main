@@ -15,44 +15,60 @@ import '../../features/scanner/presentation/pages/scanner_page.dart' deferred as
 import '../../features/scanner/presentation/pages/product_review_page.dart' deferred as review;
 import '../../features/products/presentation/pages/product_list_page.dart';
 import '../../features/products/presentation/pages/product_detail_page.dart';
-import '../../features/products/presentation/pages/product_form_page.dart';
-import '../../features/batches/presentation/pages/batch_form_page.dart';
+import '../../features/products/presentation/pages/product_form_page.dart'
+    deferred as product_form;
+import '../../features/batches/presentation/pages/batch_form_page.dart'
+    deferred as batch_form;
 import '../../features/stock/presentation/pages/movement_page.dart';
-import '../../features/stock/presentation/pages/adjustment_approvals_page.dart';
+import '../../features/stock/presentation/pages/adjustment_approvals_page.dart'
+    deferred as approvals;
 import 'so_quem_grava.dart';
 import '../../features/alerts/presentation/pages/alerts_page.dart';
-import '../../features/audit/presentation/pages/audit_page.dart';
+import '../../features/audit/presentation/pages/audit_page.dart'
+    deferred as audit;
 import '../../features/reports/presentation/pages/reports_page.dart' deferred as reports;
 import '../../features/settings/presentation/pages/settings_page.dart';
-import '../../features/locations/presentation/pages/locations_page.dart';
-import '../../features/locations/presentation/pages/location_create_page.dart';
-import '../../features/settings/presentation/pages/users_management_page.dart';
-import '../../features/settings/presentation/pages/categories_settings_page.dart';
-import '../../features/settings/presentation/pages/alerts_settings_page.dart';
-import '../../features/settings/presentation/pages/info_ong_page.dart';
+import '../../features/locations/presentation/pages/locations_page.dart'
+    deferred as locations;
+import '../../features/locations/presentation/pages/location_create_page.dart'
+    deferred as location_create;
+import '../../features/settings/presentation/pages/users_management_page.dart'
+    deferred as users;
+import '../../features/settings/presentation/pages/categories_settings_page.dart'
+    deferred as categories;
+import '../../features/settings/presentation/pages/alerts_settings_page.dart'
+    deferred as alerts_settings;
+import '../../features/settings/presentation/pages/info_ong_page.dart'
+    deferred as info_ong;
 import '../../features/ml/presentation/pages/ml_insights_page.dart' deferred as insights;
 import '../../features/ml/presentation/pages/forecast_page.dart' deferred as forecast;
-import '../../features/recipes/presentation/pages/recipes_page.dart';
-import '../../features/recipes/presentation/pages/recipe_create_page.dart';
+import '../../features/recipes/presentation/pages/recipes_page.dart'
+    deferred as recipes;
+import '../../features/recipes/presentation/pages/recipe_create_page.dart'
+    deferred as recipe_create;
 import '../../features/recipes/domain/entities/stock_recipe.dart';
 import '../../features/stock/presentation/pages/history_page.dart';
 import '../../features/donations/presentation/pages/donor_home_page.dart';
 import '../../features/donations/presentation/pages/donation_needs_page.dart';
 import '../../features/donations/presentation/pages/donation_need_detail_page.dart';
-import '../../features/donations/presentation/pages/donation_form_page.dart';
+import '../../features/donations/presentation/pages/donation_form_page.dart'
+    deferred as donation_form;
 import '../../features/donations/presentation/pages/my_donations_page.dart';
 import '../../features/donations/presentation/pages/donation_detail_page.dart';
 import '../../features/donations/presentation/pages/donor_profile_page.dart';
 import '../../features/donation_ops/presentation/pages/donation_queue_page.dart';
-import '../../features/donation_ops/presentation/pages/donation_review_page.dart';
-import '../../features/donation_ops/presentation/pages/donation_receive_page.dart';
-import '../../features/donation_ops/presentation/pages/nova_necessidade_page.dart';
+import '../../features/donation_ops/presentation/pages/donation_review_page.dart'
+    deferred as donation_review;
+import '../../features/donation_ops/presentation/pages/donation_receive_page.dart'
+    deferred as donation_receive;
+import '../../features/donation_ops/presentation/pages/nova_necessidade_page.dart'
+    deferred as new_need;
 import '../../features/chatbot/presentation/pages/chat_screen.dart' deferred as chat;
 import 'deferred_page.dart';
 
-/// Carrega de uma vez todas as telas sob demanda (usado pelos testes de layout, que
-/// precisam medir as telas de verdade; o app continua carregando cada uma na 1ª visita).
-@visibleForTesting
+/// Carrega todas as telas sob demanda. O app chama isto em segundo plano logo depois de
+/// abrir (a primeira tela não espera por elas, e a navegação depois fica instantânea);
+/// os testes de layout chamam para medir as telas de verdade.
 Future<void> precarregarTelasSobDemanda() async {
   final cargas = <String, Future<void> Function()>{
     'scanner': scanner.loadLibrary,
@@ -61,6 +77,22 @@ Future<void> precarregarTelasSobDemanda() async {
     'insights': insights.loadLibrary,
     'forecast': forecast.loadLibrary,
     'chat': chat.loadLibrary,
+    'product_form': product_form.loadLibrary,
+    'batch_form': batch_form.loadLibrary,
+    'approvals': approvals.loadLibrary,
+    'audit': audit.loadLibrary,
+    'locations': locations.loadLibrary,
+    'location_create': location_create.loadLibrary,
+    'users': users.loadLibrary,
+    'categories': categories.loadLibrary,
+    'alerts_settings': alerts_settings.loadLibrary,
+    'info_ong': info_ong.loadLibrary,
+    'recipes': recipes.loadLibrary,
+    'recipe_create': recipe_create.loadLibrary,
+    'donation_form': donation_form.loadLibrary,
+    'donation_review': donation_review.loadLibrary,
+    'donation_receive': donation_receive.loadLibrary,
+    'new_need': new_need.loadLibrary,
   };
   for (final e in cargas.entries) {
     await e.value();
@@ -267,7 +299,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final prefillUnit = state.uri.queryParameters['unit'];
           final prefillUnitSize = state.uri.queryParameters['unitSize'];
           final prefillDescription = state.uri.queryParameters['desc'];
-          return _framed(SoQuemGrava(titulo: 'Produto', child: ProductFormPage(
+          return _framed(SoQuemGrava(titulo: 'Produto', child: DeferredPage(
+            id: 'product_form',
+            load: product_form.loadLibrary,
+            builder: () => product_form.ProductFormPage(
             productId: productId,
             barcode: barcode,
             prefillName: prefillName,
@@ -278,7 +313,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             prefillUnit: prefillUnit,
             prefillUnitSize: prefillUnitSize,
             prefillDescription: prefillDescription,
-          )));
+          ))));
         },
       ),
       GoRoute(
@@ -288,30 +323,45 @@ final routerProvider = Provider<GoRouter>((ref) {
           final batchId = state.uri.queryParameters['id'] ?? '';
           return _framed(SoQuemGrava(
               titulo: 'Cadastrar lote',
-              child: BatchFormPage(productId: productId, batchId: batchId)));
+              child: DeferredPage(
+              id: 'batch_form',
+              load: batch_form.loadLibrary,
+              builder: () => batch_form.BatchFormPage(productId: productId, batchId: batchId))));
         },
       ),
       // Formulário de doação (D06–D07): tela cheia, fora de qualquer shell.
       GoRoute(
         path: AppRoutes.donorDonate,
         builder: (_, state) =>
-            _framed(DonationFormPage(needId: state.uri.queryParameters['needId'])),
+            _framed(DeferredPage(
+              id: 'donation_form',
+              load: donation_form.loadLibrary,
+              builder: () => donation_form.DonationFormPage(needId: state.uri.queryParameters['needId']))),
       ),
       // Nova necessidade da ONG (antes de /doacoes/:id, que também casaria com o endereço).
       GoRoute(
         path: AppRoutes.opsNewNeed,
-        builder: (_, __) => _framed(const NovaNecessidadePage(), 960),
+        builder: (_, __) => _framed(DeferredPage(
+              id: 'new_need',
+              load: new_need.loadLibrary,
+              builder: () => new_need.NovaNecessidadePage()), 960),
       ),
       // Telas de decisão e recebimento da equipe (S02, S03): tela cheia, sem TabBar.
       GoRoute(
         path: AppRoutes.opsDonationDetail,
         builder: (_, state) =>
-            _framed(DonationReviewPage(donationId: state.pathParameters['id'] ?? ''), 960),
+            _framed(DeferredPage(
+              id: 'donation_review',
+              load: donation_review.loadLibrary,
+              builder: () => donation_review.DonationReviewPage(donationId: state.pathParameters['id'] ?? '')), 960),
       ),
       GoRoute(
         path: AppRoutes.opsDonationReceive,
         builder: (_, state) =>
-            _framed(DonationReceivePage(donationId: state.pathParameters['id'] ?? ''), 960),
+            _framed(DeferredPage(
+              id: 'donation_receive',
+              load: donation_receive.loadLibrary,
+              builder: () => donation_receive.DonationReceivePage(donationId: state.pathParameters['id'] ?? '')), 960),
       ),
       ShellRoute(
         builder: (context, state, child) {
@@ -354,7 +404,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.adjustmentApprovals,
-            builder: (_, __) => _framed(const AdjustmentApprovalsPage(), 1000),
+            builder: (_, __) => _framed(DeferredPage(
+              id: 'approvals',
+              load: approvals.loadLibrary,
+              builder: () => approvals.AdjustmentApprovalsPage()), 1000),
           ),
           GoRoute(
             path: AppRoutes.alerts,
@@ -362,7 +415,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.audit,
-            builder: (_, __) => _framed(const AuditPage(), 1100),
+            builder: (_, __) => _framed(DeferredPage(
+              id: 'audit',
+              load: audit.loadLibrary,
+              builder: () => audit.AuditPage()), 1100),
           ),
           GoRoute(
             path: AppRoutes.reports,
@@ -378,28 +434,46 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.locations,
-            builder: (_, __) => const LocationsPage(),
+            builder: (_, __) => DeferredPage(
+              id: 'locations',
+              load: locations.loadLibrary,
+              builder: () => locations.LocationsPage()),
           ),
           GoRoute(
             path: AppRoutes.locationCreate,
-            builder: (_, __) => _framed(const SoQuemGrava(
-                titulo: 'Nova localização', child: LocationCreatePage())),
+            builder: (_, __) => _framed(SoQuemGrava(
+                titulo: 'Nova localização', child: DeferredPage(
+              id: 'location_create',
+              load: location_create.loadLibrary,
+              builder: () => location_create.LocationCreatePage()))),
           ),
           GoRoute(
             path: AppRoutes.usersManagement,
-            builder: (_, __) => _framed(const UsersManagementPage(), 1000),
+            builder: (_, __) => _framed(DeferredPage(
+              id: 'users',
+              load: users.loadLibrary,
+              builder: () => users.UsersManagementPage()), 1000),
           ),
           GoRoute(
             path: AppRoutes.categoriesSettings,
-            builder: (_, __) => _framed(const CategoriesSettingsPage()),
+            builder: (_, __) => _framed(DeferredPage(
+              id: 'categories',
+              load: categories.loadLibrary,
+              builder: () => categories.CategoriesSettingsPage())),
           ),
           GoRoute(
             path: AppRoutes.alertsSettings,
-            builder: (_, __) => _framed(const AlertsSettingsPage()),
+            builder: (_, __) => _framed(DeferredPage(
+              id: 'alerts_settings',
+              load: alerts_settings.loadLibrary,
+              builder: () => alerts_settings.AlertsSettingsPage())),
           ),
           GoRoute(
             path: AppRoutes.infoOng,
-            builder: (_, __) => _framed(const InfoOngPage()),
+            builder: (_, __) => _framed(DeferredPage(
+              id: 'info_ong',
+              load: info_ong.loadLibrary,
+              builder: () => info_ong.InfoOngPage())),
           ),
           GoRoute(
             path: AppRoutes.mlInsights,
@@ -419,14 +493,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.recipes,
-            builder: (_, __) => const RecipesPage(),
+            builder: (_, __) => DeferredPage(
+              id: 'recipes',
+              load: recipes.loadLibrary,
+              builder: () => recipes.RecipesPage()),
           ),
           GoRoute(
             path: AppRoutes.recipeCreate,
             builder: (context, state) {
               final recipe = state.extra as StockRecipe?;
               return _framed(SoQuemGrava(
-                  titulo: 'Receita', child: RecipeCreatePage(editRecipe: recipe)));
+                  titulo: 'Receita', child: DeferredPage(
+              id: 'recipe_create',
+              load: recipe_create.loadLibrary,
+              builder: () => recipe_create.RecipeCreatePage(editRecipe: recipe))));
             },
           ),
           GoRoute(

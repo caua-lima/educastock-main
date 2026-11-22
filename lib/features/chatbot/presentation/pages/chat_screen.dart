@@ -97,20 +97,37 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   itemBuilder: (context, index) {
                     if (index < chat.messages.length) {
                       final message = chat.messages[index];
-                      return _Bubble(
+                      final ultima = index == chat.messages.length - 1;
+                      final bubble = _Bubble(
                         message: message,
-                        onRetry:
-                            message.isError && index == chat.messages.length - 1
-                                ? () => ref
-                                    .read(chatControllerProvider.notifier)
-                                    .retry()
-                                : null,
+                        onRetry: message.isError && ultima
+                            ? () => ref
+                                .read(chatControllerProvider.notifier)
+                                .retry()
+                            : null,
+                      );
+                      // Sugestões do assistente só embaixo da última resposta.
+                      if (!ultima ||
+                          chat.sending ||
+                          message.isUser ||
+                          message.sugestoes.isEmpty) {
+                        return bubble;
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          bubble,
+                          _Suggestions(
+                              itens: message.sugestoes, onPick: _send),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
                       );
                     }
                     if (chat.sending && index == chat.messages.length) {
                       return const _TypingBubble();
                     }
-                    return _Suggestions(onPick: _send);
+                    return _Suggestions(
+                        itens: kAssistantSuggestions, onPick: _send);
                   },
                 ),
               ),
@@ -281,8 +298,9 @@ class _TypingBubble extends StatelessWidget {
 }
 
 class _Suggestions extends StatelessWidget {
+  final List<String> itens;
   final ValueChanged<String> onPick;
-  const _Suggestions({required this.onPick});
+  const _Suggestions({required this.itens, required this.onPick});
 
   @override
   Widget build(BuildContext context) {
@@ -290,7 +308,7 @@ class _Suggestions extends StatelessWidget {
       spacing: AppSpacing.sm,
       runSpacing: AppSpacing.sm,
       children: [
-        for (final s in kAssistantSuggestions)
+        for (final s in itens)
           ActionChip(
             label: Text(s),
             onPressed: () => onPick(s),

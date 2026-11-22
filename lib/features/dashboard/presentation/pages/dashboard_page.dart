@@ -96,7 +96,7 @@ class DashboardPage extends ConsumerWidget {
                       key: _keyDashMlRisk,
                       title: 'Análise de Risco com IA',
                       description:
-                          'O EducaStock usa Inteligência Artificial (TFLite on-device) para classificar o risco de cada lote vencer sem ser distribuído. Analisa histórico de saídas, velocidade de consumo e dias até vencimento para sugerir prioridades de distribuição.',
+                          'O EducaStock usa Inteligência Artificial (modelo Random Forest treinado no Colab) para classificar o risco de cada lote vencer sem ser distribuído. Analisa histórico de saídas, velocidade de consumo e dias até vencimento para sugerir prioridades de distribuição.',
                       icon: Icons.psychology_rounded,
                       align: ContentAlign.top,
                       hints: const [

@@ -24,6 +24,9 @@ class StockAlert {
   final bool resolved;
   final DateTime? snoozedUntil;
 
+  /// Campo `donationId` do aviso de doação (id do documento ou o protocolo DOA-…).
+  final String? donationRef;
+
   const StockAlert({
     required this.id,
     required this.productId,
@@ -34,9 +37,27 @@ class StockAlert {
     required this.createdAt,
     this.resolved = false,
     this.snoozedUntil,
+    this.donationRef,
   });
 
   bool get isManual => productId == 'manual';
+
+  /// Aviso de nova doação pelo portal (`productId: 'donation'`, documento
+  /// `donation_<id>`): não aponta para um produto do estoque.
+  bool get isDonation => productId == 'donation';
+
+  /// Id do documento da doação do aviso: o campo `donationId` ou o id do aviso
+  /// (`donation_<id>`). Nulo quando só se sabe o protocolo (DOA-…): aí o aviso abre a
+  /// fila de doações em vez de uma doação.
+  String? get donationId {
+    if (!isDonation) return null;
+    final ref = donationRef;
+    if (ref != null && ref.isNotEmpty && !ref.startsWith('DOA-')) return ref;
+    return id.startsWith('donation_') ? id.substring(9) : null;
+  }
+
+  /// O alerta aponta para um produto do estoque (abre a tela do produto).
+  bool get hasProduct => !isManual && !isDonation;
 
   bool get isSnoozed {
     final s = snoozedUntil;
@@ -57,6 +78,7 @@ class StockAlert {
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       resolved: map['resolved'] as bool? ?? false,
       snoozedUntil: (map['snoozedUntil'] as Timestamp?)?.toDate(),
+      donationRef: map['donationId'] as String?,
     );
   }
 }
@@ -210,7 +232,12 @@ final alertsAutoCheckProvider = Provider<void>((ref) {
     }
   }
 
-  unawaited(run());
+  // A primeira verificação espera a tela inicial carregar: ela lê todos os lotes e
+  // alertas, e na abertura essa leitura disputaria a rede com o painel.
+  final primeira = Timer(const Duration(seconds: 8), () => unawaited(run()));
   final timer = Timer.periodic(const Duration(hours: 6), (_) => run());
-  ref.onDispose(timer.cancel);
+  ref.onDispose(() {
+    primeira.cancel();
+    timer.cancel();
+  });
 });

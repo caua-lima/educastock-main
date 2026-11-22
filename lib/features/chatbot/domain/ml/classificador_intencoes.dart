@@ -197,6 +197,216 @@ class ClassificadorIntencoes {
       .where((t) => t.isNotEmpty)
       .toList();
 
+  /// Sinônimos agrupados num mesmo conceito: "zap", "whatsapp" e "telefone" viram
+  /// `telefone`. Com poucas frases de treino por intenção, isso deixa o modelo reconhecer
+  /// palavras que não apareceram nos exemplos daquele assunto (medido na validação
+  /// cruzada: test/assistente_conversa_test.dart).
+  static const _grupos = <String, List<String>>{
+    'abrir': [
+      'abre',
+      'abrem',
+      'aberto',
+      'abertos',
+      'aberta',
+      'abrir',
+      'funciona',
+      'funcionam',
+      'funcionamento',
+      'funcionamneto',
+      'expediente',
+      'fecha',
+      'fecham',
+      'fechado',
+      'fechada',
+      'abertura',
+      'horario',
+      'orario',
+      'horarios',
+      'hora',
+      'horas'
+    ],
+    'entregar': [
+      'entregar',
+      'entrego',
+      'entrega',
+      'entregas',
+      'levar',
+      'levo',
+      'deixar',
+      'deixo',
+      'trazer',
+      'trago'
+    ],
+    'doar': [
+      'doar',
+      'doo',
+      'doacao',
+      'doacoes',
+      'doando',
+      'contribuir',
+      'contribuicao',
+      'ajudar',
+      'ajuda',
+      'doador',
+      'doadora'
+    ],
+    'dinheiro': [
+      'dinheiro',
+      'grana',
+      'financeira',
+      'financeiramente',
+      'financeiro',
+      'deposito',
+      'transferencia',
+      'bancaria',
+      'bancarios',
+      'banco',
+      'conta',
+      'valor',
+      'reais'
+    ],
+    'telefone': [
+      'telefone',
+      'fone',
+      'numero',
+      'ligar',
+      'ligo',
+      'whatsapp',
+      'zap',
+      'wpp',
+      'whats',
+      'contato',
+      'email',
+      'instagram',
+      'insta',
+      'redes'
+    ],
+    'endereco': [
+      'endereco',
+      'fica',
+      'ficam',
+      'localizacao',
+      'local',
+      'bairro',
+      'rua',
+      'chegar',
+      'mapa',
+      'localizados'
+    ],
+    'precisar': [
+      'precisa',
+      'precisam',
+      'precisando',
+      'falta',
+      'faltando',
+      'faltam',
+      'necessidade',
+      'necessidades',
+      'urgente',
+      'prioridade',
+      'prioridades'
+    ],
+    'aceitar': ['aceita', 'aceitam', 'aceito', 'aceitar', 'recebem', 'serve'],
+    'cancelar': [
+      'cancelar',
+      'cancelo',
+      'cancela',
+      'desistir',
+      'desisti',
+      'anular'
+    ],
+    'recibo': ['recibo', 'comprovante', 'comprovacao', 'certificado'],
+    'validade': [
+      'validade',
+      'vencimento',
+      'vence',
+      'vencido',
+      'vencida',
+      'vencendo'
+    ],
+    'crianca': [
+      'criancas',
+      'adolescentes',
+      'meninos',
+      'jovens',
+      'alunos',
+      'idade',
+      'faixa',
+      'etaria'
+    ],
+    'robo': [
+      'robo',
+      'bot',
+      'ia',
+      'humano',
+      'pessoa',
+      'maquina',
+      'inteligencia',
+      'artificial'
+    ],
+    'aplicativo': [
+      'aplicativo',
+      'app',
+      'portal',
+      'sistema',
+      'site',
+      'plataforma'
+    ],
+    'status': [
+      'status',
+      'andamento',
+      'situacao',
+      'aprovada',
+      'aprovou',
+      'pendente',
+      'acompanhar',
+      'acompanho',
+      'acompanhamento'
+    ],
+    'voluntario': [
+      'voluntario',
+      'voluntaria',
+      'voluntariado',
+      'voluntarios',
+      'trabalhar'
+    ],
+    'imposto': [
+      'imposto',
+      'fiscal',
+      'deduzir',
+      'deducao',
+      'abater',
+      'abate',
+      'irpf'
+    ],
+    'visita': ['visita', 'visitar', 'conhecer', 'visitas', 'pessoalmente'],
+    'reclamar': [
+      'reclamacao',
+      'reclamar',
+      'sugestao',
+      'elogio',
+      'elogiar',
+      'critica',
+      'problema',
+      'erro'
+    ],
+    'mensal': [
+      'mensal',
+      'mensalmente',
+      'mes',
+      'recorrente',
+      'periodica',
+      'periodicas',
+      'frequencia',
+      'sempre',
+      'fixo'
+    ],
+  };
+  static final Map<String, String> _conceito = {
+    for (final g in _grupos.entries)
+      for (final p in g.value) p: g.key,
+  };
+
   static Map<String, double> atributosDe(String texto) {
     final todas = palavrasDe(texto);
     final f = <String, double>{};
@@ -207,6 +417,10 @@ class ClassificadorIntencoes {
       if (_paradas.contains(p)) continue;
       uteis.add(p);
       soma('w:$p', 1.0);
+      // Conceito (sinônimos) e radical curto ("precisam" e "precisando" → "prec").
+      final conceito = _conceito[p];
+      if (conceito != null) soma('s:$conceito', 1.0);
+      if (p.length > 4) soma('r:${p.substring(0, 4)}', 1.0);
       final pad = '_${p}_';
       for (final n in const [3, 4]) {
         for (var i = 0; i + n <= pad.length; i++) {

@@ -62,6 +62,11 @@ final List<Intencao> kIntencoes = [
         'hello',
         'oii',
         'bom diaa',
+        'oi, tudo bom?',
+        'olá, boa tarde',
+        'oi, quero tirar uma dúvida',
+        'salve',
+        'boa noite, tudo certo?',
       ],
       (c) =>
           'Olá! Sou o assistente da Casa da Criança. Posso ajudar com o horário, o endereço, '
@@ -98,6 +103,11 @@ final List<Intencao> kIntencoes = [
         'tenha um bom dia',
         'fui',
         'flw',
+        'até amanhã',
+        'até breve',
+        'obrigado, tchau',
+        'era só isso, até mais',
+        'tchauzinho',
       ],
       (c) =>
           'Até mais! Quando quiser doar ou tirar outra dúvida, é só voltar aqui.'),
@@ -179,6 +189,11 @@ final List<Intencao> kIntencoes = [
     'redes sociais',
     'contato da casa da criança',
     'zap de vocês',
+    'qual o whatsapp da ong',
+    'como falo com vocês',
+    'tem telefone',
+    'qual o email da ong',
+    'número de contato',
   ], (c) {
     final o = c.ong;
     final faltam = [
@@ -201,6 +216,11 @@ final List<Intencao> kIntencoes = [
     'tem conta no banco',
     'posso ajudar com dinheiro',
     'como faço uma doação financeira',
+    'como faço transferência para vocês',
+    'qual a conta da ong',
+    'posso depositar um valor',
+    'aceitam doação em dinheiro',
+    'quero contribuir com dinheiro',
   ], (c) {
     final o = c.ong;
     final partes = <String>[];
@@ -219,6 +239,11 @@ final List<Intencao> kIntencoes = [
     'pix da ong',
     'chave pix de vocês',
     'doar por pix',
+    'qual o pix de vocês',
+    'vocês aceitam pix',
+    'manda a chave pix',
+    'como faço um pix para a ong',
+    'pix para doação',
   ], (c) {
     final o = c.ong;
     if (o.chavePix.isNotEmpty) {
@@ -241,6 +266,14 @@ final List<Intencao> kIntencoes = [
         'quantos anos tem a instituição',
         'quem foi celencina caldas sarkis',
         'fale sobre a instituição',
+        'quando a ong foi fundada',
+        'em que ano começou a casa da criança',
+        'quem fundou a instituição',
+        'a casa da criança é antiga',
+        'conta a história de vocês',
+        'em que ano a ong foi criada',
+        'qual o ano de fundação',
+        'desde quando a ong existe',
       ],
       (c) =>
           'A Casa da Criança "Celencina Caldas Sarkis" foi fundada em 27 de julho de 1945, em Itapira, '
@@ -265,6 +298,11 @@ final List<Intencao> kIntencoes = [
         'qual a idade de quem é atendido',
         'faixa de idade das crianças',
         'atendem crianças pequenas',
+        'quantas crianças são atendidas',
+        'qual a idade das crianças atendidas',
+        'que atividades as crianças fazem',
+        'vocês atendem adolescentes',
+        'quais projetos a ong tem',
       ],
       (c) =>
           'A Casa da Criança atende ${c.ong.publicoAtendido}, com atividades educacionais, culturais '
@@ -292,6 +330,14 @@ final List<Intencao> kIntencoes = [
         'que itens posso doar',
         'o que eu posso levar de doação',
         'que coisas vocês recebem',
+        'posso doar roupa de criança',
+        'aceitam material de higiene',
+        'que tipos de itens vocês aceitam',
+        'posso doar alimentos não perecíveis',
+        'vocês aceitam produtos de limpeza usados em bom estado',
+        'aceitam sabão e detergente',
+        'posso doar escova de dente',
+        'posso doar pasta de dente e papel higiênico',
       ],
       (c) =>
           'A Casa da Criança aceita alimentos, bebidas, produtos de limpeza, higiene pessoal, '
@@ -328,6 +374,11 @@ final List<Intencao> kIntencoes = [
         'alimento vencido pode',
         'validade mínima dos alimentos',
         'aceitam comida que vence semana que vem',
+        'qual a validade mínima',
+        'posso doar perto do vencimento',
+        'aceitam produto vencendo',
+        'validade curta pode',
+        'quanto tempo de validade precisa',
       ],
       (c) =>
           'Itens perecíveis precisam ter data de validade, e itens vencidos não devem ser doados. '
@@ -349,6 +400,11 @@ final List<Intencao> kIntencoes = [
         'por onde começo para doar',
         'como inicio uma doação',
         'primeira vez doando, como faz',
+        'como faço uma doação pelo app',
+        'quais os passos para doar',
+        'como começo a doar',
+        'como cadastro minha doação',
+        'me explica como doar',
       ],
       (c) =>
           'É rápido:\n- Toque em "Quero doar" (ou em "Doar" num item de "Precisa");\n'
@@ -369,6 +425,11 @@ final List<Intencao> kIntencoes = [
         'para onde levo as doações',
         'onde deixo os alimentos doados',
         'onde entrego as roupas',
+        'onde deixo os itens',
+        'onde entrego os alimentos',
+        'qual o ponto de entrega',
+        'pra onde levo a doação',
+        'onde faço a entrega',
       ],
       (c) =>
           'O ponto de entrega, os dias e as instruções aparecem no passo "Entrega" do formulário e '
@@ -384,6 +445,11 @@ final List<Intencao> kIntencoes = [
         'não consigo levar, vocês buscam',
         'tem retirada',
         'passam para pegar',
+        'vocês vêm buscar',
+        'dá pra buscarem aqui em casa',
+        'tem como retirar no meu endereço',
+        'vocês retiram doação',
+        'não tenho como levar, podem pegar',
       ],
       (c) =>
           'O app não agenda retirada: a entrega é feita no ponto indicado na doação. Se não puder '
@@ -401,6 +467,11 @@ final List<Intencao> kIntencoes = [
         'como sei se aprovaram',
         'onde vejo minhas doações',
         'qual meu protocolo',
+        'como vejo o status da doação',
+        'minha doação foi aprovada?',
+        'onde acompanho minha doação',
+        'cadê a minha doação',
+        'status da doação',
       ],
       (c) =>
           'Cada doação ganha um protocolo (DOA-ANO-NÚMERO) e passa por Pendente, Aprovada e Recebida. '
@@ -415,6 +486,11 @@ final List<Intencao> kIntencoes = [
         'não vou conseguir entregar',
         'errei a doação, e agora',
         'como desfaço a doação',
+        'quero cancelar minha doação',
+        'como desisto da doação',
+        'preciso desfazer a doação',
+        'dá para cancelar depois de aprovada',
+        'cancelar doação pendente',
       ],
       (c) =>
           'Você pode cancelar enquanto a doação estiver Pendente ou Aprovada: abra a doação na aba '
@@ -428,6 +504,11 @@ final List<Intencao> kIntencoes = [
         'preciso do qr code',
         'como mostro o qr',
         'o qr não aparece',
+        'onde está o qr code da doação',
+        'pra que serve o qr code',
+        'como uso o qr code na entrega',
+        'não acho o qr code',
+        'qr code da doação',
       ],
       (c) =>
           'O QR Code fica na tela da sua doação, na aba "Doações". Mostre-o na entrega: a equipe lê '
@@ -443,6 +524,11 @@ final List<Intencao> kIntencoes = [
         'recibo em pdf',
         'nota da doação',
         'como sei para onde foi minha doação',
+        'como baixo o recibo',
+        'tem comprovante da doação',
+        'onde pego o comprovante',
+        'recibo da doação em pdf',
+        'preciso do recibo',
       ],
       (c) =>
           'Depois que a doação é recebida, a equipe registra o destino dela. Você vê o impacto e '
@@ -456,6 +542,11 @@ final List<Intencao> kIntencoes = [
         'esconder meu nome',
         'meu nome aparece',
         'quero ficar anônimo',
+        'posso doar sem me identificar',
+        'quero que meu nome não apareça',
+        'doar de forma anônima',
+        'como fico anônimo',
+        'dá pra esconder meu nome',
       ],
       (c) =>
           'Pode, sim: em "Perfil", ligue "Doar de forma anônima". A equipe e os agradecimentos '
@@ -471,6 +562,11 @@ final List<Intencao> kIntencoes = [
         'baixar meus dados',
         'privacidade',
         'quero excluir meu cadastro',
+        'quero excluir meus dados',
+        'vocês compartilham meus dados',
+        'meus dados ficam guardados',
+        'como funciona a privacidade',
+        'posso apagar minha conta',
       ],
       (c) =>
           'Seus dados ficam visíveis só para você e para a equipe autorizada. Em "Perfil" você pode '
@@ -484,6 +580,11 @@ final List<Intencao> kIntencoes = [
         'quero ajudar como voluntário',
         'trabalho voluntário',
         'posso ajudar pessoalmente',
+        'quero ser voluntário',
+        'como faço para ser voluntária',
+        'vocês precisam de voluntários',
+        'posso trabalhar como voluntário',
+        'quero ajudar como voluntário',
       ],
       (c) =>
           'Que bom que você quer ajudar! O voluntariado é combinado direto com a equipe: '
@@ -498,6 +599,11 @@ final List<Intencao> kIntencoes = [
         'posso doar para o bazar',
         'coleta de óleo',
         'reciclagem de óleo',
+        'vocês recolhem óleo de cozinha usado',
+        'tem bazar na ong',
+        'posso doar coisas para o bazar',
+        'onde descarto óleo usado',
+        'vocês fazem bazar de roupas',
       ],
       (c) =>
           'A Casa da Criança recolhe óleo de cozinha usado (projeto desde 2007) e tem um bazar de '
@@ -511,6 +617,11 @@ final List<Intencao> kIntencoes = [
         'doação com cnpj',
         'empresa pode doar',
         'campanha na minha empresa',
+        'sou empresa, posso doar',
+        'como uma empresa faz doação',
+        'doação de cnpj',
+        'minha loja pode doar',
+        'empresa pode se cadastrar como doadora',
       ],
       (c) =>
           'Pode sim! No "Perfil", escolha "Pessoa jurídica" e informe a razão social. A doação segue '
@@ -525,6 +636,11 @@ final List<Intencao> kIntencoes = [
         'meu email não foi verificado',
         'como verifico meu email',
         'problema no login',
+        'não lembro minha senha',
+        'como troco minha senha',
+        'não consigo fazer login',
+        'minha conta está bloqueada',
+        'como recupero minha conta',
       ],
       (c) =>
           'Para entrar de novo, use "Esqueci" na tela de login. Para trocar a senha, vá em "Perfil" › '
@@ -538,6 +654,11 @@ final List<Intencao> kIntencoes = [
         'meu rg é',
         'te mando os dados do cartão',
         'preciso informar documento',
+        'vou mandar o número do meu cartão',
+        'posso te passar minha senha',
+        'meu cpf é',
+        'aqui está meu documento',
+        'anota meus dados bancários',
       ],
       (c) =>
           'Por segurança, não peço nem recebo senhas, cartões ou documentos. Para doar, basta usar '
@@ -558,6 +679,11 @@ final List<Intencao> kIntencoes = [
         'vocês recebem medicamento',
         'doação de remédio pode',
         'aceitam vitaminas e medicamentos',
+        'vocês aceitam coisa vencida',
+        'posso doar remédio vencido',
+        'aceitam produto sem embalagem',
+        'o que não pode ser doado',
+        'tem itens proibidos',
       ],
       (c) =>
           'Não doe itens vencidos, estragados, abertos ou quebrados. Itens perecíveis precisam de validade. '
@@ -578,6 +704,11 @@ final List<Intencao> kIntencoes = [
         'posso juntar produtos diferentes numa doação',
         'mais de um produto na mesma doação',
         'colocar leite e açúcar juntos',
+        'dá pra doar mais de um produto',
+        'como coloco vários itens na doação',
+        'posso doar arroz e feijão juntos',
+        'limite de doações abertas',
+        'por que não posso abrir outra doação',
       ],
       (c) =>
           'Pode sim: no formulário, toque em "Adicionar à lista" e depois em "Adicionar outro item" '
@@ -592,6 +723,11 @@ final List<Intencao> kIntencoes = [
         'em quanto tempo respondem',
         'já faz dias e não aprovaram',
         'quanto tempo leva a avaliação',
+        'em quanto tempo aprovam',
+        'demora para aprovar a doação',
+        'quantos dias leva a avaliação',
+        'quando vão avaliar minha doação',
+        'a aprovação é rápida',
       ],
       (c) =>
           'A equipe avalia as doações pela ordem de chegada; não há um prazo fixo informado. Você '
@@ -606,6 +742,11 @@ final List<Intencao> kIntencoes = [
         'qual o motivo da recusa',
         'não aprovaram minha doação',
         'minha doação foi negada',
+        'por que minha doação foi recusada',
+        'recusaram minha doação',
+        'minha doação não foi aceita',
+        'o que faço se recusarem',
+        'motivo da recusa',
       ],
       (c) =>
           'Quando a equipe recusa uma doação, o motivo aparece na tela dela, na aba "Doações". '
@@ -623,6 +764,11 @@ final List<Intencao> kIntencoes = [
         'quero ser avisado',
         'como recebo alertas sobre minha doação',
         'avisos no celular',
+        'vocês mandam notificação',
+        'como ativo os avisos',
+        'vou ser avisado quando aprovarem',
+        'recebo mensagem quando receberem',
+        'desligar notificações',
       ],
       (c) =>
           'Em "Perfil", ligue "Receber notificações": você recebe um aviso quando a doação for '
@@ -635,6 +781,11 @@ final List<Intencao> kIntencoes = [
         'quero saber o impacto da minha doação',
         'a doação chegou às crianças',
         'onde usaram os itens que doei',
+        'relatório de impacto',
+        'o que fizeram com minha doação',
+        'como foi usada minha doação',
+        'quero ver o impacto',
+        'minha doação ajudou quem',
         'relatório de impacto',
       ],
       (c) =>
@@ -649,6 +800,11 @@ final List<Intencao> kIntencoes = [
         'como funciona o aplicativo',
         'quem fez esse app',
         'o que é esse portal',
+        'o que é esse aplicativo',
+        'pra que serve o educastock',
+        'o que o app faz',
+        'como funciona esse portal',
+        'quem desenvolveu o aplicativo',
       ],
       (c) =>
           'O EducaStock é o sistema de estoque e doações da Casa da Criança. No Portal do Doador você '
@@ -664,11 +820,93 @@ final List<Intencao> kIntencoes = [
         'quem é você',
         'você é inteligente',
         'é um bot',
+        'você é uma pessoa de verdade',
+        'você é um robô ou humano',
+        'estou falando com um bot',
+        'é inteligência artificial',
+        'quem está respondendo',
       ],
       (c) =>
           'Sou o assistente virtual da Casa da Criança: um modelo de Machine Learning que roda no '
           'próprio aplicativo. Respondo as dúvidas mais comuns sobre doações; para falar com uma pessoa, '
           '${c.ong.ondePerguntar}.'),
+  Intencao(
+      'doacao_recorrente',
+      [
+        'quero doar todo mês',
+        'posso fazer doação mensal',
+        'como ser doador fixo',
+        'doação recorrente',
+        'dá pra doar sempre',
+        'quero ajudar todo mês',
+        'posso programar doações',
+        'quero doar com frequência',
+        'minha empresa quer doar todo mês',
+        'doação periódica',
+        'quero doar mensalmente',
+        'dá pra doar todo mês',
+        'quero ser doador fixo',
+        'doações todo mês',
+        'posso ajudar sempre',
+      ],
+      (c) =>
+          'Que ótimo! O app não agenda doações automáticas, mas você pode registrar uma nova doação '
+          'sempre que quiser. As necessidades em "Precisa" mudam com o estoque, então vale olhar antes '
+          'de cada doação. Para combinar doações frequentes, ${c.ong.ondePerguntar}.'),
+  Intencao(
+      'elogio_reclamacao',
+      [
+        'quero fazer uma reclamação',
+        'tenho uma sugestão',
+        'quero elogiar a equipe',
+        'fui mal atendido',
+        'achei um erro no aplicativo',
+        'o app está com problema',
+        'parabéns pelo trabalho',
+        'quero dar uma sugestão de melhoria',
+        'tive um problema na entrega',
+        'adorei o atendimento',
+        'quero deixar uma reclamação',
+        'tenho uma crítica',
+        'gostaria de fazer um elogio',
+        'o atendimento foi ruim',
+        'encontrei um problema no app',
+      ],
+      (c) =>
+          'Obrigado por contar! Elogios, sugestões e reclamações ajudam a Casa da Criança a melhorar. '
+          'Para registrar, ${c.ong.ondePerguntar}. Se for um problema no aplicativo, diga o que '
+          'aconteceu e em qual tela.'),
+  Intencao(
+      'visita',
+      [
+        'posso visitar a ong',
+        'posso conhecer a casa da criança',
+        'dá pra fazer uma visita',
+        'posso levar meus filhos para conhecer',
+        'agendar uma visita',
+        'posso ir conhecer o trabalho de vocês',
+        'vocês recebem visitas',
+        'posso passar aí para conhecer',
+      ],
+      (c) =>
+          'Visitas são combinadas antes com a equipe, para não atrapalhar as atividades das crianças. '
+          'Para agendar, ${c.ong.ondePerguntar}. A sede fica na ${c.ong.endereco}.'),
+  Intencao(
+      'imposto',
+      [
+        'a doação abate no imposto de renda',
+        'posso deduzir do imposto',
+        'vocês emitem nota fiscal',
+        'o recibo serve para imposto de renda',
+        'dedução fiscal da doação',
+        'preciso de documento fiscal',
+        'dá para abater no imposto',
+        'tem benefício fiscal',
+      ],
+      (c) =>
+          'O recibo em PDF do app comprova a entrega da doação, mas não é um documento fiscal. Se você '
+          'precisa de um comprovante para imposto de renda ou para a contabilidade da empresa, '
+          '${c.ong.ondePerguntar}: a equipe informa o que a Casa da Criança pode emitir.'),
   Intencao(
       'fora_escopo',
       [
@@ -685,6 +923,70 @@ final List<Intencao> kIntencoes = [
           'Só consigo ajudar com doações para a Casa da Criança e com o uso do aplicativo. '
           'Pergunte, por exemplo, sobre o horário, o endereço, o que doar ou como doar.'),
 ];
+
+/// Pergunta legível de cada intenção: vira botão de sugestão ("Você quis dizer…" e
+/// "Talvez você também queira saber"). Intenções sem pergunta aqui não viram botão.
+const Map<String, String> kPerguntaDaIntencao = {
+  'horario_funcionamento': 'Qual o horário de funcionamento?',
+  'horario_entrega': 'Que horas posso entregar a doação?',
+  'endereco': 'Onde fica a Casa da Criança?',
+  'contato': 'Qual o telefone de vocês?',
+  'dinheiro': 'Posso doar em dinheiro?',
+  'pix': 'Vocês têm chave PIX?',
+  'historia': 'Quando a Casa da Criança foi fundada?',
+  'quem_atende': 'Quem a Casa da Criança atende?',
+  'o_que_doar': 'O que posso doar?',
+  'necessidades': 'Do que vocês mais precisam?',
+  'validade': 'Qual a validade mínima dos alimentos?',
+  'como_doar': 'Como faço para doar?',
+  'entrega': 'Onde entrego a doação?',
+  'retirada': 'Vocês buscam a doação?',
+  'acompanhamento': 'Como acompanho minha doação?',
+  'cancelar': 'Como cancelo uma doação?',
+  'qr_code': 'Onde fica o QR Code?',
+  'recibo': 'Como pego o recibo?',
+  'anonimato': 'Posso doar sem mostrar meu nome?',
+  'privacidade': 'Meus dados estão seguros?',
+  'voluntariado': 'Como posso ser voluntário?',
+  'empresa': 'Minha empresa pode doar?',
+  'nao_aceitos': 'O que vocês não aceitam?',
+  'varios_itens': 'Posso doar vários itens de uma vez?',
+  'prazo_avaliacao': 'Quanto tempo leva para aprovar?',
+  'impacto': 'Como vejo o impacto da minha doação?',
+  'doacao_recorrente': 'Posso doar todo mês?',
+  'visita': 'Posso visitar a Casa da Criança?',
+  'imposto': 'A doação abate no imposto de renda?',
+};
+
+/// Próximas dúvidas mais comuns depois de cada assunto (viram botões de sugestão).
+const Map<String, List<String>> kIntencoesRelacionadas = {
+  'saudacao': ['necessidades', 'como_doar', 'horario_funcionamento'],
+  'horario_funcionamento': ['endereco', 'horario_entrega'],
+  'horario_entrega': ['entrega', 'endereco'],
+  'endereco': ['horario_funcionamento', 'entrega'],
+  'contato': ['horario_funcionamento', 'endereco'],
+  'dinheiro': ['pix', 'imposto'],
+  'pix': ['dinheiro', 'imposto'],
+  'historia': ['quem_atende', 'visita'],
+  'quem_atende': ['necessidades', 'visita'],
+  'o_que_doar': ['necessidades', 'nao_aceitos'],
+  'necessidades': ['como_doar', 'validade'],
+  'validade': ['necessidades', 'nao_aceitos'],
+  'como_doar': ['entrega', 'acompanhamento'],
+  'entrega': ['horario_entrega', 'qr_code'],
+  'retirada': ['entrega', 'contato'],
+  'acompanhamento': ['prazo_avaliacao', 'qr_code'],
+  'cancelar': ['acompanhamento'],
+  'qr_code': ['entrega', 'acompanhamento'],
+  'recibo': ['impacto', 'imposto'],
+  'impacto': ['recibo'],
+  'empresa': ['doacao_recorrente', 'imposto'],
+  'doacao_recorrente': ['necessidades', 'empresa'],
+  'visita': ['horario_funcionamento', 'voluntariado'],
+  'imposto': ['recibo'],
+  'voluntariado': ['contato', 'visita'],
+  'nao_aceitos': ['o_que_doar', 'validade'],
+};
 
 /// Resposta quando o modelo não tem segurança suficiente.
 String respostaNaoEntendi(ContextoResposta c) =>

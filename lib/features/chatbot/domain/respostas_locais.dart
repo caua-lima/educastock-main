@@ -9,6 +9,10 @@ final ClassificadorIntencoes classificadorAssistente =
 });
 final Map<String, Intencao> _porId = {for (final i in kIntencoes) i.id: i};
 
+/// Resposta pronta de uma intenção (usada pela conversa com várias perguntas).
+String respostaDaIntencao(String id, ContextoResposta contexto) =>
+    _porId[id]?.responder(contexto) ?? respostaNaoEntendi(contexto);
+
 /// Resposta do assistente pelo modelo local (Machine Learning no aparelho, sem custo e
 /// sem internet). [maisPrecisados] traz as necessidades abertas já em texto (ex.:
 /// "Leite UHT integral: faltam 240 un (prioridade Crítica)").

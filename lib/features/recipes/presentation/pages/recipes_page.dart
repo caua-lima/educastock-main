@@ -515,6 +515,10 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                                           ),
                                       ),
                                     ],
+                                    // Executar, editar e excluir gravam no estoque: só
+                                    // administrador e estoquista (voluntário e consulta só leem).
+                                    if (ref.watch(currentUserProvider)?.canEdit ??
+                                        false) ...[
                                     const SizedBox(height: 14),
                                     Row(
                                       children: [
@@ -644,6 +648,7 @@ class _RecipesPageState extends ConsumerState<RecipesPage> {
                                         ),
                                       ],
                                     ),
+                                    ],
                                   ],
                                 ),
                               ),
