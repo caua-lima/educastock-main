@@ -13,6 +13,7 @@ import '../controllers/alerts_provider.dart';
 import '../../domain/mensagem_alerta.dart';
 import '../../../batches/presentation/controllers/batches_provider.dart';
 import '../../../../core/utils/friendly_error.dart';
+import '../../../donation_ops/presentation/controllers/donation_ops_provider.dart';
 
 class AlertsPage extends ConsumerStatefulWidget {
   const AlertsPage({super.key});
@@ -392,14 +393,23 @@ class _AlertsPageState extends ConsumerState<AlertsPage> {
             '&reason=${isCritical ? "validade" : "uso"}',
           ),
         ),
-      // Ver produto (quando não é manual)
-      if (!alert.isManual)
+      // Ver produto (quando o alerta é de um produto do estoque)
+      if (alert.hasProduct)
         CasaSheetItem(
           icon: Icons.inventory_2_rounded,
           label: 'Ver produto',
           subtitle: 'Detalhes e todos os lotes',
           color: AppColors.brandPrimary600,
           onTap: () => context.push('/products/${alert.productId}'),
+        ),
+      // Ver doação (aviso de nova doação, para quem opera as doações)
+      if (alert.isDonation && canOperateDonations(user))
+        CasaSheetItem(
+          icon: Icons.volunteer_activism_rounded,
+          label: 'Ver doação',
+          subtitle: 'Avaliar a intenção de doação',
+          color: AppColors.brandPrimary600,
+          onTap: () => context.push(_rotaDaDoacao(alert)),
         ),
       // Excluir (destrutivo): só administrador, como nas regras do banco.
       if (ehAdmin)
@@ -660,6 +670,12 @@ String _relativeTime(DateTime dt) {
 // Stats banner
 // ═══════════════════════════════════════════════════════════════════════════
 
+/// Aviso de doação: abre a doação, ou a fila de doações quando só há o protocolo.
+String _rotaDaDoacao(StockAlert alert) {
+  final id = alert.donationId;
+  return id == null ? AppRoutes.opsDonations : AppRoutes.opsDonationPath(id);
+}
+
 class _SeverityCounts {
   final int critical;
   final int warning;
@@ -894,12 +910,18 @@ class _ModernAlertCard extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.modal),
-          onTap: alert.isManual
-              ? onOpenActions
-              : () {
+          onTap: alert.hasProduct
+              ? () {
                   HapticFeedback.selectionClick();
                   context.push('/products/${alert.productId}');
-                },
+                }
+              : (alert.isDonation &&
+                      canOperateDonations(ref.read(currentUserProvider)))
+                  ? () {
+                      HapticFeedback.selectionClick();
+                      context.push(_rotaDaDoacao(alert));
+                    }
+                  : onOpenActions,
           onLongPress: () {
             HapticFeedback.mediumImpact();
             onOpenActions();
@@ -1028,7 +1050,10 @@ class _ModernAlertCard extends ConsumerWidget {
                                     ),
                                   ],
                                 ),
-                                if (!alert.isManual)
+                                if (alert.hasProduct ||
+                                    (alert.isDonation &&
+                                        canOperateDonations(
+                                            ref.watch(currentUserProvider))))
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -1036,7 +1061,7 @@ class _ModernAlertCard extends ConsumerWidget {
                                           size: 14, color: cs.onSurfaceVariant),
                                       const SizedBox(width: 4),
                                       Text(
-                                        'Ver produto',
+                                        alert.hasProduct ? 'Ver produto' : 'Ver doação',
                                         style: AppTypography.bodySmall.copyWith(
                                           color: cs.onSurfaceVariant,
                                           fontWeight: FontWeight.w600,

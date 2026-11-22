@@ -611,7 +611,7 @@ class _SkeletonPill extends StatelessWidget {
 
 // ─── Card: produto encontrado no banco ────────────────────────────────────
 
-class _ProductFoundCard extends StatelessWidget {
+class _ProductFoundCard extends ConsumerWidget {
   final Product product;
   final ColorScheme cs;
   final bool isDark;
@@ -619,7 +619,9 @@ class _ProductFoundCard extends StatelessWidget {
       {required this.product, required this.cs, required this.isDark});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Editar o produto grava no banco: só administrador e estoquista.
+    final podeGravar = ref.watch(currentUserProvider)?.canEdit ?? false;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.success600.withValues(alpha: 0.05),
@@ -725,6 +727,7 @@ class _ProductFoundCard extends StatelessWidget {
             ),
           ),
           // Botão editar
+          if (podeGravar)
           Padding(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),

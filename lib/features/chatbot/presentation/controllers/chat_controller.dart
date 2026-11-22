@@ -3,7 +3,7 @@ import '../../data/gemini_chat_service.dart';
 import '../../domain/assistant_prompt.dart';
 import '../../domain/chat_message.dart';
 import '../../domain/info_ong.dart';
-import '../../domain/respostas_locais.dart';
+import '../../domain/ml/conversa.dart';
 import 'info_ong_provider.dart';
 import '../../../donations/presentation/controllers/donation_needs_provider.dart';
 
@@ -37,19 +37,27 @@ class ChatController extends Notifier<ChatState> {
     );
 
     // 1º o modelo de Machine Learning do próprio app (grátis, sem internet): reconhece a
-    // intenção da pergunta e responde com os dados da ONG e as necessidades abertas.
+    // intenção (ou várias), procura o item nas necessidades abertas e usa a pergunta
+    // anterior como contexto.
     final ong = await _infoOng();
-    final previa = classificadorAssistente.classificar(text);
-    final mais = previa.confiavel && previa.intencao == 'necessidades'
-        ? await _maisPrecisados()
-        : const <String>[];
-    final local = analisarPergunta(text, maisPrecisados: mais, ong: ong);
+    final necessidades = await _necessidades();
+    final local = responderConversa(
+      text,
+      ong: ong,
+      necessidades: necessidades,
+      perguntaAnterior: _ultimaEntendida,
+    );
+    if (local.entendeu) _ultimaEntendida = text;
     final service = ref.read(geminiChatServiceProvider);
     if (local.entendeu || !service.isConfigured) {
       state = ChatState(
         messages: [
           ...state.messages,
-          ChatMessage(role: ChatRole.model, text: local.resposta)
+          ChatMessage(
+            role: ChatRole.model,
+            text: local.texto,
+            sugestoes: local.sugestoes,
+          ),
         ],
       );
       return;
@@ -86,7 +94,13 @@ class ChatController extends Notifier<ChatState> {
     await send(text);
   }
 
-  void reset() => state = const ChatState(messages: [_greeting]);
+  /// Última pergunta que o modelo entendeu: contexto para "e no sábado?".
+  String? _ultimaEntendida;
+
+  void reset() {
+    _ultimaEntendida = null;
+    state = const ChatState(messages: [_greeting]);
+  }
 
   /// Dados da ONG cadastrados pelo administrador (ou os públicos, se não carregar).
   Future<InfoOng> _infoOng() async {
@@ -99,16 +113,23 @@ class ChatController extends Notifier<ChatState> {
     }
   }
 
-  /// As necessidades abertas mais urgentes, em texto. Vazio se não carregar a tempo.
-  Future<List<String>> _maisPrecisados() async {
+  /// As necessidades abertas, das mais urgentes para as menos. Vazio se não carregar a
+  /// tempo (o assistente responde sem a lista).
+  Future<List<NecessidadeChat>> _necessidades() async {
     try {
       await ref
           .read(donationNeedsProvider.future)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 4));
       final abertas = ref.read(openNeedsProvider).valueOrNull ?? const [];
       return [
-        for (final n in abertas.take(5))
-          '${n.title}: faltam ${n.remainingQty} ${n.unit} (prioridade ${n.priority.label})',
+        for (final n in abertas)
+          NecessidadeChat(
+            titulo: n.title,
+            falta: n.remainingQty,
+            unidade: n.unit,
+            prioridade: n.priority.label,
+            validadeMinimaDias: n.minShelfLifeDays,
+          ),
       ];
     } catch (_) {
       return const [];

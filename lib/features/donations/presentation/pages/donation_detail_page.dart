@@ -315,9 +315,15 @@ class _DetailBody extends ConsumerWidget {
 /// ("12/11/2026" ou "12/11/2026 a 15/11/2026"), em vez de "00:00 às 00:00".
 String _textoJanela(DateTime de, DateTime ate, DateFormat data, DateFormat hora) {
   final semHorario = de.hour == 0 && de.minute == 0 && ate.hour == 0 && ate.minute == 0;
-  if (!semHorario) return '${data.format(de)} · ${hora.format(de)} às ${hora.format(ate)}';
   final mesmoDia = de.year == ate.year && de.month == ate.month && de.day == ate.day;
-  return mesmoDia ? data.format(de) : '${data.format(de)} a ${data.format(ate)}';
+  // Janela de vários dias: as datas dizem mais que o horário ("07/11 a 10/11", não
+  // "07/11 · 10:18 às 10:18").
+  if (!mesmoDia) return '${data.format(de)} a ${data.format(ate)}';
+  if (semHorario) return data.format(de);
+  if (de.hour == ate.hour && de.minute == ate.minute) {
+    return '${data.format(de)} · ${hora.format(de)}';
+  }
+  return '${data.format(de)} · ${hora.format(de)} às ${hora.format(ate)}';
 }
 
 /// QR Code do protocolo (RF22): o doador mostra na entrega e a equipe lê no Escanear,

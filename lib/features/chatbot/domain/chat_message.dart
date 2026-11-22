@@ -8,8 +8,15 @@ class ChatMessage {
   /// Mensagem de erro mostrada no balão do assistente (não entra no histórico enviado à IA).
   final bool isError;
 
-  const ChatMessage(
-      {required this.role, required this.text, this.isError = false});
+  /// Perguntas sugeridas pelo assistente, mostradas como botões abaixo da resposta.
+  final List<String> sugestoes;
+
+  const ChatMessage({
+    required this.role,
+    required this.text,
+    this.isError = false,
+    this.sugestoes = const [],
+  });
 
   bool get isUser => role == ChatRole.user;
 }

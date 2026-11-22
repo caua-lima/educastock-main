@@ -84,8 +84,15 @@ Para administrador e estoquista (aba **Doações** na barra inferior, com selo d
 
 Tudo roda em transação no próprio app (protocolo `DOA-AAAA-NNNNNN`, reserva de quantidade, linha do tempo, auditoria e aviso ao doador), então funciona **sem** Cloud Functions publicadas. O doador vê o relatório de impacto e baixa o **recibo em PDF** na tela de acompanhamento (D09).
 
-### Assistente virtual (Gemini)
-Tela `ChatScreen` no portal do doador (botão *Tirar dúvidas com o assistente*), com `google_generative_ai`, balões azuis (doador) e cinza (assistente) e instruções de sistema sobre itens aceitos, validade e logística. A chave **não fica no código**:
+### Assistente virtual (Machine Learning no aparelho + Gemini opcional)
+O assistente responde primeiro com um classificador **Naive Bayes** treinado no próprio aparelho (`lib/features/chatbot/domain/ml/`): 41 assuntos e 570 frases de treino, com sinônimos, radicais e pedaços de palavras (tolera erros de digitação). Sobre o classificador, a conversa (`conversa.dart`):
+
+* **Busca de item**: "vocês precisam de arroz?" responde com o que falta, a prioridade e a validade mínima, a partir das necessidades abertas; item fora da lista recebe a sugestão de oferecer.
+* **Várias perguntas** numa mensagem ("qual o endereço e o horário?") e **contexto** ("e no sábado?").
+* **Sugestões** em botões: as próximas dúvidas comuns e, quando não entende, os assuntos mais prováveis.
+* **Avaliação** (`test/assistente_conversa_test.dart`): 100% em 59 perguntas inéditas e 74% na validação cruzada deixa-um-de-fora.
+
+Só o que o modelo não entende vai para o Gemini, quando há chave. Tela `ChatScreen` no portal do doador (botão *Tirar dúvidas com o assistente*), com `google_generative_ai`, balões azuis (doador) e cinza (assistente) e instruções de sistema sobre itens aceitos, validade e logística. A chave **não fica no código**:
 
 ```bash
 flutter run -d chrome --dart-define=GEMINI_API_KEY=SUA_CHAVE
