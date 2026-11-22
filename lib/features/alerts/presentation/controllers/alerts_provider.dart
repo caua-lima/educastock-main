@@ -232,7 +232,12 @@ final alertsAutoCheckProvider = Provider<void>((ref) {
     }
   }
 
-  unawaited(run());
+  // A primeira verificação espera a tela inicial carregar: ela lê todos os lotes e
+  // alertas, e na abertura essa leitura disputaria a rede com o painel.
+  final primeira = Timer(const Duration(seconds: 8), () => unawaited(run()));
   final timer = Timer.periodic(const Duration(hours: 6), (_) => run());
-  ref.onDispose(timer.cancel);
+  ref.onDispose(() {
+    primeira.cancel();
+    timer.cancel();
+  });
 });

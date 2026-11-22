@@ -55,6 +55,16 @@ Future<void> _start() async {
         child: const EducaStockApp(),
       ),
     );
+    // Telas secundárias (formulários, relatórios, configurações…) ficam fora do arquivo
+    // principal na web. Depois que a primeira tela aparece, são baixadas em segundo plano,
+    // uma de cada vez, para abrir sem espera quando a pessoa navegar até elas.
+    Future<void>.delayed(const Duration(seconds: 3), () async {
+      try {
+        await precarregarTelasSobDemanda();
+      } catch (e) {
+        debugPrint('[EducaStock] pré-carga das telas falhou (abrem na 1ª visita): $e');
+      }
+    });
   } catch (error, stack) {
     debugPrint('[EducaStock] falha na inicialização: $error\n$stack');
     runApp(StartupErrorApp(onRetry: _start));
